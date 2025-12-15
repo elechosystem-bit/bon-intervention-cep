@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bon d'Intervention - CEP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --accent: #f6ad55;
+            --accent-dark: #dd6b20;
+            --bg: #f7fafc;
+            --card: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --success: #48bb78;
+            --danger: #fc8181;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .logo-section h1 { font-size: 1.5rem; font-weight: 700; }
+        .logo-section p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
+        .bon-number { background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 10px; text-align: right; }
+        .bon-number span { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; }
+        .bon-number p { font-size: 0.8rem; opacity: 0.8; }
+        .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; }
+        .section { margin-bottom: 30px; }
+        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ''; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
+        .input-group input, .input-group textarea, .input-group select { padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 1rem; transition: all 0.2s ease; background: white; }
+        .input-group input:focus, .input-group textarea:focus, .input-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1); }
+        
+        /* Style pour le sélecteur de matériel */
+        .material-selector { background: #f0f7ff; border: 2px solid var(--primary); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .material-selector label { font-weight: 600; color: var(--primary); margin-bottom: 10px; display: block; }
+        .material-selector-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .material-selector select { flex: 1; min-width: 200px; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; background: white; }
+        .material-selector input[type="number"] { width: 80px; padding: 12px; border: 2px solid var(--border); border-radius: 8px; text-align: center; font-family: 'Space Mono', monospace; }
+        .material-selector .btn-add { padding: 12px 20px; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .material-selector .btn-add:hover { background: #38a169; transform: scale(1.05); }
+
+        .category-section { margin-bottom: 20px; }
+        .category-header { background: var(--primary); color: white; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .category-header:hover { background: var(--primary-light); }
+        .category-header .toggle-icon { transition: transform 0.3s; }
+        .category-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+        .category-content { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+        .category-content.hidden { display: none; }
+        .product-row { display: grid; grid-template-columns: 40px 1fr 90px 80px 90px; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border); transition: background 0.2s; }
+        .product-row:last-child { border-bottom: none; }
+        .product-row:hover { background: #f8fafc; }
+        .product-row.selected { background: #ebf8ff; }
+        .product-row input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
+        .product-name { font-size: 0.85rem; }
+        .product-ref { font-size: 0.7rem; color: var(--text-light); font-family: 'Space Mono', monospace; }
+        .product-price { font-weight: 600; color: var(--primary); text-align: center; font-size: 0.85rem; }
+        .product-qty input { width: 55px; padding: 5px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
+        .product-total { font-weight: 700; color: var(--accent-dark); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
+        .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #fffaf0; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
+        .service-row label { font-weight: 600; }
+        .service-row input { padding: 8px; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; text-align: center; }
+        .totals-section { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 25px; border-radius: 12px; margin-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 1rem; }
+        .total-row.grand-total { font-size: 1.4rem; font-weight: 700; border-top: 2px solid rgba(255,255,255,0.3); padding-top: 15px; margin-top: 10px; }
+        .total-row span:last-child { font-family: 'Space Mono', monospace; }
+        .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+        .signature-box { border: 2px dashed var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+        .signature-box h4 { font-size: 0.9rem; color: var(--text-light); margin-bottom: 15px; }
+        .signature-canvas { width: 100%; height: 120px; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: crosshair; touch-action: none; }
+        .signature-actions { margin-top: 10px; }
+        .btn-clear { padding: 6px 12px; font-size: 0.8rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .actions { display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+        .btn { flex: 1; min-width: 200px; padding: 16px 30px; font-size: 1rem; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%); color: white; box-shadow: 0 4px 15px rgba(246, 173, 85, 0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(246, 173, 85, 0.5); }
+        .btn-secondary { background: var(--card); color: var(--primary); border: 2px solid var(--primary); }
+        .btn-secondary:hover { background: var(--primary); color: white; }
+        .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; animation: modalIn 0.3s ease; }
+        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-icon { width: 80px; height: 80px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2.5rem; color: white; }
+        .modal h3 { font-size: 1.5rem; margin-bottom: 10px; }
+        .modal p { color: var(--text-light); margin-bottom: 20px; }
+        @media (max-width: 768px) {
+            .product-row { grid-template-columns: 30px 1fr 60px 70px; }
+            .product-row .product-price { display: none; }
+            .service-row { grid-template-columns: 1fr 1fr; }
+            .signature-section { grid-template-columns: 1fr; }
+            .header { flex-direction: column; text-align: center; }
+            .bon-number { text-align: center; }
+            .material-selector-row { flex-direction: column; }
+            .material-selector select, .material-selector input[type="number"] { width: 100%; }
+        }
+        @media print {
+            body { padding: 0; background: white; }
+            .btn, .actions, .btn-clear, .material-selector { display: none !important; }
+            .header, .footer, .totals-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-section">
+                <h1>⚡ Compagnie d'Électricité Parisienne</h1>
+                <p>Bon d'Intervention</p>
+            </div>
+            <div class="bon-number">
+                <span id="bonNumber">CEP-2024-0001</span>
+                <p id="currentDate"></p>
+            </div>
+        </div>
+
+        <div class="form-body">
+            <div class="section">
+                <h3 class="section-title">Informations Client</h3>
+                <div class="input-grid">
+                    <div class="input-group"><label>Nom / Société</label><input type="text" id="clientName" placeholder="Nom du client"></div>
+                    <div class="input-group"><label>Téléphone</label><input type="tel" id="clientPhone" placeholder="06 12 34 56 78"></div>
+                    <div class="input-group"><label>Email</label><input type="email" id="clientEmail" placeholder="email@exemple.fr"></div>
+                    <div class="input-group"><label>Adresse</label><input type="text" id="clientAddress" placeholder="Adresse complète"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Détails de l'Intervention</h3>
+                <div class="input-grid">
+                    <div class="input-group"><label>Date</label><input type="date" id="interventionDate"></div>
+                    <div class="input-group">
+                        <label>Technicien</label>
+                        <select id="technicien">
+                            <option value="">-- Sélectionner un technicien --</option>
+                            <option value="Christophe Tavares">Christophe Tavares</option>
+                            <option value="Ricardo Dassilva">Ricardo Dassilva</option>
+                            <option value="Mathieu Rodriguez">Mathieu Rodriguez</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="grid-column: 1 / -1;"><label>Description</label><textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Produits Utilisés</h3>
+                
+                <!-- Sélecteur rapide de matériel -->
+                <div class="material-selector">
+                    <label>⚡ Ajout rapide de matériel</label>
+                    <div class="material-selector-row">
+                        <select id="materialSelect">
+                            <option value="">-- Choisir un produit --</option>
+                            <optgroup label="🔌 Câbles">
+                                <option value="0" data-price="0.6">3G0,75 - 0.60€/m</option>
+                                <option value="1" data-price="1.3">3G1,5 - 1.30€/m</option>
+                                <option value="2" data-price="2">3G2,5 - 2.00€/m</option>
+                                <option value="3" data-price="2.1">5G1,5 - 2.10€/m</option>
+                                <option value="4" data-price="3.2">5G2,5 - 3.20€/m</option>
+                                <option value="5" data-price="4.5">5G6 - 4.50€/m</option>
+                                <option value="6" data-price="14">5G10 - 14€/m</option>
+                                <option value="7" data-price="22">5G16 - 22€/m</option>
+                                <option value="8" data-price="50">4X35 - 50€/m</option>
+                                <option value="9" data-price="3">3G1,5 Pyrolion - 3€/m</option>
+                                <option value="10" data-price="4.35">3G2,5 Pyrolion - 4.35€/m</option>
+                                <option value="11" data-price="6.5">5G2,5 Pyrolion - 6.50€/m</option>
+                                <option value="12" data-price="1.8">Câble Info Cat.6 - 1.80€/m</option>
+                                <option value="13" data-price="3.4">Câble Sono 2X1,5 - 3.40€/m</option>
+                                <option value="14" data-price="1">Gaine Grise Ø20 - 1€/m</option>
+                            </optgroup>
+                            <optgroup label="🔧 Disjoncteurs Mono">
+                                <option value="15" data-price="37">2A Mono 6kA - 37€</option>
+                                <option value="16" data-price="39">4A Mono 6kA - 39€</option>
+                                <option value="17" data-price="34">10A Mono 6kA - 34€</option>
+                                <option value="18" data-price="34">16A Mono 6kA - 34€</option>
+                                <option value="19" data-price="34">20A Mono 6kA - 34€</option>
+                                <option value="20" data-price="37">32A Mono 6kA - 37€</option>
+                            </optgroup>
+                            <optgroup label="🔧 Disjoncteurs Tétra">
+                                <option value="21" data-price="114">10A Tétra 6kA - 114€</option>
+                                <option value="22" data-price="114">16A Tétra 6kA - 114€</option>
+                                <option value="23" data-price="114">20A Tétra 6kA - 114€</option>
+                                <option value="24" data-price="130">32A Tétra 6kA - 130€</option>
+                                <option value="25" data-price="158">40A Tétra 6kA - 158€</option>
+                                <option value="26" data-price="275">63A Tétra 10kA - 275€</option>
+                            </optgroup>
+                            <optgroup label="🔌 Appareillages Plexo">
+                                <option value="27" data-price="15">Inter. Plexo Saillie - 15€</option>
+                                <option value="28" data-price="22">Prise Plexo Simple - 22€</option>
+                                <option value="29" data-price="42">Prise Plexo Double - 42€</option>
+                                <option value="30" data-price="86">Prise Plexo Triple - 86€</option>
+                                <option value="31" data-price="72">Prise Tétra 20A - 72€</option>
+                                <option value="32" data-price="25">Fiche Tétra 20A - 25€</option>
+                                <option value="33" data-price="8">Boîte Plexo Ø60 - 8€</option>
+                                <option value="34" data-price="12">Boîte Plexo Ø80 - 12€</option>
+                                <option value="35" data-price="27">Boîte Plexo Ø100 - 27€</option>
+                                <option value="36" data-price="30">Prise Encastré Simple - 30€</option>
+                                <option value="37" data-price="59">Prise Encastré Double - 59€</option>
+                                <option value="38" data-price="90">Prise Encastré Triple - 90€</option>
+                                <option value="39" data-price="67">Prise Tétra Encastré - 67€</option>
+                            </optgroup>
+                            <optgroup label="🚨 BAES & Peignes">
+                                <option value="40" data-price="130">BAES Legrand - 130€</option>
+                                <option value="41" data-price="120">BAES URA ONE - 120€</option>
+                                <option value="42" data-price="290">Télécommande BAES - 290€</option>
+                                <option value="43" data-price="42">Peigne Mono DT40 - 42€</option>
+                                <option value="44" data-price="76">Peigne Tétra IDT40 - 76€</option>
+                                <option value="45" data-price="28">Peigne Tétra IC60 - 28€</option>
+                            </optgroup>
+                            <optgroup label="💡 Éclairage & LED">
+                                <option value="46" data-price="8">Ampoule E27 2W - 8€</option>
+                                <option value="47" data-price="9">Ampoule E27 4W Dim - 9€</option>
+                                <option value="48" data-price="125">Guirlande 12m - 125€</option>
+                                <option value="49" data-price="9">Ampoule GU10 7W - 9€</option>
+                                <option value="50" data-price="1.1">Douille GU10 - 1.10€</option>
+                                <option value="51" data-price="28">Ruban LED COB480 - 28€/m</option>
+                                <option value="52" data-price="7.6">Profilé Alu - 7.60€/m</option>
+                                <option value="53" data-price="7.2">Capot Blanc - 7.20€/m</option>
+                                <option value="54" data-price="105">Transfo 24V 100W - 105€</option>
+                            </optgroup>
+                            <optgroup label="🎛️ Variateurs">
+                                <option value="55" data-price="390">RVLED 250W - 390€</option>
+                                <option value="56" data-price="430">RVLED 500W - 430€</option>
+                                <option value="57" data-price="490">RVLED 1000W - 490€</option>
+                                <option value="58" data-price="65">Potentiomètre - 65€</option>
+                                <option value="59" data-price="8.5">Support Potentiomètre - 8.50€</option>
+                            </optgroup>
+                        </select>
+                        <input type="number" id="materialQty" value="1" min="1" placeholder="Qté">
+                        <button class="btn-add" onclick="addMaterial()">+ Ajouter</button>
+                    </div>
+                </div>
+                
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>🔌 Câbles</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="0"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G0,75</div></div><div class="product-price">0.60€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="0.6" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="1"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G1,5</div></div><div class="product-price">1.30€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="1.3" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="2"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G2,5</div></div><div class="product-price">2.00€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="2" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="3"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">5G1,5</div></div><div class="product-price">2.10€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="2.1" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="4"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">5G2,5</div></div><div class="product-price">3.20€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="3.2" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="5"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">5G6</div></div><div class="product-price">4.50€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="4.5" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="6"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">5G10</div></div><div class="product-price">14€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="14" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="7"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">5G16</div></div><div class="product-price">22€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="22" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="8"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">4X35</div></div><div class="product-price">50€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="50" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="9"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G1,5 Pyrolion</div></div><div class="product-price">3€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="3" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="10"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G2,5 Pyrolion</div></div><div class="product-price">4.35€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="4.35" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="11"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">5G2,5 Pyrolion</div></div><div class="product-price">6.50€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="6.5" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="12"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Câble Info Cat.6</div></div><div class="product-price">1.80€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="1.8" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="13"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Câble Sono 2X1,5</div></div><div class="product-price">3.40€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="3.4" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="14"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Gaine Grise Ø20</div></div><div class="product-price">1€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="1" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>🔧 Disjoncteurs Mono</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="15"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">2A Mono 6kA</div><div class="product-ref">A9P22602</div></div><div class="product-price">37€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="37" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="16"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">4A Mono 6kA</div><div class="product-ref">A9P22604</div></div><div class="product-price">39€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="39" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="17"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">10A Mono 6kA</div><div class="product-ref">A9P22610</div></div><div class="product-price">34€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="34" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="18"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">16A Mono 6kA</div><div class="product-ref">A9P22616</div></div><div class="product-price">34€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="34" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="19"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">20A Mono 6kA</div><div class="product-ref">A9P22620</div></div><div class="product-price">34€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="34" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="20"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">32A Mono 6kA</div><div class="product-ref">A9P22632</div></div><div class="product-price">37€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="37" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>🔧 Disjoncteurs Tétra</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="21"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">10A Tétra 6kA</div><div class="product-ref">A9P22710</div></div><div class="product-price">114€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="114" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="22"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">16A Tétra 6kA</div><div class="product-ref">A9P22716</div></div><div class="product-price">114€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="114" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="23"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">20A Tétra 6kA</div><div class="product-ref">A9P22720</div></div><div class="product-price">114€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="114" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="24"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">32A Tétra 6kA</div><div class="product-ref">A9P22732</div></div><div class="product-price">130€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="130" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="25"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">40A Tétra 6kA</div><div class="product-ref">A9P22740</div></div><div class="product-price">158€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="158" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="26"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">63A Tétra 10kA</div><div class="product-ref">A9P24463</div></div><div class="product-price">275€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="275" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>🔌 Appareillages Plexo</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="27"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Inter. Plexo Saillie</div><div class="product-ref">069711L</div></div><div class="product-price">15€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="15" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="28"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Plexo Simple</div><div class="product-ref">069731L</div></div><div class="product-price">22€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="22" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="29"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Plexo Double</div><div class="product-ref">069768L</div></div><div class="product-price">42€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="42" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="30"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Plexo Triple</div><div class="product-ref">069680L</div></div><div class="product-price">86€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="86" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="31"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Tétra 20A</div><div class="product-ref">091657</div></div><div class="product-price">72€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="72" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="32"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Fiche Tétra 20A</div><div class="product-ref">055637</div></div><div class="product-price">25€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="25" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="33"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Boîte Plexo Ø60</div><div class="product-ref">092003</div></div><div class="product-price">8€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="8" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="34"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Boîte Plexo Ø80</div><div class="product-ref">092013</div></div><div class="product-price">12€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="12" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="35"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Boîte Plexo Ø100</div><div class="product-ref">092020</div></div><div class="product-price">27€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="27" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="36"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Encastré Simple</div><div class="product-ref">069831L</div></div><div class="product-price">30€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="30" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="37"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Encastré Double</div><div class="product-ref">069562L</div></div><div class="product-price">59€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="59" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="38"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Encastré Triple</div><div class="product-ref">080053</div></div><div class="product-price">90€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="90" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="39"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Tétra Encastré</div><div class="product-ref">080051</div></div><div class="product-price">67€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="67" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>🚨 BAES & Peignes</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="40"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">BAES Legrand</div><div class="product-ref">062525</div></div><div class="product-price">130€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="130" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="41"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">BAES URA ONE</div><div class="product-ref">111013V</div></div><div class="product-price">120€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="120" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="42"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Télécommande BAES</div><div class="product-ref">062520</div></div><div class="product-price">290€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="290" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="43"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Peigne Mono DT40</div><div class="product-ref">A9XPN624</div></div><div class="product-price">42€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="42" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="44"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Peigne Tétra IDT40</div><div class="product-ref">A9XPP724</div></div><div class="product-price">76€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="76" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="45"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Peigne Tétra IC60</div><div class="product-ref">R9PXH424</div></div><div class="product-price">28€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="28" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>💡 Éclairage & LED</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="46"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Ampoule E27 2W</div><div class="product-ref">716630</div></div><div class="product-price">8€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="8" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="47"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Ampoule E27 4W Dim</div><div class="product-ref">165458</div></div><div class="product-price">9€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="9" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="48"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Guirlande 12m</div></div><div class="product-price">125€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="125" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="49"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Ampoule GU10 7W</div></div><div class="product-price">9€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="9" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="50"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Douille GU10</div></div><div class="product-price">1.10€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="1.1" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="51"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Ruban LED COB480</div></div><div class="product-price">28€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="28" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="52"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Profilé Alu</div></div><div class="product-price">7.60€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="7.6" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="53"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Capot Blanc</div></div><div class="product-price">7.20€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="7.2" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="54"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Transfo 24V 100W</div></div><div class="product-price">105€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="105" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+
+                <div class="category-section">
+                    <div class="category-header" onclick="toggleCategory(this)"><span>🎛️ Variateurs</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content">
+                        <div class="product-row" data-index="55"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">RVLED 250W</div></div><div class="product-price">390€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="390" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="56"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">RVLED 500W</div></div><div class="product-price">430€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="430" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="57"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">RVLED 1000W</div></div><div class="product-price">490€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="490" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="58"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Potentiomètre</div><div class="product-ref">1977</div></div><div class="product-price">65€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="65" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                        <div class="product-row" data-index="59"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Support Potentiomètre</div><div class="product-ref">A9A15152</div></div><div class="product-price">8.50€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="8.5" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Main d'Œuvre & Déplacement</h3>
+                <div class="service-row">
+                    <label>🔧 Main d'œuvre</label>
+                    <input type="number" id="moHeures" value="0" min="0" step="0.5" placeholder="Heures" onchange="updateMO()">
+                    <input type="number" id="moTarif" value="45" min="0" placeholder="€/h" onchange="updateMO()">
+                    <div class="product-total" id="moTotal">0.00€</div>
+                </div>
+                <div class="service-row">
+                    <label>🚗 Déplacement</label>
+                    <input type="number" id="deplKm" value="0" min="0" placeholder="Km" onchange="updateDepl()">
+                    <input type="number" id="deplTarif" value="0.50" min="0" step="0.1" placeholder="€/km" onchange="updateDepl()">
+                    <div class="product-total" id="deplTotal">0.00€</div>
+                </div>
+            </div>
+
+            <div class="totals-section">
+                <div class="total-row"><span>Sous-total Produits</span><span id="subtotalProduits">0.00€</span></div>
+                <div class="total-row"><span>Main d'œuvre</span><span id="subtotalMO">0.00€</span></div>
+                <div class="total-row"><span>Déplacement</span><span id="subtotalDepl">0.00€</span></div>
+                <div class="total-row"><span>Total HT</span><span id="totalHT">0.00€</span></div>
+                <div class="total-row"><span>TVA (20%)</span><span id="totalTVA">0.00€</span></div>
+                <div class="total-row grand-total"><span>TOTAL TTC</span><span id="totalTTC">0.00€</span></div>
+            </div>
+
+            <div class="signature-section">
+                <div class="signature-box">
+                    <h4>Signature Technicien</h4>
+                    <canvas class="signature-canvas" id="signatureTech"></canvas>
+                    <div class="signature-actions"><button class="btn-clear" onclick="clearSignature('signatureTech')">Effacer</button></div>
+                </div>
+                <div class="signature-box">
+                    <h4>Signature Client</h4>
+                    <canvas class="signature-canvas" id="signatureClient"></canvas>
+                    <div class="signature-actions"><button class="btn-clear" onclick="clearSignature('signatureClient')">Effacer</button></div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimer</button>
+                <button class="btn btn-primary" onclick="envoyerCompta()">📧 Envoyer en Comptabilité</button>
+            </div>
+        </div>
+
+        <div class="footer">Compagnie d'Électricité Parisienne — Bon d'intervention</div>
+    </div>
+
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-icon">✓</div>
+            <h3>Envoyé !</h3>
+            <p>Le bon a été envoyé à<br><strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="dab9b5b7aaaebb9ab9bfaaedeff4bca8">[email&#160;protected]</a></strong></p>
+            <button class="btn btn-primary" onclick="closeModal()" style="width:100%">Fermer</button>
+        </div>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
+            document.getElementById('interventionDate').valueAsDate = today;
+            document.getElementById('bonNumber').textContent = 'CEP-' + today.getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+            initSignature('signatureTech');
+            initSignature('signatureClient');
+        });
+
+        function toggleCategory(header) {
+            header.classList.toggle('collapsed');
+            header.nextElementSibling.classList.toggle('hidden');
+        }
+
+        // Ajout rapide de matériel via le menu déroulant
+        function addMaterial() {
+            const select = document.getElementById('materialSelect');
+            const qtyInput = document.getElementById('materialQty');
+            const index = select.value;
+            const qty = parseInt(qtyInput.value) || 1;
+            
+            if (index === '') {
+                alert('Veuillez sélectionner un produit');
+                return;
+            }
+            
+            // Trouver la ligne correspondante
+            const row = document.querySelector(`.product-row[data-index="${index}"]`);
+            if (row) {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                const qtyField = row.querySelector('.product-qty input');
+                const currentQty = parseInt(qtyField.value) || 0;
+                
+                qtyField.value = currentQty + qty;
+                checkbox.checked = true;
+                row.classList.add('selected');
+                updateRowTotal(qtyField);
+                
+                // Ouvrir la catégorie si fermée
+                const categoryContent = row.closest('.category-content');
+                const categoryHeader = categoryContent.previousElementSibling;
+                if (categoryContent.classList.contains('hidden')) {
+                    categoryHeader.classList.remove('collapsed');
+                    categoryContent.classList.remove('hidden');
+                }
+                
+                // Scroll vers le produit
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.style.animation = 'flash 0.5s';
+            }
+            
+            // Reset
+            select.value = '';
+            qtyInput.value = 1;
+        }
+
+        function updateRowTotal(input) {
+            const row = input.closest('.product-row');
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            const qty = parseFloat(input.value) || 0;
+            const price = parseFloat(input.dataset.price) || 0;
+            row.querySelector('.product-total').textContent = (qty * price).toFixed(2) + '€';
+            checkbox.checked = qty > 0;
+            row.classList.toggle('selected', qty > 0);
+            calculateTotals();
+        }
+
+        function updateTotal(checkbox) {
+            const row = checkbox.closest('.product-row');
+            row.classList.toggle('selected', checkbox.checked);
+            if (!checkbox.checked) {
+                row.querySelector('.product-qty input').value = 0;
+                row.querySelector('.product-total').textContent = '0.00€';
+            }
+            calculateTotals();
+        }
+
+        function updateMO() {
+            const h = parseFloat(document.getElementById('moHeures').value) || 0;
+            const t = parseFloat(document.getElementById('moTarif').value) || 0;
+            document.getElementById('moTotal').textContent = (h * t).toFixed(2) + '€';
+            calculateTotals();
+        }
+
+        function updateDepl() {
+            const km = parseFloat(document.getElementById('deplKm').value) || 0;
+            const t = parseFloat(document.getElementById('deplTarif').value) || 0;
+            document.getElementById('deplTotal').textContent = (km * t).toFixed(2) + '€';
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+            let sub = 0;
+            document.querySelectorAll('.product-row').forEach(row => {
+                if (row.querySelector('input[type="checkbox"]')?.checked) {
+                    sub += parseFloat(row.querySelector('.product-total').textContent) || 0;
+                }
+            });
+            const mo = parseFloat(document.getElementById('moTotal').textContent) || 0;
+            const depl = parseFloat(document.getElementById('deplTotal').textContent) || 0;
+            const ht = sub + mo + depl;
+            const tva = ht * 0.2;
+            document.getElementById('subtotalProduits').textContent = sub.toFixed(2) + '€';
+            document.getElementById('subtotalMO').textContent = mo.toFixed(2) + '€';
+            document.getElementById('subtotalDepl').textContent = depl.toFixed(2) + '€';
+            document.getElementById('totalHT').textContent = ht.toFixed(2) + '€';
+            document.getElementById('totalTVA').textContent = tva.toFixed(2) + '€';
+            document.getElementById('totalTTC').textContent = (ht + tva).toFixed(2) + '€';
+        }
+
+        function initSignature(id) {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            let drawing = false;
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            ctx.strokeStyle = '#1a365d';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+
+            function pos(e) {
+                const r = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - r.left;
+                const y = (e.clientY || e.touches[0].clientY) - r.top;
+                return {x, y};
+            }
+            canvas.onmousedown = e => { drawing = true; ctx.beginPath(); ctx.moveTo(pos(e).x, pos(e).y); };
+            canvas.onmousemove = e => { if (drawing) { ctx.lineTo(pos(e).x, pos(e).y); ctx.stroke(); } };
+            canvas.onmouseup = canvas.onmouseout = () => drawing = false;
+            canvas.ontouchstart = e => { e.preventDefault(); drawing = true; ctx.beginPath(); ctx.moveTo(pos(e).x, pos(e).y); };
+            canvas.ontouchmove = e => { e.preventDefault(); if (drawing) { ctx.lineTo(pos(e).x, pos(e).y); ctx.stroke(); } };
+            canvas.ontouchend = () => drawing = false;
+        }
+
+        function clearSignature(id) {
+            const c = document.getElementById(id);
+            c.getContext('2d').clearRect(0, 0, c.width, c.height);
+        }
+
+        function envoyerCompta() {
+            const bon = document.getElementById('bonNumber').textContent;
+            const client = document.getElementById('clientName').value || 'Client';
+            const technicien = document.getElementById('technicien').value || 'Non spécifié';
+            const total = document.getElementById('totalTTC').textContent;
+            const subject = encodeURIComponent("Bon " + bon + " - " + client);
+            const body = encodeURIComponent("Bon: " + bon + "\nClient: " + client + "\nTechnicien: " + technicien + "\nTotal TTC: " + total);
+            window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
+          
