@@ -54,10 +54,7 @@
         .category-header.collapsed .toggle-icon { transform: rotate(-90deg); }
         .category-content { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
         .category-content.hidden { display: none; }
-        /* Version technicien : par défaut, masquer complètement les listes de produits,
-           ne laisser visible que le sélecteur rapide (ascenseur) */
-        .category-section { display: none !important; }
-        /* Version technicien : uniquement case, nom produit, quantité (pas de prix) */
+        /* Version technicien : afficher les produits mais sans aucun prix (voir règles ci-dessous) */
         .product-row { display: grid; grid-template-columns: 40px 1fr 80px; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border); transition: background 0.2s; }
         .product-row:last-child { border-bottom: none; }
         .product-row:hover { background: #f8fafc; }
@@ -104,9 +101,6 @@
         .btn-admin-toggle:hover { background: rgba(0,0,0,0.3); }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
         .btn-email:hover { background: var(--primary); color: #fff; }
-        /* Bouton compta réservé au mode admin */
-        .btn-compta { display: none; }
-        body.admin-mode .btn-compta { display: flex; }
         .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.show { display: flex; }
@@ -268,8 +262,8 @@
                 </div>
                 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>🔌 Câbles</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>🔌 Câbles</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="0"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G0,75</div></div><div class="product-price">0.60€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="0.6" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="1"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G1,5</div></div><div class="product-price">1.30€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="1.3" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="2"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">3G2,5</div></div><div class="product-price">2.00€/m</div><div class="product-qty"><input type="number" value="0" min="0" data-price="2" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
@@ -289,8 +283,8 @@
                 </div>
 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>🔧 Disjoncteurs Mono</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>🔧 Disjoncteurs Mono</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="15"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">2A Mono 6kA</div><div class="product-ref">A9P22602</div></div><div class="product-price">37€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="37" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="16"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">4A Mono 6kA</div><div class="product-ref">A9P22604</div></div><div class="product-price">39€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="39" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="17"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">10A Mono 6kA</div><div class="product-ref">A9P22610</div></div><div class="product-price">34€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="34" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
@@ -301,8 +295,8 @@
                 </div>
 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>🔧 Disjoncteurs Tétra</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>🔧 Disjoncteurs Tétra</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="21"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">10A Tétra 6kA</div><div class="product-ref">A9P22710</div></div><div class="product-price">114€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="114" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="22"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">16A Tétra 6kA</div><div class="product-ref">A9P22716</div></div><div class="product-price">114€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="114" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="23"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">20A Tétra 6kA</div><div class="product-ref">A9P22720</div></div><div class="product-price">114€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="114" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
@@ -313,8 +307,8 @@
                 </div>
 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>🔌 Appareillages Plexo</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>🔌 Appareillages Plexo</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="27"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Inter. Plexo Saillie</div><div class="product-ref">069711L</div></div><div class="product-price">15€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="15" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="28"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Plexo Simple</div><div class="product-ref">069731L</div></div><div class="product-price">22€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="22" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="29"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Prise Plexo Double</div><div class="product-ref">069768L</div></div><div class="product-price">42€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="42" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
@@ -332,8 +326,8 @@
                 </div>
 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>🚨 BAES & Peignes</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>🚨 BAES & Peignes</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="40"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">BAES Legrand</div><div class="product-ref">062525</div></div><div class="product-price">130€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="130" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="41"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">BAES URA ONE</div><div class="product-ref">111013V</div></div><div class="product-price">120€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="120" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="42"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Télécommande BAES</div><div class="product-ref">062520</div></div><div class="product-price">290€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="290" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
@@ -344,8 +338,8 @@
                 </div>
 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>💡 Éclairage & LED</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>💡 Éclairage & LED</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="46"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Ampoule E27 2W</div><div class="product-ref">716630</div></div><div class="product-price">8€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="8" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="47"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Ampoule E27 4W Dim</div><div class="product-ref">165458</div></div><div class="product-price">9€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="9" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="48"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Guirlande 12m</div></div><div class="product-price">125€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="125" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
@@ -359,14 +353,22 @@
                 </div>
 
                 <div class="category-section">
-                    <div class="category-header" onclick="toggleCategory(this)"><span>🎛️ Variateurs</span><span class="toggle-icon">▼</span></div>
-                    <div class="category-content">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>🎛️ Variateurs</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">
                         <div class="product-row" data-index="55"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">RVLED 250W</div></div><div class="product-price">390€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="390" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="56"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">RVLED 500W</div></div><div class="product-price">430€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="430" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="57"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">RVLED 1000W</div></div><div class="product-price">490€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="490" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="58"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Potentiomètre</div><div class="product-ref">1977</div></div><div class="product-price">65€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="65" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                         <div class="product-row" data-index="59"><input type="checkbox" onchange="updateTotal(this)"><div><div class="product-name">Support Potentiomètre</div><div class="product-ref">A9A15152</div></div><div class="product-price">8.50€</div><div class="product-qty"><input type="number" value="0" min="0" data-price="8.5" onchange="updateRowTotal(this)"></div><div class="product-total">0.00€</div></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Récap produits ajoutés par le technicien -->
+            <div class="section">
+                <h3 class="section-title">Récapitulatif des produits ajoutés</h3>
+                <div id="selectedProductsList" style="font-size:0.9rem; border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:#f8fafc;">
+                    <p style="color:var(--text-light);">Aucun produit sélectionné pour le moment.</p>
                 </div>
             </div>
 
@@ -410,7 +412,7 @@
 
             <div class="actions">
                 <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimer</button>
-                <button class="btn btn-primary btn-compta" onclick="envoyerCompta()">📧 Envoyer en Comptabilité</button>
+                <button class="btn btn-primary" onclick="saveBonTech()">💾 Enregistrer le bon</button>
             </div>
         </div>
 
@@ -431,7 +433,8 @@
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
             document.getElementById('interventionDate').valueAsDate = today;
-            document.getElementById('bonNumber').textContent = 'CEP-' + today.getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+            // Côté technicien : pas de numéro définitif, il sera posé par l'admin à la validation
+            document.getElementById('bonNumber').textContent = 'BROUILLON-' + today.getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
             initSignature('signatureTech');
             initSignature('signatureClient');
         });
@@ -464,18 +467,8 @@
                 checkbox.checked = true;
                 row.classList.add('selected');
                 updateRowTotal(qtyField);
-                
-                // Ouvrir la catégorie si fermée
-                const categoryContent = row.closest('.category-content');
-                const categoryHeader = categoryContent.previousElementSibling;
-                if (categoryContent.classList.contains('hidden')) {
-                    categoryHeader.classList.remove('collapsed');
-                    categoryContent.classList.remove('hidden');
-                }
-                
-                // Scroll vers le produit
-                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                row.style.animation = 'flash 0.5s';
+
+                // On n'ouvre plus automatiquement les catégories : l'ajout se fait en "silence"
             }
             
             // Reset
@@ -535,6 +528,32 @@
             document.getElementById('totalHT').textContent = ht.toFixed(2) + '€';
             document.getElementById('totalTVA').textContent = tva.toFixed(2) + '€';
             document.getElementById('totalTTC').textContent = (ht + tva).toFixed(2) + '€';
+
+            // Mettre à jour le récap des produits sélectionnés (vue technicien)
+            const container = document.getElementById('selectedProductsList');
+            if (container) {
+                const lignes = [];
+                document.querySelectorAll('.product-row').forEach(row => {
+                    const checkbox = row.querySelector('input[type="checkbox"]');
+                    const qtyInput = row.querySelector('.product-qty input');
+                    const qty = parseFloat(qtyInput.value) || 0;
+                    if (checkbox && checkbox.checked && qty > 0) {
+                        const name = row.querySelector('.product-name')?.textContent || '';
+                        lignes.push({ name, qty });
+                    }
+                });
+
+                if (lignes.length === 0) {
+                    container.innerHTML = "<p style=\"color:var(--text-light);\">Aucun produit sélectionné pour le moment.</p>";
+                } else {
+                    container.innerHTML = lignes.map(l => 
+                        `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--border);">
+                            <span>${l.name}</span>
+                            <span style="font-family:'Space Mono', monospace;">Qté : ${l.qty}</span>
+                        </div>`
+                    ).join("");
+                }
+            }
         }
 
         function initSignature(id) {
@@ -568,8 +587,8 @@
 
         function toggleAdmin() {
             const code = prompt("Code administrateur :");
+            // Pour le patron : accès à la page récap avec tous les bons chiffrés
             if (code === "CEP2024") {
-                // Redirige vers la page complète admin
                 window.location.href = "admin.html";
             } else if (code !== null) {
                 alert("Code incorrect.");
@@ -601,6 +620,62 @@
             const subject = encodeURIComponent("Bon " + bon + " - " + client);
             const body = encodeURIComponent("Bon: " + bon + "\nClient: " + client + "\nTechnicien: " + technicien + "\nTotal TTC: " + total);
             window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
+        }
+
+        // --- Historique des bons (version technicien) ---
+        function getBons() {
+            try {
+                return JSON.parse(localStorage.getItem('bonsIntervention') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function setBons(bons) {
+            localStorage.setItem('bonsIntervention', JSON.stringify(bons));
+        }
+
+        function saveBonTech() {
+            const bon = {
+                id: Date.now(),
+                numero: document.getElementById('bonNumber').textContent,
+                date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
+                client: document.getElementById('clientName').value || '',
+                phone: document.getElementById('clientPhone').value || '',
+                email: document.getElementById('clientEmail').value || '',
+                address: document.getElementById('clientAddress').value || '',
+                technicien: document.getElementById('technicien').value || '',
+                description: document.getElementById('description').value || '',
+                moHeures: document.getElementById('moHeures').value || '0',
+                moTarif: document.getElementById('moTarif').value || '0',
+                deplKm: document.getElementById('deplKm').value || '0',
+                deplTarif: document.getElementById('deplTarif').value || '0',
+                subtotalProduits: document.getElementById('subtotalProduits').textContent || '0.00€',
+                subtotalMO: document.getElementById('subtotalMO').textContent || '0.00€',
+                subtotalDepl: document.getElementById('subtotalDepl').textContent || '0.00€',
+                totalHT: document.getElementById('totalHT').textContent || '0.00€',
+                totalTVA: document.getElementById('totalTVA').textContent || '0.00€',
+                totalTTC: document.getElementById('totalTTC').textContent || '0.00€',
+                produits: []
+            };
+
+            // Même si les prix ne sont pas visibles, on enregistre les quantités sélectionnées
+            document.querySelectorAll('.product-row').forEach(row => {
+                const index = row.dataset.index;
+                const qtyInput = row.querySelector('.product-qty input');
+                const qty = parseFloat(qtyInput.value) || 0;
+                if (qty > 0) {
+                    bon.produits.push({
+                        index: index,
+                        qty: qty
+                    });
+                }
+            });
+
+            const bons = getBons();
+            bons.push(bon);
+            setBons(bons);
+            alert("Bon enregistré pour l'admin (historique local).");
         }
     </script>
 </body>
