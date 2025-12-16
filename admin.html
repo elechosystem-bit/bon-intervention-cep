@@ -67,6 +67,10 @@
         .product-total { font-weight: 700; color: var(--accent-dark); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
 
         .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #fffaf0; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
+        /* Ajuster la grille pour Main d'œuvre (sans demi-heures ni tarif unitaire) */
+        .service-row:has(#moDemiHeures[style*="display: none"]) {
+            grid-template-columns: 1fr 150px 120px;
+        }
         .service-row label { font-weight: 600; }
         .service-row input { padding: 8px; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; text-align: center; }
 
@@ -393,9 +397,9 @@
             <div class="section">
                 <h3 class="section-title">Main d'Œuvre & Déplacement</h3>
                 <div class="service-row">
-                    <label>🔧 Main d'œuvre (35€/demi-heure)</label>
+                    <label>🔧 Main d'œuvre</label>
                     <input type="text" id="moDuree" value="0h00" readonly style="background:#f0f0f0; cursor:not-allowed;" placeholder="Durée">
-                    <input type="text" id="moDemiHeures" value="0 demi-heures" readonly style="background:#f0f0f0; cursor:not-allowed; text-align:center;" placeholder="Demi-heures">
+                    <input type="text" id="moDemiHeures" value="0 demi-heures" readonly style="background:#f0f0f0; cursor:not-allowed; text-align:center; display:none;" placeholder="Demi-heures">
                     <input type="number" id="moTarif" value="35" min="0" placeholder="€/demi-h" style="display:none;">
                     <div class="product-total" id="moTotal">0.00€</div>
                 </div>
@@ -871,8 +875,14 @@
         async function chargerBon(id) {
             try {
                 const doc = await db.collection('bons').doc(id).get();
-                if (!doc.exists) return;
+                if (!doc.exists) {
+                    alert("Bon introuvable.");
+                    return;
+                }
                 const bon = doc.data();
+                console.log('Bon chargé:', bon);
+                console.log('Produits:', bon.produits);
+                console.log('Photos:', bon.photos);
 
                 currentBonId = id;
 
@@ -907,12 +917,16 @@
 
             // Réappliquer les quantités sauvegardées et ouvrir les catégories concernées
             (bon.produits || []).forEach(p => {
-                const row = document.querySelector(`.product-row[data-index="${p.index}"]`);
+                // Convertir l'index en string pour la correspondance avec data-index
+                const indexStr = String(p.index);
+                const row = document.querySelector(`.product-row[data-index="${indexStr}"]`);
                 if (row) {
                     const qtyInput = row.querySelector('.product-qty input');
-                    qtyInput.value = p.qty;
-                    row.querySelector('input[type="checkbox"]').checked = true;
-                    row.classList.add('selected');
+                    // Utiliser quantite au lieu de qty (cohérence avec saveBonTech)
+                    const quantite = parseFloat(p.quantite || p.qty || 0);
+                    qtyInput.value = quantite;
+                    row.querySelector('input[type="checkbox"]').checked = quantite > 0;
+                    row.classList.toggle('selected', quantite > 0);
                     updateRowTotal(qtyInput);
 
                     // Ouvrir la catégorie pour que l'admin voie le produit installé
@@ -924,6 +938,8 @@
                             header.classList.remove('collapsed');
                         }
                     }
+                } else {
+                    console.warn('Produit non trouvé avec index:', p.index, p.nom);
                 }
             });
 
@@ -932,15 +948,19 @@
             updateDepl();
             calculateTotals();
 
-            // Afficher les photos (thumbnails)
+            // Afficher les photos (thumbnails avec lightbox)
             const photosContainer = document.getElementById('photosAdmin');
             if (photosContainer) {
                 const photos = bon.photos || [];
+                photosAdmin = photos.slice(); // Sauvegarder pour la suppression
                 if (!photos.length) {
                     photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
                 } else {
-                    photosContainer.innerHTML = photos.map(url =>
-                        `<img src="${url}" alt="Photo intervention" />`
+                    photosContainer.innerHTML = photos.map((url, idx) =>
+                        `<div class="photo-thumb-admin" data-index="${idx}">
+                            <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${url.replace(/'/g, "\\'")}')" />
+                            <button type="button" class="photo-remove-admin" onclick="removePhotoAdmin(${idx}); event.stopPropagation();">×</button>
+                        </div>`
                     ).join("");
                 }
             }
@@ -959,6 +979,63 @@
             } catch (e) {
                 console.error(e);
                 alert("Erreur lors de la suppression du bon.");
+            }
+        }
+
+        function openPhotoLightbox(url) {
+            const overlay = document.getElementById('photoLightbox');
+            const img = document.getElementById('photoLightboxImg');
+            if (!overlay || !img) return;
+            img.src = url;
+            overlay.classList.add('show');
+        }
+
+        function closePhotoLightbox() {
+            const overlay = document.getElementById('photoLightbox');
+            if (!overlay) return;
+            overlay.classList.remove('show');
+        }
+
+        async function removePhotoAdmin(index) {
+            if (index < 0 || index >= photosAdmin.length) return;
+            if (!currentBonId) return;
+            
+            try {
+                const url = photosAdmin[index];
+                // Supprimer de Firebase Storage
+                if (url && storage && storage.refFromURL) {
+                    try {
+                        await storage.refFromURL(url).delete();
+                    } catch (e) {
+                        console.warn('Erreur suppression Storage (ignorée)', e);
+                    }
+                }
+                
+                // Retirer de la liste
+                photosAdmin.splice(index, 1);
+                
+                // Mettre à jour dans Firestore
+                await db.collection('bons').doc(currentBonId).update({
+                    photos: photosAdmin
+                });
+                
+                // Réafficher les photos
+                const photosContainer = document.getElementById('photosAdmin');
+                if (photosContainer) {
+                    if (!photosAdmin.length) {
+                        photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
+                    } else {
+                        photosContainer.innerHTML = photosAdmin.map((url, idx) =>
+                            `<div class="photo-thumb-admin" data-index="${idx}">
+                                <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${url.replace(/'/g, "\\'")}')" />
+                                <button type="button" class="photo-remove-admin" onclick="removePhotoAdmin(${idx}); event.stopPropagation();">×</button>
+                            </div>`
+                        ).join("");
+                    }
+                }
+            } catch (e) {
+                console.error('Erreur suppression photo', e);
+                alert("Erreur lors de la suppression de la photo.");
             }
         }
     </script>
