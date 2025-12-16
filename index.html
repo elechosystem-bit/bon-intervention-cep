@@ -428,7 +428,23 @@
         </div>
     </div>
 
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+    <!-- Firebase v8 (app + firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuX2gsGiRGqVbsk93y0wmwJOsT-RuEkE4",
+            authDomain: "bon-d-intervention-cep.firebaseapp.com",
+            projectId: "bon-d-intervention-cep",
+            storageBucket: "bon-d-intervention-cep.firebasestorage.app",
+            messagingSenderId: "323636987494",
+            appId: "1:323636987494:web:0b07cffbb086c767320fa7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
@@ -612,6 +628,7 @@
             window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
         }
 
+        // Envoi direct compta (utilisé seulement côté admin, pas sur cette page)
         function envoyerCompta() {
             const bon = document.getElementById('bonNumber').textContent;
             const client = document.getElementById('clientName').value || 'Client';
@@ -622,60 +639,54 @@
             window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
         }
 
-        // --- Historique des bons (version technicien) ---
-        function getBons() {
+        // --- Enregistrement du bon côté technicien (Firestore) ---
+        async function saveBonTech() {
             try {
-                return JSON.parse(localStorage.getItem('bonsIntervention') || '[]');
+                const bon = {
+                    numero: document.getElementById('bonNumber').textContent,
+                    date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
+                    client: document.getElementById('clientName').value || '',
+                    phone: document.getElementById('clientPhone').value || '',
+                    email: document.getElementById('clientEmail').value || '',
+                    address: document.getElementById('clientAddress').value || '',
+                    technicien: document.getElementById('technicien').value || '',
+                    description: document.getElementById('description').value || '',
+                    moHeures: document.getElementById('moHeures').value || '0',
+                    moTarif: document.getElementById('moTarif').value || '0',
+                    deplKm: document.getElementById('deplKm').value || '0',
+                    deplTarif: document.getElementById('deplTarif').value || '0',
+                    subtotalProduits: document.getElementById('subtotalProduits').textContent || '0.00€',
+                    subtotalMO: document.getElementById('subtotalMO').textContent || '0.00€',
+                    subtotalDepl: document.getElementById('subtotalDepl').textContent || '0.00€',
+                    totalHT: document.getElementById('totalHT').textContent || '0.00€',
+                    totalTVA: document.getElementById('totalTVA').textContent || '0.00€',
+                    totalTTC: document.getElementById('totalTTC').textContent || '0.00€',
+                    statut: 'en_attente',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    produits: [],
+                    signatures: {
+                        technicien: document.getElementById('signatureTech').toDataURL && document.getElementById('signatureTech').toDataURL() || null,
+                        client: document.getElementById('signatureClient').toDataURL && document.getElementById('signatureClient').toDataURL() || null
+                    }
+                };
+
+                // Enregistrer les produits (index + nom + quantité)
+                document.querySelectorAll('.product-row').forEach(row => {
+                    const index = row.dataset.index;
+                    const qtyInput = row.querySelector('.product-qty input');
+                    const qty = parseFloat(qtyInput.value) || 0;
+                    if (qty > 0) {
+                        const name = row.querySelector('.product-name')?.textContent || '';
+                        bon.produits.push({ index, name, qty });
+                    }
+                });
+
+                await db.collection('bons').add(bon);
+                alert("Bon enregistré pour l'admin (Firestore).");
             } catch (e) {
-                return [];
+                console.error(e);
+                alert("Erreur lors de l'enregistrement du bon (Firestore).");
             }
-        }
-
-        function setBons(bons) {
-            localStorage.setItem('bonsIntervention', JSON.stringify(bons));
-        }
-
-        function saveBonTech() {
-            const bon = {
-                id: Date.now(),
-                numero: document.getElementById('bonNumber').textContent,
-                date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
-                client: document.getElementById('clientName').value || '',
-                phone: document.getElementById('clientPhone').value || '',
-                email: document.getElementById('clientEmail').value || '',
-                address: document.getElementById('clientAddress').value || '',
-                technicien: document.getElementById('technicien').value || '',
-                description: document.getElementById('description').value || '',
-                moHeures: document.getElementById('moHeures').value || '0',
-                moTarif: document.getElementById('moTarif').value || '0',
-                deplKm: document.getElementById('deplKm').value || '0',
-                deplTarif: document.getElementById('deplTarif').value || '0',
-                subtotalProduits: document.getElementById('subtotalProduits').textContent || '0.00€',
-                subtotalMO: document.getElementById('subtotalMO').textContent || '0.00€',
-                subtotalDepl: document.getElementById('subtotalDepl').textContent || '0.00€',
-                totalHT: document.getElementById('totalHT').textContent || '0.00€',
-                totalTVA: document.getElementById('totalTVA').textContent || '0.00€',
-                totalTTC: document.getElementById('totalTTC').textContent || '0.00€',
-                produits: []
-            };
-
-            // Même si les prix ne sont pas visibles, on enregistre les quantités sélectionnées
-            document.querySelectorAll('.product-row').forEach(row => {
-                const index = row.dataset.index;
-                const qtyInput = row.querySelector('.product-qty input');
-                const qty = parseFloat(qtyInput.value) || 0;
-                if (qty > 0) {
-                    bon.produits.push({
-                        index: index,
-                        qty: qty
-                    });
-                }
-            });
-
-            const bons = getBons();
-            bons.push(bon);
-            setBons(bons);
-            alert("Bon enregistré pour l'admin (historique local).");
         }
     </script>
 </body>

@@ -426,8 +426,23 @@
         <div class="footer">Compagnie d'Électricité Parisienne — Bon d'intervention (Admin)</div>
     </div>
 
+    <!-- Firebase v8 (app + firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script>
-        let currentBonId = null;
+        let currentBonId = null; // id du document Firestore courant
+
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuX2gsGiRGqVbsk93y0wmwJOsT-RuEkE4",
+            authDomain: "bon-d-intervention-cep.firebaseapp.com",
+            projectId: "bon-d-intervention-cep",
+            storageBucket: "bon-d-intervention-cep.firebasestorage.app",
+            messagingSenderId: "323636987494",
+            appId: "1:323636987494:web:0b07cffbb086c767320fa7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // Utilise le même compteur que la page technicien si besoin de créer un nouveau bon vierge
         function getNextBonNumberFromStorage() {
@@ -449,10 +464,17 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Protection par code admin
+            const code = prompt("Code administrateur :");
+            if (code !== "CEP2024") {
+                alert("Code incorrect. Retour à la page technicien.");
+                window.location.href = "index.html";
+                return;
+            }
+
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
             document.getElementById('interventionDate').valueAsDate = today;
-            // Par défaut on laisse le numéro tel quel (sera fixé à la validation)
             initSignature('signatureTech');
             initSignature('signatureClient');
             renderHistorique();
@@ -620,14 +642,32 @@
             window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
         }
 
-        function envoyerCompta() {
-            const bon = document.getElementById('bonNumber').textContent;
-            const client = document.getElementById('clientName').value || 'Client';
-            const technicien = document.getElementById('technicien').value || 'Non spécifié';
-            const total = document.getElementById('totalTTC').textContent;
-            const subject = encodeURIComponent("Bon " + bon + " - " + client);
-            const body = encodeURIComponent("Bon: " + bon + "\nClient: " + client + "\nTechnicien: " + technicien + "\nTotal TTC: " + total);
-            window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
+        async function envoyerCompta() {
+            if (!currentBonId) {
+                alert("Charge d'abord un bon avant de l'envoyer en comptabilité.");
+                return;
+            }
+
+            try {
+                // S'assurer que le bon a un numéro définitif et est bien sauvegardé
+                await saveBon();
+
+                // Mettre à jour le statut en 'validé'
+                await db.collection('bons').doc(currentBonId).update({ statut: 'validé' });
+
+                const bon = document.getElementById('bonNumber').textContent;
+                const client = document.getElementById('clientName').value || 'Client';
+                const technicien = document.getElementById('technicien').value || 'Non spécifié';
+                const total = document.getElementById('totalTTC').textContent;
+                const subject = encodeURIComponent("Bon " + bon + " - " + client);
+                const body = encodeURIComponent("Bon: " + bon + "\nClient: " + client + "\nTechnicien: " + technicien + "\nTotal TTC: " + total);
+                window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
+
+                await renderHistorique();
+            } catch (e) {
+                console.error(e);
+                alert("Erreur lors de la validation / envoi à la comptabilité.");
+            }
         }
 
         // Filtre de recherche rapide dans l'ascenseur produits (admin)
@@ -647,19 +687,7 @@
 
         // --- Gestion de l'historique des bons (stockage local navigateur) ---
 
-        function getBons() {
-            try {
-                return JSON.parse(localStorage.getItem('bonsIntervention') || '[]');
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function setBons(bons) {
-            localStorage.setItem('bonsIntervention', JSON.stringify(bons));
-        }
-
-        function saveBon() {
+        async function saveBon() {
             if (!currentBonId) {
                 alert("Pour l'admin : charge d'abord un bon existant depuis l'historique, puis modifie et enregistre.");
                 return;
@@ -701,53 +729,64 @@
                 const qtyInput = row.querySelector('.product-qty input');
                 const qty = parseFloat(qtyInput.value) || 0;
                 if (qty > 0) {
-                    bon.produits.push({
-                        index: index,
-                        qty: qty
-                    });
+                    const name = row.querySelector('.product-name')?.textContent || '';
+                    bon.produits.push({ index, name, qty });
                 }
             });
 
-            const bons = getBons();
-            const idx = bons.findIndex(b => b.id === currentBonId);
-            if (idx !== -1) {
-                bons[idx] = bon;
-            } else {
-                bons.push(bon);
+            try {
+                await db.collection('bons').doc(currentBonId).update(bon);
+                await renderHistorique();
+                alert("Modifications enregistrées pour ce bon (Firestore).");
+            } catch (e) {
+                console.error(e);
+                alert("Erreur lors de l'enregistrement du bon (Firestore).");
             }
-            setBons(bons);
-            renderHistorique();
-            alert("Modifications enregistrées pour ce bon (local du navigateur).");
         }
 
-        function renderHistorique() {
+        async function renderHistorique() {
             const tbody = document.getElementById('bonsTableBody');
             if (!tbody) return;
-            const bons = getBons();
             tbody.innerHTML = '';
-            bons.slice().reverse().forEach(bon => {
+
+            try {
+                const snap = await db.collection('bons').where('statut', '==', 'en_attente').get();
+                const bons = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    bons.push({ id: doc.id, ...data });
+                });
+
+                bons.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                bons.forEach(bon => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.date}</td>
-                    <td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:'Space Mono', monospace;">${bon.numero}</td>
+                    <td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:'Space Mono', monospace;">${bon.numero || ''}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.client}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.technicien}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:right;">${bon.totalTTC}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">
-                        <button style="margin-right:6px; padding:4px 8px; font-size:0.75rem;" onclick="chargerBon(${bon.id})">Charger</button>
-                        <button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon(${bon.id})">Supprimer</button>
+                        <button style="margin-right:6px; padding:4px 8px; font-size:0.75rem;" onclick="chargerBon('${bon.id}')">Charger</button>
+                        <button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon('${bon.id}')">Supprimer</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
-            });
+                });
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:8px; text-align:center; color:var(--text-light);">Erreur de chargement des bons.</td></tr>';
+            }
         }
 
-        function chargerBon(id) {
-            const bons = getBons();
-            const bon = bons.find(b => b.id === id);
-            if (!bon) return;
+        async function chargerBon(id) {
+            try {
+                const doc = await db.collection('bons').doc(id).get();
+                if (!doc.exists) return;
+                const bon = doc.data();
 
-            currentBonId = id;
+                currentBonId = id;
 
             document.getElementById('bonNumber').textContent = bon.numero;
             document.getElementById('interventionDate').value = bon.date;
@@ -772,7 +811,7 @@
             });
 
             // Réappliquer les quantités sauvegardées et ouvrir les catégories concernées
-            bon.produits.forEach(p => {
+            (bon.produits || []).forEach(p => {
                 const row = document.querySelector(`.product-row[data-index="${p.index}"]`);
                 if (row) {
                     const qtyInput = row.querySelector('.product-qty input');
@@ -797,16 +836,21 @@
             updateMO();
             updateDepl();
             calculateTotals();
+        } catch (e) {
+            console.error(e);
+            alert("Erreur lors du chargement du bon depuis Firestore.");
+        }
         }
 
-        function supprimerBon(id) {
+        async function supprimerBon(id) {
             if (!confirm("Supprimer ce bon de l'historique ?")) return;
-            let bons = getBons();
-            bons = bons.filter(b => b.id !== id);
-            setBons(bons);
-            renderHistorique();
-            if (currentBonId === id) {
-                currentBonId = null;
+            try {
+                await db.collection('bons').doc(id).delete();
+                if (currentBonId === id) currentBonId = null;
+                await renderHistorique();
+            } catch (e) {
+                console.error(e);
+                alert("Erreur lors de la suppression du bon.");
             }
         }
     </script>
