@@ -66,10 +66,14 @@
         .product-qty input { width: 55px; padding: 5px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
         .product-total { font-weight: 700; color: var(--accent-dark); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; display: none !important; }
         .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #fffaf0; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
+        /* Version technicien : ajuster la grille pour ne montrer que la durée (pas de demi-heures ni total) */
+        .service-row:has(#moDemiHeures[style*="display: none"]) {
+            grid-template-columns: 1fr 150px;
+        }
         .service-row label { font-weight: 600; }
         .service-row input { padding: 8px; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; text-align: center; }
         /* Cacher les montants de main d'œuvre / déplacement pour les techniciens */
-        #moTarif, #deplTarif, .service-row .product-total { display: none !important; }
+        #moTarif, #moDemiHeures, #moTotal, #deplTarif, .service-row .product-total { display: none !important; }
         /* Cacher entièrement le récapitulatif des totaux pour la version technicien */
         .totals-section { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 25px; border-radius: 12px; margin-top: 20px; display: none !important; }
         .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 1rem; }
@@ -179,6 +183,16 @@
                             <option value="Ricardo Dassilva">Ricardo Dassilva</option>
                             <option value="Mathieu Rodriguez">Mathieu Rodriguez</option>
                         </select>
+                    </div>
+                    <div class="input-group" style="display: flex; flex-direction: column; gap: 0;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label>🕐 Heure d'arrivée</label>
+                            <input type="time" id="heureArrivee" onchange="calculerMainOeuvre()">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 15px;">
+                            <label>🕐 Heure de départ</label>
+                            <input type="time" id="heureDepart" onchange="calculerMainOeuvre()">
+                        </div>
                     </div>
                     <div class="input-group" style="grid-column: 1 / -1;">
                         <label>Description</label>
@@ -395,9 +409,10 @@
                 <h3 class="section-title">Main d'Œuvre & Déplacement</h3>
                 <div class="service-row">
                     <label>🔧 Main d'œuvre</label>
-                    <input type="number" id="moHeures" value="0" min="0" step="0.5" placeholder="Heures" onchange="updateMO()">
-                    <input type="number" id="moTarif" value="45" min="0" placeholder="€/h" onchange="updateMO()">
-                    <div class="product-total" id="moTotal">0.00€</div>
+                    <input type="text" id="moDuree" value="0h00" readonly style="background:#f0f0f0; cursor:not-allowed; flex:1;" placeholder="Temps passé">
+                    <input type="text" id="moDemiHeures" value="0 demi-heures" readonly style="background:#f0f0f0; cursor:not-allowed; text-align:center; display:none;" placeholder="Demi-heures">
+                    <input type="number" id="moTarif" value="35" min="0" placeholder="€/demi-h" style="display:none;">
+                    <div class="product-total" id="moTotal" style="display:none;">0.00€</div>
                 </div>
                 <div class="service-row">
                     <label>🚗 Déplacement</label>
@@ -542,11 +557,52 @@
             calculateTotals();
         }
 
-        function updateMO() {
-            const h = parseFloat(document.getElementById('moHeures').value) || 0;
-            const t = parseFloat(document.getElementById('moTarif').value) || 0;
-            document.getElementById('moTotal').textContent = (h * t).toFixed(2) + '€';
+        function calculerMainOeuvre() {
+            const heureArrivee = document.getElementById('heureArrivee').value;
+            const heureDepart = document.getElementById('heureDepart').value;
+            
+            if (!heureArrivee || !heureDepart) {
+                document.getElementById('moDuree').value = '0h00';
+                document.getElementById('moDemiHeures').value = '0 demi-heures';
+                document.getElementById('moTotal').textContent = '0.00€';
+                calculateTotals();
+                return;
+            }
+            
+            // Convertir les heures en minutes
+            const [hArr, mArr] = heureArrivee.split(':').map(Number);
+            const [hDep, mDep] = heureDepart.split(':').map(Number);
+            const minutesArrivee = hArr * 60 + mArr;
+            const minutesDepart = hDep * 60 + mDep;
+            
+            // Calculer la durée en minutes
+            let dureeMinutes = minutesDepart - minutesArrivee;
+            
+            // Gérer le cas où le départ est le lendemain (après minuit)
+            if (dureeMinutes < 0) {
+                dureeMinutes += 24 * 60; // Ajouter 24 heures
+            }
+            
+            // Convertir en heures et minutes pour l'affichage
+            const heures = Math.floor(dureeMinutes / 60);
+            const minutes = dureeMinutes % 60;
+            document.getElementById('moDuree').value = heures + 'h' + String(minutes).padStart(2, '0');
+            
+            // Calculer le nombre de demi-heures (arrondi au demi-heure supérieur)
+            const demiHeures = Math.ceil(dureeMinutes / 30);
+            document.getElementById('moDemiHeures').value = demiHeures + ' demi-heure' + (demiHeures > 1 ? 's' : '');
+            
+            // Calculer le total : nombre de demi-heures × 35€
+            const tarifDemiHeure = 35;
+            const totalMO = demiHeures * tarifDemiHeure;
+            document.getElementById('moTotal').textContent = totalMO.toFixed(2) + '€';
+            
             calculateTotals();
+        }
+
+        function updateMO() {
+            // Cette fonction n'est plus utilisée, mais on la garde pour compatibilité
+            calculerMainOeuvre();
         }
 
         function updateDepl() {
@@ -669,8 +725,11 @@
                     address: document.getElementById('clientAddress').value || '',
                     technicien: document.getElementById('technicien').value || '',
                     description: document.getElementById('description').value || '',
-                    moHeures: document.getElementById('moHeures').value || '0',
-                    moTarif: document.getElementById('moTarif').value || '0',
+                    heureArrivee: document.getElementById('heureArrivee').value || '',
+                    heureDepart: document.getElementById('heureDepart').value || '',
+                    moDuree: document.getElementById('moDuree').value || '0h00',
+                    moDemiHeures: document.getElementById('moDemiHeures').value || '0 demi-heures',
+                    moTarif: document.getElementById('moTarif').value || '35',
                     deplKm: document.getElementById('deplKm').value || '0',
                     deplTarif: document.getElementById('deplTarif').value || '0',
                     subtotalProduits: document.getElementById('subtotalProduits').textContent || '0.00€',
