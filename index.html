@@ -723,29 +723,43 @@
         }
 
         async function handlePhotoSelect(event) {
-            const files = Array.from(event.target.files || []);
+            const input = event.target;
+            const files = Array.from(input.files || []);
             if (!files.length) return;
 
             const restant = 5 - photosBon.length;
             const toUpload = files.slice(0, restant);
-            const bonIdSafe = (document.getElementById('bonNumber').textContent || 'BON').replace(/[^a-zA-Z0-9-_]/g, '_');
+            const bonIdSafe = (document.getElementById('bonNumber').textContent || 'BON')
+                .replace(/[^a-zA-Z0-9-_]/g, '_');
 
             for (const file of toUpload) {
+                // Afficher immédiatement une vignette locale pour le technicien
+                const localUrl = URL.createObjectURL(file);
+                const tempIndex = photosBon.length;
+                photosBon.push(localUrl);
+                renderPhotosPreview();
+
                 try {
-                    const fileName = Date.now() + '-' + file.name.replace(/\s+/g, '_');
+                    const fileName = Date.now() + '-' + (file.name || 'photo').replace(/\s+/g, '_');
                     const ref = storage.ref('bons/' + bonIdSafe + '/' + fileName);
                     const snap = await ref.put(file);
                     const url = await snap.ref.getDownloadURL();
-                    photosBon.push(url);
+                    // Remplacer l'URL locale par l'URL Firebase Storage
+                    photosBon[tempIndex] = url;
+                    URL.revokeObjectURL(localUrl);
                     renderPhotosPreview();
                 } catch (e) {
-                    console.error(e);
+                    console.error('Erreur upload photo', e);
                     alert("Erreur lors du téléversement d'une photo.");
+                    // Retirer la vignette temporaire
+                    photosBon.splice(tempIndex, 1);
+                    URL.revokeObjectURL(localUrl);
+                    renderPhotosPreview();
                 }
             }
 
             // reset input pour pouvoir re-sélectionner les mêmes fichiers si besoin
-            event.target.value = '';
+            input.value = '';
         }
 
         function renderPhotosPreview() {
