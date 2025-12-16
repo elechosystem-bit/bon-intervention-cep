@@ -977,27 +977,44 @@
 
             // Afficher les photos (thumbnails cliquables)
             const photosContainer = document.getElementById('photosAdmin');
+            console.log('=== DÉBOGAGE PHOTOS ===');
             console.log('Conteneur photos trouvé:', photosContainer);
+            console.log('Bon complet:', bon);
+            console.log('Champ bon.photos:', bon.photos);
+            console.log('Type:', typeof bon.photos);
+            console.log('Est tableau?', Array.isArray(bon.photos));
+            
             if (photosContainer) {
-                // Section photos
-                let photosSection = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                // Vérifier que photos existe et est un tableau
                 if (bon.photos && Array.isArray(bon.photos) && bon.photos.length > 0) {
                     console.log('Affichage de', bon.photos.length, 'photos');
-                    bon.photos.forEach(function(url) {
-                        if (url && typeof url === 'string') {
-                            // Échapper les guillemets simples pour éviter les erreurs
-                            const safeUrl = url.replace(/'/g, "\\'");
-                            photosSection += '<img src="' + url + '" alt="Photo intervention" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;" onclick="openPhotoLightbox(\'' + safeUrl + '\')" />';
+                    let photosHtml = '';
+                    bon.photos.forEach(function(url, index) {
+                        if (url && typeof url === 'string' && url.trim() !== '') {
+                            console.log('Photo', index + 1, ':', url);
+                            // Échapper les guillemets simples et doubles pour éviter les erreurs JavaScript
+                            const safeUrl = url.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            photosHtml += '<div class="photo-thumb-admin" style="position:relative;display:inline-block;margin:4px;">';
+                            photosHtml += '<img src="' + url + '" alt="Photo intervention ' + (index + 1) + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;" onclick="openPhotoLightbox(\'' + safeUrl + '\')" onerror="console.error(\'Erreur chargement photo:\', this.src); this.style.display=\'none\';" />';
+                            photosHtml += '</div>';
+                        } else {
+                            console.warn('Photo invalide à l\'index', index, ':', url);
                         }
                     });
+                    
+                    if (photosHtml === '') {
+                        photosContainer.innerHTML = '<p style="color:#718096;margin-top:4px;">Aucune photo valide trouvée.</p>';
+                    } else {
+                        photosContainer.innerHTML = photosHtml;
+                        console.log('Photos HTML injectées avec succès');
+                    }
                 } else {
                     console.log('Aucune photo ou tableau vide');
-                    photosSection += '<p style="color:#718096;">Aucune photo</p>';
+                    photosContainer.innerHTML = '<p style="color:#718096;margin-top:4px;">Aucune photo pour ce bon.</p>';
                 }
-                photosSection += '</div>';
-                photosContainer.innerHTML = photosSection;
             } else {
-                console.error('ERREUR: Conteneur photosAdmin introuvable dans le DOM !');
+                console.error('ERREUR CRITIQUE: Conteneur photosAdmin introuvable dans le DOM !');
+                console.error('Vérifiez que l\'élément avec id="photosAdmin" existe dans le HTML');
             }
 
             // Charger et afficher les signatures
@@ -1050,10 +1067,22 @@
         }
 
         function openPhotoLightbox(url) {
+            console.log('Ouverture lightbox pour:', url);
             const overlay = document.getElementById('photoLightbox');
             const img = document.getElementById('photoLightboxImg');
-            if (!overlay || !img) return;
+            if (!overlay) {
+                console.error('Lightbox overlay introuvable !');
+                return;
+            }
+            if (!img) {
+                console.error('Image lightbox introuvable !');
+                return;
+            }
             img.src = url;
+            img.onerror = function() {
+                console.error('Erreur chargement image dans lightbox:', url);
+                alert('Impossible de charger la photo.');
+            };
             overlay.classList.add('show');
         }
 
