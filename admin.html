@@ -1280,22 +1280,24 @@
             try {
                 console.log('Envoi email via EmailJS avec données:', bon);
                 const result = await emailjs.send("service_swcsnom", "template_qsnhl5e", {
-                    to_email: bon.email || "aurelien.mathieu@elechosystem.com",
+                    email: bon.email || "aurelien.mathieu@elechosystem.com",
                     numero: bon.numero || '',
                     date: bon.date || '',
                     client: bon.client || '',
-                    adresse: bon.adresse || '',
-                    telephone: bon.telephone || '',
-                    email_client: bon.emailClient || '',
+                    adresse: bon.adresse || bon.address || '',
                     technicien: bon.technicien || '',
                     description: bon.description || '',
+                    totalHT: bon.totalHT || '',
+                    totalTVA: bon.totalTVA || '',
+                    totalTTC: bon.totalTTC || '',
+                    // Variables supplémentaires pour le template
                     produits: bon.produits || 'Aucun',
                     main_oeuvre: bon.mainOeuvre || '',
                     deplacement: bon.deplacement || '',
                     subtotal_produits: bon.subtotalProduits || '0.00€',
-                    total_ht: bon.totalHT || '0.00€',
-                    total_tva: bon.totalTVA || '0.00€',
-                    total_ttc: bon.totalTTC || '0.00€',
+                    total_ht: bon.totalHT || '',
+                    total_tva: bon.totalTVA || '',
+                    total_ttc: bon.totalTTC || '',
                     photos: bon.photos || 'Aucune photo',
                     message: bon.corpsComplet || ''
                 });
