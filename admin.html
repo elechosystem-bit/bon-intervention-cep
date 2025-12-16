@@ -90,6 +90,8 @@
         .btn-secondary:hover { background: var(--primary); color: white; }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
         .btn-email:hover { background: var(--primary); color: #fff; }
+        .photos-preview-admin { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .photos-preview-admin img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
         .material-search { padding: 8px 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; min-width: 180px; }
 
         .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
@@ -151,7 +153,16 @@
                             <option value="Mathieu Rodriguez">Mathieu Rodriguez</option>
                         </select>
                     </div>
-                    <div class="input-group" style="grid-column: 1 / -1;"><label>Description</label><textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea></div>
+                    <div class="input-group" style="grid-column: 1 / -1;">
+                        <label>Description</label>
+                        <textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea>
+                        <div style="margin-top:6px;">
+                            <strong style="font-size:0.8rem; color:var(--text-light);">Photos de l'intervention</strong>
+                            <div id="photosAdmin" class="photos-preview-admin">
+                                <p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -836,6 +847,19 @@
             updateMO();
             updateDepl();
             calculateTotals();
+
+            // Afficher les photos (thumbnails)
+            const photosContainer = document.getElementById('photosAdmin');
+            if (photosContainer) {
+                const photos = bon.photos || [];
+                if (!photos.length) {
+                    photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
+                } else {
+                    photosContainer.innerHTML = photos.map(url =>
+                        `<img src="${url}" alt="Photo intervention" />`
+                    ).join("");
+                }
+            }
         } catch (e) {
             console.error(e);
             alert("Erreur lors du chargement du bon depuis Firestore.");

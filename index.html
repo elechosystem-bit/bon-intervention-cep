@@ -101,6 +101,10 @@
         .btn-admin-toggle:hover { background: rgba(0,0,0,0.3); }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
         .btn-email:hover { background: var(--primary); color: #fff; }
+        .btn-photo { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px dashed var(--primary); background: #ebf8ff; color: var(--primary); cursor: pointer; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-photo:hover { background: #bee3f8; }
+        .photos-preview, .photos-preview-admin { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .photos-preview img, .photos-preview-admin img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
         .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.show { display: flex; }
@@ -168,7 +172,13 @@
                             <option value="Mathieu Rodriguez">Mathieu Rodriguez</option>
                         </select>
                     </div>
-                    <div class="input-group" style="grid-column: 1 / -1;"><label>Description</label><textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea></div>
+                    <div class="input-group" style="grid-column: 1 / -1;">
+                        <label>Description</label>
+                        <textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea>
+                        <button type="button" class="btn-photo" onclick="ouvrirPhotoPicker()">📷 Ajouter une photo</button>
+                        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoSelect(event)">
+                        <div id="photosPreview" class="photos-preview"></div>
+                    </div>
                 </div>
             </div>
 
@@ -444,6 +454,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const storage = firebase.storage();
+        let photosBon = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
@@ -628,17 +640,6 @@
             window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
         }
 
-        // Envoi direct compta (utilisé seulement côté admin, pas sur cette page)
-        function envoyerCompta() {
-            const bon = document.getElementById('bonNumber').textContent;
-            const client = document.getElementById('clientName').value || 'Client';
-            const technicien = document.getElementById('technicien').value || 'Non spécifié';
-            const total = document.getElementById('totalTTC').textContent;
-            const subject = encodeURIComponent("Bon " + bon + " - " + client);
-            const body = encodeURIComponent("Bon: " + bon + "\nClient: " + client + "\nTechnicien: " + technicien + "\nTotal TTC: " + total);
-            window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
-        }
-
         // --- Enregistrement du bon côté technicien (Firestore) ---
         async function saveBonTech() {
             try {
@@ -664,6 +665,7 @@
                     statut: 'en_attente',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     produits: [],
+                    photos: photosBon.slice(),
                     signatures: {
                         technicien: document.getElementById('signatureTech').toDataURL && document.getElementById('signatureTech').toDataURL() || null,
                         client: document.getElementById('signatureClient').toDataURL && document.getElementById('signatureClient').toDataURL() || null
@@ -687,6 +689,53 @@
                 console.error(e);
                 alert("Erreur lors de l'enregistrement du bon (Firestore).");
             }
+        }
+
+        // --- Gestion des photos côté technicien ---
+        function ouvrirPhotoPicker() {
+            if (photosBon.length >= 5) {
+                alert("Maximum 5 photos par bon.");
+                return;
+            }
+            document.getElementById('photoInput').click();
+        }
+
+        async function handlePhotoSelect(event) {
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+
+            const restant = 5 - photosBon.length;
+            const toUpload = files.slice(0, restant);
+            const bonIdSafe = (document.getElementById('bonNumber').textContent || 'BON').replace(/[^a-zA-Z0-9-_]/g, '_');
+
+            for (const file of toUpload) {
+                try {
+                    const fileName = Date.now() + '-' + file.name.replace(/\s+/g, '_');
+                    const ref = storage.ref('bons/' + bonIdSafe + '/' + fileName);
+                    const snap = await ref.put(file);
+                    const url = await snap.ref.getDownloadURL();
+                    photosBon.push(url);
+                    renderPhotosPreview();
+                } catch (e) {
+                    console.error(e);
+                    alert("Erreur lors du téléversement d'une photo.");
+                }
+            }
+
+            // reset input pour pouvoir re-sélectionner les mêmes fichiers si besoin
+            event.target.value = '';
+        }
+
+        function renderPhotosPreview() {
+            const container = document.getElementById('photosPreview');
+            if (!container) return;
+            if (!photosBon.length) {
+                container.innerHTML = "<p style=\"color:var(--text-light);\">Aucune photo ajoutée pour le moment.</p>";
+                return;
+            }
+            container.innerHTML = photosBon.map(url =>
+                `<img src="${url}" alt="Photo" />`
+            ).join("");
         }
     </script>
 </body>
