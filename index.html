@@ -845,8 +845,14 @@
                 renderPhotosPreview();
 
                 try {
+                    console.log('=== DÉBUT UPLOAD PHOTO ===');
+                    console.log('Fichier:', file.name, 'Taille:', file.size, 'Type:', file.type);
+                    
                     const fileName = Date.now() + '-' + (file.name || 'photo').replace(/\s+/g, '_');
-                    const ref = storage.ref('bons/' + bonIdSafe + '/' + fileName);
+                    const filePath = 'bons/' + bonIdSafe + '/' + fileName;
+                    console.log('Chemin de stockage:', filePath);
+                    
+                    const ref = storage.ref(filePath);
                     
                     // Upload avec métadonnées pour permettre l'accès public
                     const metadata = {
@@ -854,22 +860,34 @@
                         cacheControl: 'public, max-age=31536000',
                     };
                     
+                    console.log('Début upload vers Firebase Storage...');
                     const snap = await ref.put(file, metadata);
+                    console.log('Upload réussi, snapshot:', snap);
                     
                     // Obtenir l'URL de téléchargement (avec token d'accès)
                     const url = await snap.ref.getDownloadURL();
-                    console.log('Photo uploadée, URL complète:', url);
+                    console.log('Photo uploadée, URL:', url);
+                    console.log('URL commence par http?', url.startsWith('http'));
+                    console.log('URL complète:', url);
                     
-                    // Stocker aussi le chemin du fichier pour pouvoir régénérer l'URL plus tard
-                    const filePath = ref.fullPath;
-                    console.log('Chemin fichier:', filePath);
+                    // Vérifier que l'URL est valide
+                    if (!url || !url.startsWith('http')) {
+                        throw new Error('URL invalide générée: ' + url);
+                    }
                     
                     // Remplacer l'URL locale par l'URL Firebase Storage
                     photosBon[tempIndex] = url;
+                    console.log('URL ajoutée au tableau photosBon à l\'index', tempIndex);
+                    console.log('Tableau photosBon maintenant:', photosBon);
+                    
                     URL.revokeObjectURL(localUrl);
                     renderPhotosPreview();
+                    console.log('=== FIN UPLOAD PHOTO (SUCCÈS) ===');
                 } catch (e) {
-                    console.error('Erreur upload photo', e);
+                    console.error('=== ERREUR UPLOAD PHOTO ===');
+                    console.error('Erreur complète:', e);
+                    console.error('Message:', e.message);
+                    console.error('Code:', e.code);
                     alert("Erreur lors du téléversement d'une photo: " + (e.message || e));
                     // Retirer la vignette temporaire
                     photosBon.splice(tempIndex, 1);
