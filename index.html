@@ -708,8 +708,8 @@
                 await db.collection('bons').add(bon);
                 alert("Bon enregistré pour l'admin (Firestore).");
             } catch (e) {
-                console.error(e);
-                alert("Erreur lors de l'enregistrement du bon (Firestore).");
+                console.error('Erreur Firestore saveBonTech', e);
+                alert("Erreur lors de l'enregistrement du bon (Firestore) : " + (e.message || e));
             }
         }
 
