@@ -125,6 +125,13 @@
             .header, .footer, .totals-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
+    <!-- EmailJS pour l'envoi automatique d'emails -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function() {
+            emailjs.init("GXDaMfa8u-ZzmkvNn");
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
@@ -805,7 +812,7 @@
                     photosHtml = '\n\n📷 PHOTOS : Aucune photo\n';
                 }
                 
-                // Construire le corps de l'email
+                // Construire le corps de l'email pour EmailJS
                 let body = `BON D'INTERVENTION ${numeroBon}\n`;
                 body += '═'.repeat(50) + '\n\n';
                 body += `📅 Date : ${date}\n`;
@@ -844,10 +851,27 @@
                 body += 'Compagnie d\'Électricité Parisienne\n';
                 body += 'Bon généré automatiquement\n';
                 
-                // Créer le lien mailto
-                const subject = encodeURIComponent(`Bon d'intervention ${numeroBon} - ${client}`);
-                const bodyEncoded = encodeURIComponent(body);
-                window.location.href = `mailto:aurelien.mathieu@elechosystem.com?subject=${subject}&body=${bodyEncoded}`;
+                // Envoyer l'email via EmailJS
+                await envoyerEmailCompta({
+                    email: "aurelien.mathieu@elechosystem.com",
+                    numero: numeroBon,
+                    date: date,
+                    client: client,
+                    adresse: clientAddress,
+                    telephone: clientPhone,
+                    emailClient: clientEmail,
+                    technicien: technicien,
+                    description: description,
+                    produits: produitsHtml,
+                    mainOeuvre: `Durée: ${moDuree} | ${moDemiHeures} | Montant: ${moTotal}`,
+                    deplacement: `Nombre: ${deplNombre} | Montant: ${deplTotal}`,
+                    subtotalProduits: subtotalProduits,
+                    totalHT: totalHT,
+                    totalTVA: totalTVA,
+                    totalTTC: totalTTC,
+                    photos: photosHtml,
+                    corpsComplet: body
+                });
 
                 await renderHistorique();
             } catch (e) {
@@ -1249,6 +1273,40 @@
             console.error(e);
             alert("Erreur lors du chargement du bon depuis Firestore.");
         }
+        }
+
+        // Fonction pour envoyer l'email à la comptabilité via EmailJS
+        async function envoyerEmailCompta(bon) {
+            try {
+                console.log('Envoi email via EmailJS avec données:', bon);
+                const result = await emailjs.send("service_swcsnom", "template_qsnhl5e", {
+                    to_email: bon.email || "aurelien.mathieu@elechosystem.com",
+                    numero: bon.numero || '',
+                    date: bon.date || '',
+                    client: bon.client || '',
+                    adresse: bon.adresse || '',
+                    telephone: bon.telephone || '',
+                    email_client: bon.emailClient || '',
+                    technicien: bon.technicien || '',
+                    description: bon.description || '',
+                    produits: bon.produits || 'Aucun',
+                    main_oeuvre: bon.mainOeuvre || '',
+                    deplacement: bon.deplacement || '',
+                    subtotal_produits: bon.subtotalProduits || '0.00€',
+                    total_ht: bon.totalHT || '0.00€',
+                    total_tva: bon.totalTVA || '0.00€',
+                    total_ttc: bon.totalTTC || '0.00€',
+                    photos: bon.photos || 'Aucune photo',
+                    message: bon.corpsComplet || ''
+                });
+                console.log('Email envoyé avec succès:', result);
+                alert("✓ Email envoyé à la comptabilité avec succès !");
+                return true;
+            } catch (error) {
+                console.error("Erreur envoi email EmailJS:", error);
+                alert("Erreur lors de l'envoi de l'email: " + (error.text || error.message || error));
+                return false;
+            }
         }
 
         async function supprimerBon(id, statut) {
