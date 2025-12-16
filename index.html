@@ -175,8 +175,9 @@
                     <div class="input-group" style="grid-column: 1 / -1;">
                         <label>Description</label>
                         <textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea>
-                        <button type="button" class="btn-photo" onclick="ouvrirPhotoPicker()">📷 Ajouter une photo</button>
-                        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoSelect(event)">
+                        <!-- iOS Safari : le clic doit se faire directement sur l'input (via label for) -->
+                        <label for="photoInput" class="btn-photo">📷 Ajouter une photo</label>
+                        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)">
                         <div id="photosPreview" class="photos-preview"></div>
                     </div>
                 </div>
