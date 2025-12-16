@@ -741,21 +741,118 @@
                 // S'assurer que le bon a un numéro définitif et est bien sauvegardé
                 await saveBon();
 
+                // Récupérer les données du bon depuis Firestore
+                const doc = await db.collection('bons').doc(currentBonId).get();
+                if (!doc.exists) {
+                    alert("Bon introuvable.");
+                    return;
+                }
+                const bonData = doc.data();
+
                 // Mettre à jour le statut en 'validé'
                 await db.collection('bons').doc(currentBonId).update({ statut: 'validé' });
 
-                const bon = document.getElementById('bonNumber').textContent;
-                const client = document.getElementById('clientName').value || 'Client';
-                const technicien = document.getElementById('technicien').value || 'Non spécifié';
-                const total = document.getElementById('totalTTC').textContent;
-                const subject = encodeURIComponent("Bon " + bon + " - " + client);
-                const body = encodeURIComponent("Bon: " + bon + "\nClient: " + client + "\nTechnicien: " + technicien + "\nTotal TTC: " + total);
-                window.location.href = "mailto:compta@cep75.fr?subject=" + subject + "&body=" + body;
+                // Récupérer les informations du formulaire
+                const numeroBon = document.getElementById('bonNumber').textContent;
+                const date = document.getElementById('interventionDate').value || bonData.date || '';
+                const client = document.getElementById('clientName').value || bonData.client || 'Client';
+                const clientPhone = document.getElementById('clientPhone').value || bonData.phone || '';
+                const clientEmail = document.getElementById('clientEmail').value || bonData.email || '';
+                const clientAddress = document.getElementById('clientAddress').value || bonData.address || '';
+                const technicien = document.getElementById('technicien').value || bonData.technicien || 'Non spécifié';
+                const description = document.getElementById('description').value || bonData.description || '';
+                
+                // Main d'œuvre
+                const moDuree = document.getElementById('moDuree').value || bonData.moDuree || '0h00';
+                const moDemiHeures = document.getElementById('moDemiHeures').value || bonData.moDemiHeures || '0 demi-heures';
+                const moTotal = document.getElementById('subtotalMO').textContent || bonData.subtotalMO || '0.00€';
+                
+                // Déplacement
+                const deplNombre = document.getElementById('deplNombre').value || bonData.deplNombre || '0';
+                const deplTotal = document.getElementById('subtotalDepl').textContent || bonData.subtotalDepl || '0.00€';
+                
+                // Totaux
+                const subtotalProduits = document.getElementById('subtotalProduits').textContent || bonData.subtotalProduits || '0.00€';
+                const totalHT = document.getElementById('totalHT').textContent || bonData.totalHT || '0.00€';
+                const totalTVA = document.getElementById('totalTVA').textContent || bonData.totalTVA || '0.00€';
+                const totalTTC = document.getElementById('totalTTC').textContent || bonData.totalTTC || '0.00€';
+                
+                // Récupérer les produits
+                let produitsHtml = '';
+                if (bonData.produits && Array.isArray(bonData.produits) && bonData.produits.length > 0) {
+                    produitsHtml = '\n\n📦 MATÉRIEL UTILISÉ :\n';
+                    produitsHtml += '─'.repeat(50) + '\n';
+                    bonData.produits.forEach(p => {
+                        produitsHtml += `• ${p.nom || ''}`;
+                        if (p.reference) produitsHtml += ` (Réf: ${p.reference})`;
+                        produitsHtml += `\n  Quantité: ${p.quantite || 0}`;
+                        produitsHtml += ` | Prix unitaire: ${(p.prixUnitaire || 0).toFixed(2)}€`;
+                        produitsHtml += ` | Total: ${((p.prixUnitaire || 0) * (p.quantite || 0)).toFixed(2)}€\n\n`;
+                    });
+                } else {
+                    produitsHtml = '\n\n📦 MATÉRIEL UTILISÉ : Aucun\n';
+                }
+                
+                // Récupérer les photos
+                let photosHtml = '';
+                if (bonData.photos && Array.isArray(bonData.photos) && bonData.photos.length > 0) {
+                    photosHtml = '\n\n📷 PHOTOS DE L\'INTERVENTION :\n';
+                    photosHtml += '─'.repeat(50) + '\n';
+                    bonData.photos.forEach((url, index) => {
+                        photosHtml += `Photo ${index + 1}: ${url}\n`;
+                    });
+                } else {
+                    photosHtml = '\n\n📷 PHOTOS : Aucune photo\n';
+                }
+                
+                // Construire le corps de l'email
+                let body = `BON D'INTERVENTION ${numeroBon}\n`;
+                body += '═'.repeat(50) + '\n\n';
+                body += `📅 Date : ${date}\n`;
+                body += `👤 Client : ${client}\n`;
+                if (clientPhone) body += `📞 Téléphone : ${clientPhone}\n`;
+                if (clientEmail) body += `📧 Email : ${clientEmail}\n`;
+                if (clientAddress) body += `📍 Adresse : ${clientAddress}\n`;
+                body += `🔧 Technicien : ${technicien}\n`;
+                if (description) body += `📝 Description : ${description}\n`;
+                
+                body += produitsHtml;
+                
+                body += '\n💰 MAIN D\'ŒUVRE :\n';
+                body += '─'.repeat(50) + '\n';
+                body += `Durée : ${moDuree}\n`;
+                body += `Nombre de demi-heures : ${moDemiHeures}\n`;
+                body += `Montant : ${moTotal}\n`;
+                
+                body += '\n🚗 DÉPLACEMENT :\n';
+                body += '─'.repeat(50) + '\n';
+                body += `Nombre de déplacements : ${deplNombre}\n`;
+                body += `Montant : ${deplTotal}\n`;
+                
+                body += '\n💶 RÉCAPITULATIF :\n';
+                body += '─'.repeat(50) + '\n';
+                body += `Sous-total Produits : ${subtotalProduits}\n`;
+                body += `Main d'œuvre : ${moTotal}\n`;
+                body += `Déplacement : ${deplTotal}\n`;
+                body += `Total HT : ${totalHT}\n`;
+                body += `TVA (20%) : ${totalTVA}\n`;
+                body += `TOTAL TTC : ${totalTTC}\n`;
+                
+                body += photosHtml;
+                
+                body += '\n\n─'.repeat(50) + '\n';
+                body += 'Compagnie d\'Électricité Parisienne\n';
+                body += 'Bon généré automatiquement\n';
+                
+                // Créer le lien mailto
+                const subject = encodeURIComponent(`Bon d'intervention ${numeroBon} - ${client}`);
+                const bodyEncoded = encodeURIComponent(body);
+                window.location.href = `mailto:aurelien.mathieu@elechosystem.com?subject=${subject}&body=${bodyEncoded}`;
 
                 await renderHistorique();
             } catch (e) {
                 console.error(e);
-                alert("Erreur lors de la validation / envoi à la comptabilité.");
+                alert("Erreur lors de la validation / envoi à la comptabilité: " + (e.message || e));
             }
         }
 
@@ -842,7 +939,8 @@
             tbody.innerHTML = '';
 
             try {
-                const snap = await db.collection('bons').where('statut', '==', 'en_attente').get();
+                // Charger tous les bons (en_attente et validé)
+                const snap = await db.collection('bons').get();
                 const bons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
@@ -853,6 +951,19 @@
 
                 bons.forEach(bon => {
                 const tr = document.createElement('tr');
+                const statut = bon.statut || 'en_attente';
+                const estValide = statut === 'validé' || statut === 'valide';
+                
+                // Badge pour les bons validés
+                const badgeStatut = estValide 
+                    ? '<span style="background:#48bb78;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;">✓ Envoyé à la compta</span>'
+                    : '<span style="background:#f6ad55;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;">En attente</span>';
+                
+                // Bouton supprimer selon le statut
+                const boutonSupprimer = estValide
+                    ? '<button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon(\'' + bon.id + '\', \'' + statut + '\')" title="Supprimer (code admin requis)">Supprimer (admin)</button>'
+                    : '<button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon(\'' + bon.id + '\', \'' + statut + '\')">Supprimer</button>';
+                
                 tr.innerHTML = `
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.date}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:'Space Mono', monospace;">${bon.numero || ''}</td>
@@ -860,8 +971,9 @@
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.technicien}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:right;">${bon.totalTTC}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">
+                        ${badgeStatut}
                         <button style="margin-right:6px; padding:4px 8px; font-size:0.75rem;" onclick="chargerBon('${bon.id}')">Charger</button>
-                        <button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon('${bon.id}')">Supprimer</button>
+                        ${boutonSupprimer}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -882,6 +994,7 @@
                 const bon = doc.data();
                 console.log('=== DÉBOGAGE CHARGEMENT BON ===');
                 console.log('Bon complet:', bon);
+                console.log('Statut:', bon.statut);
                 console.log('Champ photos:', bon.photos);
                 console.log('Type photos:', typeof bon.photos);
                 console.log('Est un tableau?', Array.isArray(bon.photos));
@@ -890,6 +1003,26 @@
                 console.log('Produits:', bon.produits);
 
                 currentBonId = id;
+                
+                // Vérifier si le bon est validé (protégé)
+                const estValide = bon.statut === 'validé' || bon.statut === 'valide';
+                const estModifiable = !estValide;
+                
+                // Afficher un message si le bon est validé
+                if (estValide) {
+                    const msgExistant = document.getElementById('bonValideMessage');
+                    if (msgExistant) msgExistant.remove();
+                    
+                    const msg = document.createElement('div');
+                    msg.id = 'bonValideMessage';
+                    msg.style.cssText = 'background:#48bb78;color:#fff;padding:10px;border-radius:8px;margin-bottom:15px;text-align:center;font-weight:600;';
+                    msg.textContent = '✓ Ce bon a été envoyé à la comptabilité et ne peut plus être modifié.';
+                    const formBody = document.querySelector('.form-body');
+                    if (formBody) formBody.insertBefore(msg, formBody.firstChild);
+                } else {
+                    const msgExistant = document.getElementById('bonValideMessage');
+                    if (msgExistant) msgExistant.remove();
+                }
 
             document.getElementById('bonNumber').textContent = bon.numero;
             document.getElementById('interventionDate').value = bon.date;
@@ -1047,17 +1180,109 @@
                     }
                 }
             }
+            
+            // Désactiver les champs et boutons si le bon est validé
+            if (estValide) {
+                // Désactiver tous les champs de saisie
+                const inputs = document.querySelectorAll('input, textarea, select');
+                inputs.forEach(input => {
+                    if (input.id !== 'bonNumber') { // Garder le numéro visible mais non modifiable
+                        input.disabled = true;
+                        input.style.backgroundColor = '#f0f0f0';
+                        input.style.cursor = 'not-allowed';
+                    }
+                });
+                
+                // Désactiver les boutons d'action (sauf Envoyer en Comptabilité qui n'a plus de sens)
+                const btnSave = document.querySelector('button[onclick="saveBon()"]');
+                const btnEnvoyer = document.querySelector('button[onclick="envoyerCompta()"]');
+                if (btnSave) {
+                    btnSave.disabled = true;
+                    btnSave.style.opacity = '0.5';
+                    btnSave.style.cursor = 'not-allowed';
+                    btnSave.title = 'Ce bon est validé et ne peut plus être modifié';
+                }
+                if (btnEnvoyer) {
+                    btnEnvoyer.disabled = true;
+                    btnEnvoyer.style.opacity = '0.5';
+                    btnEnvoyer.style.cursor = 'not-allowed';
+                    btnEnvoyer.title = 'Ce bon a déjà été envoyé à la comptabilité';
+                }
+                
+                // Désactiver les signatures
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
+                    canvas.style.pointerEvents = 'none';
+                    canvas.style.opacity = '0.6';
+                });
+            } else {
+                // Réactiver tous les champs si le bon n'est pas validé
+                const inputs = document.querySelectorAll('input, textarea, select');
+                inputs.forEach(input => {
+                    input.disabled = false;
+                    input.style.backgroundColor = '';
+                    input.style.cursor = '';
+                });
+                
+                const btnSave = document.querySelector('button[onclick="saveBon()"]');
+                const btnEnvoyer = document.querySelector('button[onclick="envoyerCompta()"]');
+                if (btnSave) {
+                    btnSave.disabled = false;
+                    btnSave.style.opacity = '';
+                    btnSave.style.cursor = '';
+                    btnSave.title = '';
+                }
+                if (btnEnvoyer) {
+                    btnEnvoyer.disabled = false;
+                    btnEnvoyer.style.opacity = '';
+                    btnEnvoyer.style.cursor = '';
+                    btnEnvoyer.title = '';
+                }
+                
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
+                    canvas.style.pointerEvents = '';
+                    canvas.style.opacity = '';
+                });
+            }
         } catch (e) {
             console.error(e);
             alert("Erreur lors du chargement du bon depuis Firestore.");
         }
         }
 
-        async function supprimerBon(id) {
-            if (!confirm("Supprimer ce bon de l'historique ?")) return;
+        async function supprimerBon(id, statut) {
+            // Vérifier le statut (peut être passé en paramètre ou récupéré depuis Firestore)
+            let bonStatut = statut;
+            if (!bonStatut) {
+                try {
+                    const doc = await db.collection('bons').doc(id).get();
+                    if (doc.exists) {
+                        bonStatut = doc.data().statut || 'en_attente';
+                    }
+                } catch (e) {
+                    console.error('Erreur récupération statut:', e);
+                }
+            }
+            
+            // Si le bon est validé, demander le code admin
+            if (bonStatut === 'validé' || bonStatut === 'valide') {
+                const code = prompt("Ce bon a été envoyé à la compta. Entrez le code admin pour supprimer :");
+                if (code !== 'CEP2024') {
+                    alert("Code incorrect. Suppression annulée.");
+                    return;
+                }
+            }
+            
+            // Confirmation de suppression
+            if (!confirm("Êtes-vous sûr de vouloir supprimer ce bon ?")) {
+                return;
+            }
+            
             try {
                 await db.collection('bons').doc(id).delete();
                 if (currentBonId === id) currentBonId = null;
+                alert("Bon supprimé.");
                 await renderHistorique();
             } catch (e) {
                 console.error(e);

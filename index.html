@@ -708,15 +708,93 @@
                 alert("Veuillez renseigner l'email du client avant d'envoyer.");
                 return;
             }
-            const bon = document.getElementById('bonNumber').textContent;
+            
+            // Récupérer les informations du formulaire
+            const numeroBon = document.getElementById('bonNumber').textContent;
+            const date = document.getElementById('interventionDate').value || '';
             const client = document.getElementById('clientName').value || 'Client';
-            const subject = encodeURIComponent("Bon d'intervention " + bon + " - " + client);
-            const body = encodeURIComponent(
-                "Bonjour,\n\n" +
-                "Veuillez trouver ci-joint le bon d'intervention " + bon + ".\n\n" +
-                "Cordialement,\nCompagnie d'Électricité Parisienne"
-            );
-            window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
+            const clientPhone = document.getElementById('clientPhone').value || '';
+            const clientAddress = document.getElementById('clientAddress').value || '';
+            const technicien = document.getElementById('technicien').value || 'Non spécifié';
+            const description = document.getElementById('description').value || '';
+            
+            // Main d'œuvre (sans prix pour le client)
+            const moDuree = document.getElementById('moDuree').value || '0h00';
+            
+            // Déplacement (sans prix pour le client)
+            const deplNombre = document.getElementById('deplNombre').value || '0';
+            
+            // Récupérer les produits utilisés (sans prix)
+            let produitsHtml = '';
+            const produitsUtilises = [];
+            document.querySelectorAll('.product-row').forEach(row => {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                const qtyInput = row.querySelector('.product-qty input');
+                const qty = parseFloat(qtyInput.value) || 0;
+                if (checkbox && checkbox.checked && qty > 0) {
+                    const name = row.querySelector('.product-name')?.textContent || '';
+                    const ref = row.querySelector('.product-ref')?.textContent || '';
+                    produitsUtilises.push({ nom: name, reference: ref, quantite: qty });
+                }
+            });
+            
+            if (produitsUtilises.length > 0) {
+                produitsHtml = '\n\n📦 MATÉRIEL UTILISÉ :\n';
+                produitsHtml += '─'.repeat(50) + '\n';
+                produitsUtilises.forEach(p => {
+                    produitsHtml += `• ${p.nom || ''}`;
+                    if (p.reference) produitsHtml += ` (Réf: ${p.reference})`;
+                    produitsHtml += ` - Quantité: ${p.quantite || 0}\n`;
+                });
+            } else {
+                produitsHtml = '\n\n📦 MATÉRIEL UTILISÉ : Aucun\n';
+            }
+            
+            // Récupérer les photos
+            let photosHtml = '';
+            if (photosBon && photosBon.length > 0) {
+                photosHtml = '\n\n📷 PHOTOS DE L\'INTERVENTION :\n';
+                photosHtml += '─'.repeat(50) + '\n';
+                photosBon.forEach((url, index) => {
+                    if (url && typeof url === 'string') {
+                        photosHtml += `Photo ${index + 1}: ${url}\n`;
+                    }
+                });
+            } else {
+                photosHtml = '\n\n📷 PHOTOS : Aucune photo\n';
+            }
+            
+            // Construire le corps de l'email (sans prix pour le client)
+            let body = `Bonjour,\n\n`;
+            body += `BON D'INTERVENTION ${numeroBon}\n`;
+            body += '═'.repeat(50) + '\n\n';
+            body += `📅 Date : ${date}\n`;
+            body += `👤 Client : ${client}\n`;
+            if (clientPhone) body += `📞 Téléphone : ${clientPhone}\n`;
+            if (clientAddress) body += `📍 Adresse : ${clientAddress}\n`;
+            body += `🔧 Technicien : ${technicien}\n`;
+            if (description) body += `📝 Description : ${description}\n`;
+            
+            body += produitsHtml;
+            
+            body += '\n⏱️ TEMPS DE TRAVAIL :\n';
+            body += '─'.repeat(50) + '\n';
+            body += `Durée : ${moDuree}\n`;
+            
+            body += '\n🚗 DÉPLACEMENT :\n';
+            body += '─'.repeat(50) + '\n';
+            body += `Nombre de déplacements : ${deplNombre}\n`;
+            
+            body += photosHtml;
+            
+            body += '\n\n─'.repeat(50) + '\n';
+            body += 'Cordialement,\n';
+            body += 'Compagnie d\'Électricité Parisienne\n';
+            
+            // Créer le lien mailto
+            const subject = encodeURIComponent(`Bon d'intervention ${numeroBon} - ${client}`);
+            const bodyEncoded = encodeURIComponent(body);
+            window.location.href = `mailto:${email}?subject=${subject}&body=${bodyEncoded}`;
         }
 
         // --- Enregistrement du bon côté technicien (Firestore) ---
