@@ -388,13 +388,6 @@
             </div>
 
             <div class="section">
-                <h3 class="section-title">Récapitulatif des produits ajoutés</h3>
-                <div id="selectedProductsListAdmin" style="font-size:0.9rem; border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:#f8fafc;">
-                    <p style="color:var(--text-light);">Aucun produit sélectionné pour le moment.</p>
-                </div>
-            </div>
-
-            <div class="section">
                 <h3 class="section-title">Main d'Œuvre & Déplacement</h3>
                 <div class="service-row">
                     <label>🔧 Main d'œuvre</label>
@@ -667,8 +660,10 @@
                     const qty = parseFloat(qtyInput.value) || 0;
                     if (checkbox && checkbox.checked && qty > 0) {
                         const name = row.querySelector('.product-name')?.textContent || '';
+                        const ref = row.querySelector('.product-ref')?.textContent || '';
+                        const prixUnitaire = parseFloat(qtyInput.dataset.price || 0).toFixed(2);
                         const totalLigne = row.querySelector('.product-total')?.textContent || '';
-                        lignes.push({ name, qty, total: totalLigne });
+                        lignes.push({ name, ref, qty, prixUnitaire, total: totalLigne });
                     }
                 });
 
@@ -677,8 +672,8 @@
                 } else {
                     container.innerHTML = lignes.map(l => 
                         `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--border);">
-                            <span>${l.name}</span>
-                            <span style="font-family:'Space Mono', monospace;">Qté : ${l.qty} &nbsp; | &nbsp; ${l.total}</span>
+                            <span>${l.name}${l.ref ? ' <span style="color:var(--text-light); font-size:0.8em;">(' + l.ref + ')</span>' : ''}</span>
+                            <span style="font-family:'Space Mono', monospace;">Qté : ${l.qty} × ${l.prixUnitaire}€ = ${l.total}</span>
                         </div>`
                     ).join("");
                 }
@@ -943,9 +938,30 @@
                 }
             });
 
-            // Recalculer les totaux MO / déplacement
+            // Charger les totaux sauvegardés si disponibles, sinon recalculer
+            if (bon.subtotalProduits) {
+                document.getElementById('subtotalProduits').textContent = bon.subtotalProduits;
+            }
+            if (bon.subtotalMO) {
+                document.getElementById('subtotalMO').textContent = bon.subtotalMO;
+            }
+            if (bon.subtotalDepl) {
+                document.getElementById('subtotalDepl').textContent = bon.subtotalDepl;
+            }
+            if (bon.totalHT) {
+                document.getElementById('totalHT').textContent = bon.totalHT;
+            }
+            if (bon.totalTVA) {
+                document.getElementById('totalTVA').textContent = bon.totalTVA;
+            }
+            if (bon.totalTTC) {
+                document.getElementById('totalTTC').textContent = bon.totalTTC;
+            }
+            
+            // Recalculer les totaux MO / déplacement (pour mettre à jour les champs)
             updateMO();
             updateDepl();
+            // Recalculer les totaux finaux (pour s'assurer que tout est à jour)
             calculateTotals();
 
             // Afficher les photos (thumbnails avec lightbox)
@@ -956,12 +972,46 @@
                 if (!photos.length) {
                     photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
                 } else {
-                    photosContainer.innerHTML = photos.map((url, idx) =>
-                        `<div class="photo-thumb-admin" data-index="${idx}">
-                            <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${url.replace(/'/g, "\\'")}')" />
+                    photosContainer.innerHTML = photos.map((url, idx) => {
+                        // Échapper les guillemets simples et doubles dans l'URL
+                        const safeUrl = url.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                        return `<div class="photo-thumb-admin" data-index="${idx}">
+                            <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${safeUrl}')" style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer;" />
                             <button type="button" class="photo-remove-admin" onclick="removePhotoAdmin(${idx}); event.stopPropagation();">×</button>
-                        </div>`
-                    ).join("");
+                        </div>`;
+                    }).join("");
+                }
+            }
+
+            // Charger et afficher les signatures
+            if (bon.signatures) {
+                const sigTech = bon.signatures.technicien;
+                const sigClient = bon.signatures.client;
+                
+                if (sigTech) {
+                    const canvasTech = document.getElementById('signatureTech');
+                    if (canvasTech) {
+                        const ctx = canvasTech.getContext('2d');
+                        const img = new Image();
+                        img.onload = function() {
+                            ctx.clearRect(0, 0, canvasTech.width, canvasTech.height);
+                            ctx.drawImage(img, 0, 0, canvasTech.width, canvasTech.height);
+                        };
+                        img.src = sigTech;
+                    }
+                }
+                
+                if (sigClient) {
+                    const canvasClient = document.getElementById('signatureClient');
+                    if (canvasClient) {
+                        const ctx = canvasClient.getContext('2d');
+                        const img = new Image();
+                        img.onload = function() {
+                            ctx.clearRect(0, 0, canvasClient.width, canvasClient.height);
+                            ctx.drawImage(img, 0, 0, canvasClient.width, canvasClient.height);
+                        };
+                        img.src = sigClient;
+                    }
                 }
             }
         } catch (e) {
