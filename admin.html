@@ -402,7 +402,7 @@
                 </div>
                 <div class="service-row">
                     <label>🚗 Déplacement (70€/déplacement)</label>
-                    <input type="number" id="deplNombre" value="0" min="0" placeholder="Nombre" onchange="updateDepl()">
+                    <input type="number" id="deplNombre" value="0" min="0" max="10" placeholder="0, 1, 2..." onchange="updateDepl()">
                     <input type="number" id="deplTarif" value="70" min="0" style="display:none;">
                     <div class="product-total" id="deplTotal">0.00€</div>
                 </div>
@@ -880,9 +880,14 @@
                     return;
                 }
                 const bon = doc.data();
-                console.log('Bon chargé:', bon);
+                console.log('=== DÉBOGAGE CHARGEMENT BON ===');
+                console.log('Bon complet:', bon);
+                console.log('Champ photos:', bon.photos);
+                console.log('Type photos:', typeof bon.photos);
+                console.log('Est un tableau?', Array.isArray(bon.photos));
+                console.log('Nombre de photos:', bon.photos ? bon.photos.length : 0);
+                console.log('URLs photos:', bon.photos);
                 console.log('Produits:', bon.produits);
-                console.log('Photos:', bon.photos);
 
                 currentBonId = id;
 
@@ -970,30 +975,29 @@
             // Recalculer les totaux finaux (pour s'assurer que tout est à jour)
             calculateTotals();
 
-            // Afficher les photos (thumbnails avec lightbox)
+            // Afficher les photos (thumbnails cliquables)
             const photosContainer = document.getElementById('photosAdmin');
-            console.log('Photos container:', photosContainer);
-            console.log('Photos du bon:', bon.photos);
+            console.log('Conteneur photos trouvé:', photosContainer);
             if (photosContainer) {
-                const photos = bon.photos || [];
-                photosAdmin = photos.slice(); // Sauvegarder pour la suppression
-                if (!photos || photos.length === 0) {
-                    photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
-                } else {
-                    let photosHtml = '<div class="photos-preview-admin">';
-                    photos.forEach((url, idx) => {
-                        // Échapper les guillemets pour éviter les erreurs JavaScript
-                        const safeUrl = url.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                        photosHtml += `<div class="photo-thumb-admin" data-index="${idx}">
-                            <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${safeUrl}')" style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer;" />
-                            <button type="button" class="photo-remove-admin" onclick="removePhotoAdmin(${idx}); event.stopPropagation();">×</button>
-                        </div>`;
+                // Section photos
+                let photosSection = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                if (bon.photos && Array.isArray(bon.photos) && bon.photos.length > 0) {
+                    console.log('Affichage de', bon.photos.length, 'photos');
+                    bon.photos.forEach(function(url) {
+                        if (url && typeof url === 'string') {
+                            // Échapper les guillemets simples pour éviter les erreurs
+                            const safeUrl = url.replace(/'/g, "\\'");
+                            photosSection += '<img src="' + url + '" alt="Photo intervention" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;" onclick="openPhotoLightbox(\'' + safeUrl + '\')" />';
+                        }
                     });
-                    photosHtml += '</div>';
-                    photosContainer.innerHTML = photosHtml;
+                } else {
+                    console.log('Aucune photo ou tableau vide');
+                    photosSection += '<p style="color:#718096;">Aucune photo</p>';
                 }
+                photosSection += '</div>';
+                photosContainer.innerHTML = photosSection;
             } else {
-                console.error('Conteneur photosAdmin introuvable !');
+                console.error('ERREUR: Conteneur photosAdmin introuvable dans le DOM !');
             }
 
             // Charger et afficher les signatures

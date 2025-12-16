@@ -420,7 +420,7 @@
                 </div>
                 <div class="service-row">
                     <label>🚗 Déplacement (70€/déplacement)</label>
-                    <input type="number" id="deplNombre" value="0" min="0" placeholder="Nombre" onchange="updateDepl()">
+                    <input type="number" id="deplNombre" value="0" min="0" max="10" placeholder="0, 1, 2..." onchange="updateDepl()">
                     <input type="number" id="deplTarif" value="70" min="0" style="display:none;">
                     <div class="product-total" id="deplTotal" style="display:none;">0.00€</div>
                 </div>
@@ -497,11 +497,59 @@
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
             document.getElementById('interventionDate').valueAsDate = today;
-            // Côté technicien : pas de numéro définitif, il sera posé par l'admin à la validation
-            document.getElementById('bonNumber').textContent = 'BROUILLON-' + today.getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+            // Le numéro sera généré automatiquement lors de l'enregistrement
+            document.getElementById('bonNumber').textContent = 'En attente...';
             initSignature('signatureTech');
             initSignature('signatureClient');
         });
+
+        // Fonction pour obtenir le prochain numéro de bon depuis Firestore
+        async function getNextBonNumber() {
+            try {
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                
+                // Référence au document compteur
+                const compteurRef = db.collection('compteurs').doc('bons');
+                
+                // Transaction pour garantir l'unicité
+                return await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(compteurRef);
+                    
+                    let lastNumber = 0;
+                    let lastYear = currentYear;
+                    
+                    if (doc.exists) {
+                        const data = doc.data();
+                        lastYear = data.annee || currentYear;
+                        lastNumber = data.numero || 0;
+                        
+                        // Si on change d'année, réinitialiser le compteur
+                        if (lastYear !== currentYear) {
+                            lastNumber = 0;
+                        }
+                    }
+                    
+                    // Incrémenter le numéro
+                    const newNumber = lastNumber + 1;
+                    
+                    // Mettre à jour le compteur
+                    transaction.set(compteurRef, {
+                        annee: currentYear,
+                        numero: newNumber,
+                        lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    
+                    // Retourner le numéro au format AAAANNNN
+                    return String(currentYear) + String(newNumber).padStart(4, '0');
+                });
+            } catch (e) {
+                console.error('Erreur génération numéro bon', e);
+                // En cas d'erreur, générer un numéro temporaire
+                const today = new Date();
+                return 'BROUILLON-' + today.getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+            }
+        }
 
         function toggleCategory(header) {
             header.classList.toggle('collapsed');
@@ -721,8 +769,14 @@
         // --- Enregistrement du bon côté technicien (Firestore) ---
         async function saveBonTech() {
             try {
+                // Obtenir le prochain numéro de bon automatiquement
+                const numeroBon = await getNextBonNumber();
+                
+                // Mettre à jour l'affichage du numéro
+                document.getElementById('bonNumber').textContent = numeroBon;
+                
                 const bon = {
-                    numero: document.getElementById('bonNumber').textContent,
+                    numero: numeroBon,
                     date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
                     client: document.getElementById('clientName').value || '',
                     phone: document.getElementById('clientPhone').value || '',
