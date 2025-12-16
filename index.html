@@ -847,15 +847,30 @@
                 try {
                     const fileName = Date.now() + '-' + (file.name || 'photo').replace(/\s+/g, '_');
                     const ref = storage.ref('bons/' + bonIdSafe + '/' + fileName);
-                    const snap = await ref.put(file);
+                    
+                    // Upload avec métadonnées pour permettre l'accès public
+                    const metadata = {
+                        contentType: file.type || 'image/jpeg',
+                        cacheControl: 'public, max-age=31536000',
+                    };
+                    
+                    const snap = await ref.put(file, metadata);
+                    
+                    // Obtenir l'URL de téléchargement (avec token d'accès)
                     const url = await snap.ref.getDownloadURL();
+                    console.log('Photo uploadée, URL complète:', url);
+                    
+                    // Stocker aussi le chemin du fichier pour pouvoir régénérer l'URL plus tard
+                    const filePath = ref.fullPath;
+                    console.log('Chemin fichier:', filePath);
+                    
                     // Remplacer l'URL locale par l'URL Firebase Storage
                     photosBon[tempIndex] = url;
                     URL.revokeObjectURL(localUrl);
                     renderPhotosPreview();
                 } catch (e) {
                     console.error('Erreur upload photo', e);
-                    alert("Erreur lors du téléversement d'une photo.");
+                    alert("Erreur lors du téléversement d'une photo: " + (e.message || e));
                     // Retirer la vignette temporaire
                     photosBon.splice(tempIndex, 1);
                     URL.revokeObjectURL(localUrl);

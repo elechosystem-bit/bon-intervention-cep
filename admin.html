@@ -992,10 +992,61 @@
                     bon.photos.forEach(function(url, index) {
                         if (url && typeof url === 'string' && url.trim() !== '') {
                             console.log('Photo', index + 1, ':', url);
+                            
+                            // Vérifier si c'est une URL Firebase Storage
+                            const isFirebaseUrl = url.includes('firebasestorage.googleapis.com') || url.includes('firebasestorage');
+                            console.log('Est URL Firebase?', isFirebaseUrl);
+                            
+                            // Nettoyer l'URL (enlever les espaces, etc.)
+                            let cleanUrl = url.trim();
+                            
+                            // Si c'est une URL Firebase Storage, essayer de régénérer l'URL si nécessaire
+                            if (isFirebaseUrl && storage) {
+                                // Extraire le chemin du fichier depuis l'URL Firebase Storage
+                                try {
+                                    const urlObj = new URL(cleanUrl);
+                                    // Format Firebase Storage: /o/path%2Fto%2Ffile.jpg?alt=media&token=...
+                                    const pathMatch = urlObj.pathname.match(/\/o\/(.+?)(\?|$)/);
+                                    if (pathMatch) {
+                                        const encodedPath = pathMatch[1];
+                                        const filePath = decodeURIComponent(encodedPath);
+                                        console.log('Chemin fichier extrait:', filePath);
+                                        
+                                        // Essayer de régénérer l'URL avec getDownloadURL (pour obtenir un nouveau token valide)
+                                        const fileRef = storage.ref(filePath);
+                                        fileRef.getDownloadURL().then(function(newUrl) {
+                                            console.log('Nouvelle URL générée pour photo', index + 1, ':', newUrl);
+                                            // Mettre à jour l'image avec la nouvelle URL
+                                            const img = document.querySelector(`img[alt="Photo intervention ${index + 1}"]`);
+                                            if (img) {
+                                                img.src = newUrl;
+                                                console.log('URL mise à jour pour photo', index + 1);
+                                            }
+                                        }).catch(function(err) {
+                                            console.error('Erreur régénération URL pour photo', index + 1, ':', err);
+                                            console.error('Code erreur:', err.code, 'Message:', err.message);
+                                            // Si erreur, afficher quand même l'URL originale
+                                        });
+                                    } else {
+                                        console.warn('Impossible d\'extraire le chemin depuis l\'URL:', cleanUrl);
+                                    }
+                                } catch (e) {
+                                    console.warn('Impossible de parser l\'URL Firebase:', e, 'URL:', cleanUrl);
+                                }
+                            }
+                            
                             // Échapper les guillemets simples et doubles pour éviter les erreurs JavaScript
-                            const safeUrl = url.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const safeUrl = cleanUrl.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            
+                            // Ajouter des attributs pour forcer le rechargement et gérer les erreurs CORS
                             photosHtml += '<div class="photo-thumb-admin" style="position:relative;display:inline-block;margin:4px;">';
-                            photosHtml += '<img src="' + url + '" alt="Photo intervention ' + (index + 1) + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;" onclick="openPhotoLightbox(\'' + safeUrl + '\')" onerror="console.error(\'Erreur chargement photo:\', this.src); this.style.display=\'none\';" />';
+                            photosHtml += '<img src="' + cleanUrl + '" alt="Photo intervention ' + (index + 1) + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;" ';
+                            photosHtml += 'crossorigin="anonymous" ';
+                            photosHtml += 'onclick="openPhotoLightbox(\'' + safeUrl + '\')" ';
+                            photosHtml += 'onerror="console.error(\'Erreur chargement photo:\', this.src); this.style.border=\'2px solid red\'; this.title=\'Erreur de chargement - URL: \' + this.src;" ';
+                            photosHtml += 'onload="console.log(\'Photo chargée avec succès:\', this.src)" ';
+                            photosHtml += 'loading="lazy" ';
+                            photosHtml += '/>';
                             photosHtml += '</div>';
                         } else {
                             console.warn('Photo invalide à l\'index', index, ':', url);
