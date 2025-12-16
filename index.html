@@ -503,53 +503,6 @@
             initSignature('signatureClient');
         });
 
-        // Fonction pour obtenir le prochain numéro de bon depuis Firestore
-        async function getNextBonNumber() {
-            try {
-                const today = new Date();
-                const currentYear = today.getFullYear();
-                
-                // Référence au document compteur
-                const compteurRef = db.collection('compteurs').doc('bons');
-                
-                // Transaction pour garantir l'unicité
-                return await db.runTransaction(async (transaction) => {
-                    const doc = await transaction.get(compteurRef);
-                    
-                    let lastNumber = 0;
-                    let lastYear = currentYear;
-                    
-                    if (doc.exists) {
-                        const data = doc.data();
-                        lastYear = data.annee || currentYear;
-                        lastNumber = data.numero || 0;
-                        
-                        // Si on change d'année, réinitialiser le compteur
-                        if (lastYear !== currentYear) {
-                            lastNumber = 0;
-                        }
-                    }
-                    
-                    // Incrémenter le numéro
-                    const newNumber = lastNumber + 1;
-                    
-                    // Mettre à jour le compteur
-                    transaction.set(compteurRef, {
-                        annee: currentYear,
-                        numero: newNumber,
-                        lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
-                    
-                    // Retourner le numéro au format AAAANNNN
-                    return String(currentYear) + String(newNumber).padStart(4, '0');
-                });
-            } catch (e) {
-                console.error('Erreur génération numéro bon', e);
-                // En cas d'erreur, générer un numéro temporaire
-                const today = new Date();
-                return 'BROUILLON-' + today.getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(4, '0');
-            }
-        }
 
         function toggleCategory(header) {
             header.classList.toggle('collapsed');
@@ -769,14 +722,38 @@
         // --- Enregistrement du bon côté technicien (Firestore) ---
         async function saveBonTech() {
             try {
-                // Obtenir le prochain numéro de bon automatiquement
-                const numeroBon = await getNextBonNumber();
+                // 1. Récupérer et incrémenter le compteur
+                const compteurRef = db.collection('compteurs').doc('bons');
+                const annee = new Date().getFullYear();
+                let numero;
                 
-                // Mettre à jour l'affichage du numéro
-                document.getElementById('bonNumber').textContent = numeroBon;
+                await db.runTransaction(async (transaction) => {
+                    const compteurDoc = await transaction.get(compteurRef);
+                    
+                    if (compteurDoc.exists && compteurDoc.data().annee === annee) {
+                        // Même année : incrémenter le compteur
+                        numero = compteurDoc.data().dernierNumero + 1;
+                    } else {
+                        // Nouvelle année ou premier bon : commencer à 1
+                        numero = 1;
+                    }
+                    
+                    // Mettre à jour le compteur
+                    transaction.set(compteurRef, { 
+                        annee: annee, 
+                        dernierNumero: numero 
+                    });
+                });
                 
+                // 2. Créer le numéro définitif au format AAAANNNN (ex: 20250001)
+                const numeroDefinitif = annee.toString() + String(numero).padStart(4, '0');
+                
+                // 3. Mettre à jour l'affichage du numéro
+                document.getElementById('bonNumber').textContent = numeroDefinitif;
+                
+                // 4. Enregistrer le bon avec ce numéro
                 const bon = {
-                    numero: numeroBon,
+                    numero: numeroDefinitif,
                     date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
                     client: document.getElementById('clientName').value || '',
                     phone: document.getElementById('clientPhone').value || '',
