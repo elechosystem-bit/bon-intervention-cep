@@ -71,6 +71,10 @@
         .service-row:has(#moDemiHeures[style*="display: none"]) {
             grid-template-columns: 1fr 150px 120px;
         }
+        /* Ajuster la grille pour Déplacement (nombre + total uniquement) */
+        .service-row:has(#deplNombre) {
+            grid-template-columns: 1fr 150px 120px;
+        }
         .service-row label { font-weight: 600; }
         .service-row input { padding: 8px; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; text-align: center; }
 
@@ -397,9 +401,9 @@
                     <div class="product-total" id="moTotal">0.00€</div>
                 </div>
                 <div class="service-row">
-                    <label>🚗 Déplacement</label>
-                    <input type="number" id="deplKm" value="0" min="0" placeholder="Km" onchange="updateDepl()">
-                    <input type="number" id="deplTarif" value="0.50" min="0" step="0.1" placeholder="€/km" onchange="updateDepl()">
+                    <label>🚗 Déplacement (70€/déplacement)</label>
+                    <input type="number" id="deplNombre" value="0" min="0" placeholder="Nombre" onchange="updateDepl()">
+                    <input type="number" id="deplTarif" value="70" min="0" style="display:none;">
                     <div class="product-total" id="deplTotal">0.00€</div>
                 </div>
             </div>
@@ -626,9 +630,10 @@
         }
 
         function updateDepl() {
-            const km = parseFloat(document.getElementById('deplKm').value) || 0;
-            const t = parseFloat(document.getElementById('deplTarif').value) || 0;
-            document.getElementById('deplTotal').textContent = (km * t).toFixed(2) + '€';
+            const nombre = parseFloat(document.getElementById('deplNombre').value) || 0;
+            const tarifForfait = 70; // 70€ par déplacement
+            const total = nombre * tarifForfait;
+            document.getElementById('deplTotal').textContent = total.toFixed(2) + '€';
             calculateTotals();
         }
 
@@ -799,7 +804,7 @@
                 moDuree: document.getElementById('moDuree').value || '0h00',
                 moDemiHeures: document.getElementById('moDemiHeures').value || '0 demi-heures',
                 moTarif: document.getElementById('moTarif').value || '35',
-                deplKm: document.getElementById('deplKm').value || '0',
+                deplNombre: document.getElementById('deplNombre').value || '0',
                 deplTarif: document.getElementById('deplTarif').value || '0',
                 subtotalProduits: document.getElementById('subtotalProduits').textContent || '0.00€',
                 subtotalMO: document.getElementById('subtotalMO').textContent || '0.00€',
@@ -898,8 +903,9 @@
             if (bon.heureArrivee && bon.heureDepart) {
                 calculerMainOeuvre();
             }
-            document.getElementById('deplKm').value = bon.deplKm;
-            document.getElementById('deplTarif').value = bon.deplTarif;
+            document.getElementById('deplNombre').value = bon.deplNombre || bon.deplKm || '0';
+            document.getElementById('deplTarif').value = '70';
+            updateDepl();
 
             // Remettre tous les produits à zéro
             document.querySelectorAll('.product-row').forEach(row => {
@@ -966,21 +972,28 @@
 
             // Afficher les photos (thumbnails avec lightbox)
             const photosContainer = document.getElementById('photosAdmin');
+            console.log('Photos container:', photosContainer);
+            console.log('Photos du bon:', bon.photos);
             if (photosContainer) {
                 const photos = bon.photos || [];
                 photosAdmin = photos.slice(); // Sauvegarder pour la suppression
-                if (!photos.length) {
+                if (!photos || photos.length === 0) {
                     photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
                 } else {
-                    photosContainer.innerHTML = photos.map((url, idx) => {
-                        // Échapper les guillemets simples et doubles dans l'URL
+                    let photosHtml = '<div class="photos-preview-admin">';
+                    photos.forEach((url, idx) => {
+                        // Échapper les guillemets pour éviter les erreurs JavaScript
                         const safeUrl = url.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                        return `<div class="photo-thumb-admin" data-index="${idx}">
+                        photosHtml += `<div class="photo-thumb-admin" data-index="${idx}">
                             <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${safeUrl}')" style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer;" />
                             <button type="button" class="photo-remove-admin" onclick="removePhotoAdmin(${idx}); event.stopPropagation();">×</button>
                         </div>`;
-                    }).join("");
+                    });
+                    photosHtml += '</div>';
+                    photosContainer.innerHTML = photosHtml;
                 }
+            } else {
+                console.error('Conteneur photosAdmin introuvable !');
             }
 
             // Charger et afficher les signatures
