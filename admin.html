@@ -496,6 +496,25 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
+        // ============================================
+        // CONFIGURATION EMAILJS
+        // ============================================
+        // IMPORTANT: Vérifiez vos IDs dans le dashboard EmailJS:
+        // https://dashboard.emailjs.com/admin
+        // 
+        // Pour trouver vos IDs:
+        // 1. Allez dans "Email Services" → copiez votre Service ID (format: service_xxxxxxx)
+        // 2. Allez dans "Email Templates" → copiez votre Template ID (format: template_xxxxxxx)
+        // 3. Remplacez les valeurs ci-dessous avec vos IDs réels
+        // ============================================
+        const EMAILJS_CONFIG = {
+            publicKey: "GXDaMfa8u-ZzmkvNn",  // Public Key (déjà dans emailjs.init)
+            serviceID: "service_swcsnom",     // ⚠️ À MODIFIER: Votre Service ID depuis le dashboard
+            templateID: "template_qsnhl5e",  // ⚠️ À MODIFIER: Votre Template ID depuis le dashboard
+            emailDest: "a.mathieu@elechosystem.com"  // Email de destination
+        };
+        // ============================================
+
         // Utilise le même compteur que la page technicien si besoin de créer un nouveau bon vierge
         function getNextBonNumberFromStorage() {
             const today = new Date();
@@ -1278,10 +1297,26 @@
         // Fonction pour envoyer l'email à la comptabilité via EmailJS
         async function envoyerEmailCompta(bon) {
             try {
-                const emailDest = bon.email || "a.mathieu@elechosystem.com";
-                console.log("Envoi email à:", emailDest);
-                console.log('Envoi email via EmailJS avec données:', bon);
-                const result = await emailjs.send("service_swcsnom", "template_qsnhl5e", {
+                const emailDest = bon.email || EMAILJS_CONFIG.emailDest;
+                const serviceID = EMAILJS_CONFIG.serviceID;
+                const templateID = EMAILJS_CONFIG.templateID;
+                
+                console.log("=== CONFIGURATION EMAILJS ===");
+                console.log("Email destination:", emailDest);
+                console.log("Service ID utilisé:", serviceID);
+                console.log("Template ID utilisé:", templateID);
+                console.log("Public Key:", EMAILJS_CONFIG.publicKey);
+                console.log('Données du bon:', bon);
+                
+                // Vérification préalable des IDs
+                if (!serviceID || serviceID === "service_swcsnom") {
+                    console.warn("⚠️ ATTENTION: Service ID par défaut détecté. Vérifiez votre configuration!");
+                }
+                if (!templateID || templateID === "template_qsnhl5e") {
+                    console.warn("⚠️ ATTENTION: Template ID par défaut détecté. Vérifiez votre configuration!");
+                }
+                
+                const result = await emailjs.send(serviceID, templateID, {
                     email: emailDest,
                     numero: bon.numero || '',
                     date: bon.date || '',
@@ -1308,7 +1343,38 @@
                 return true;
             } catch (error) {
                 console.error("Erreur envoi email EmailJS:", error);
-                alert("Erreur lors de l'envoi de l'email: " + (error.text || error.message || error));
+                console.error("Détails de l'erreur:", {
+                    status: error.status,
+                    text: error.text,
+                    message: error.message
+                });
+                
+                let errorMessage = "❌ Erreur lors de l'envoi de l'email.\n\n";
+                if (error.text && (error.text.includes("service ID not found") || error.text.includes("Service ID not found"))) {
+                    errorMessage += "⚠️ LE SERVICE ID EMAILJS N'EST PAS TROUVÉ.\n\n";
+                    errorMessage += "📋 CONFIGURATION ACTUELLE:\n";
+                    errorMessage += `   Service ID: ${EMAILJS_CONFIG.serviceID}\n`;
+                    errorMessage += `   Template ID: ${EMAILJS_CONFIG.templateID}\n`;
+                    errorMessage += `   Public Key: ${EMAILJS_CONFIG.publicKey}\n\n`;
+                    errorMessage += "🔧 POUR CORRIGER:\n";
+                    errorMessage += "1. Allez sur: https://dashboard.emailjs.com/admin\n";
+                    errorMessage += "2. Dans 'Email Services', copiez votre Service ID réel\n";
+                    errorMessage += "3. Dans 'Email Templates', copiez votre Template ID réel\n";
+                    errorMessage += "4. Modifiez la section EMAILJS_CONFIG dans admin.html (ligne ~498)\n";
+                    errorMessage += "5. Remplacez serviceID et templateID par vos IDs réels\n\n";
+                    errorMessage += "💡 Les IDs doivent être au format:\n";
+                    errorMessage += "   - Service: service_xxxxxxx\n";
+                    errorMessage += "   - Template: template_xxxxxxx";
+                } else if (error.text && error.text.includes("template")) {
+                    errorMessage += "⚠️ ERREUR TEMPLATE ID.\n\n";
+                    errorMessage += `Template ID utilisé: ${EMAILJS_CONFIG.templateID}\n\n`;
+                    errorMessage += "Vérifiez votre Template ID dans le dashboard EmailJS.";
+                } else {
+                    errorMessage += "Détails de l'erreur:\n";
+                    errorMessage += error.text || error.message || error;
+                }
+                
+                alert(errorMessage);
                 return false;
             }
         }
