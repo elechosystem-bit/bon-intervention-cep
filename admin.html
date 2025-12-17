@@ -509,8 +509,8 @@
         // ============================================
         const EMAILJS_CONFIG = {
             publicKey: "GXDaMfa8u-ZzmkvNn",  // Public Key (déjà dans emailjs.init)
-            serviceID: "service_swcsnom",     // ⚠️ À MODIFIER: Votre Service ID depuis le dashboard
-            templateID: "template_qsnhl5e",  // ⚠️ À MODIFIER: Votre Template ID depuis le dashboard
+            serviceID: "service_b6ibqvh",     // Service ID depuis le dashboard EmailJS
+            templateID: "template_qsnhl5e",  // Template ID depuis le dashboard EmailJS
             emailDest: "a.mathieu@elechosystem.com"  // Email de destination
         };
         // ============================================
@@ -1309,8 +1309,8 @@
                 console.log('Données du bon:', bon);
                 
                 // Vérification préalable des IDs
-                if (!serviceID || serviceID === "service_swcsnom") {
-                    console.warn("⚠️ ATTENTION: Service ID par défaut détecté. Vérifiez votre configuration!");
+                if (!serviceID) {
+                    console.warn("⚠️ ATTENTION: Service ID non configuré. Vérifiez votre configuration!");
                 }
                 if (!templateID || templateID === "template_qsnhl5e") {
                     console.warn("⚠️ ATTENTION: Template ID par défaut détecté. Vérifiez votre configuration!");
