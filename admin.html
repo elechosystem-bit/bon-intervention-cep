@@ -853,7 +853,7 @@
                 
                 // Envoyer l'email via EmailJS
                 await envoyerEmailCompta({
-                    email: "aurelien.mathieu@elechosystem.com",
+                    email: "a.mathieu@elechosystem.com",
                     numero: numeroBon,
                     date: date,
                     client: client,
@@ -1278,9 +1278,11 @@
         // Fonction pour envoyer l'email à la comptabilité via EmailJS
         async function envoyerEmailCompta(bon) {
             try {
+                const emailDest = bon.email || "a.mathieu@elechosystem.com";
+                console.log("Envoi email à:", emailDest);
                 console.log('Envoi email via EmailJS avec données:', bon);
                 const result = await emailjs.send("service_swcsnom", "template_qsnhl5e", {
-                    email: bon.email || "aurelien.mathieu@elechosystem.com",
+                    email: emailDest,
                     numero: bon.numero || '',
                     date: bon.date || '',
                     client: bon.client || '',
