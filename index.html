@@ -843,20 +843,24 @@
         // Fonction pour envoyer l'email au client via EmailJS
         async function envoyerEmailClient(bon) {
             try {
-                // Vérifier que EmailJS est chargé
-                if (typeof emailjs === 'undefined') {
-                    throw new Error("EmailJS n'est pas chargé. Veuillez recharger la page.");
-                }
-                
                 const emailDest = bon.email;
                 const serviceID = EMAILJS_CONFIG.serviceID;
                 const templateID = EMAILJS_CONFIG.templateID;
                 
                 console.log("=== ENVOI EMAIL CLIENT ===");
                 console.log("Email destination:", emailDest);
-                console.log("Service ID:", serviceID);
-                console.log("Template ID:", templateID);
-                console.log("EmailJS disponible:", typeof emailjs !== 'undefined');
+                console.log("Service ID utilisé:", serviceID);
+                console.log("Template ID utilisé:", templateID);
+                console.log("Public Key:", EMAILJS_CONFIG.publicKey);
+                console.log('Données du bon:', bon);
+                
+                // Vérification préalable des IDs
+                if (!serviceID) {
+                    console.warn("⚠️ ATTENTION: Service ID non configuré. Vérifiez votre configuration!");
+                }
+                if (!templateID) {
+                    console.warn("⚠️ ATTENTION: Template ID non configuré. Vérifiez votre configuration!");
+                }
                 
                 const result = await emailjs.send(serviceID, templateID, {
                     email: emailDest,
@@ -889,10 +893,26 @@
                 let errorMessage = "❌ Erreur lors de l'envoi de l'email.\n\n";
                 if (error.text && (error.text.includes("service ID not found") || error.text.includes("Service ID not found"))) {
                     errorMessage += "⚠️ LE SERVICE ID EMAILJS N'EST PAS TROUVÉ.\n\n";
-                    errorMessage += "Vérifiez votre configuration dans le dashboard EmailJS.\n";
-                    errorMessage += "https://dashboard.emailjs.com/admin";
+                    errorMessage += "📋 CONFIGURATION ACTUELLE:\n";
+                    errorMessage += `   Service ID: ${EMAILJS_CONFIG.serviceID}\n`;
+                    errorMessage += `   Template ID: ${EMAILJS_CONFIG.templateID}\n`;
+                    errorMessage += `   Public Key: ${EMAILJS_CONFIG.publicKey}\n\n`;
+                    errorMessage += "🔧 POUR CORRIGER:\n";
+                    errorMessage += "1. Allez sur: https://dashboard.emailjs.com/admin\n";
+                    errorMessage += "2. Dans 'Email Services', copiez votre Service ID réel\n";
+                    errorMessage += "3. Dans 'Email Templates', copiez votre Template ID réel\n";
+                    errorMessage += "4. Modifiez la section EMAILJS_CONFIG dans index.html (ligne ~507)\n";
+                    errorMessage += "5. Remplacez serviceID et templateID par vos IDs réels\n\n";
+                    errorMessage += "💡 Les IDs doivent être au format:\n";
+                    errorMessage += "   - Service: service_xxxxxxx\n";
+                    errorMessage += "   - Template: template_xxxxxxx";
+                } else if (error.text && error.text.includes("template")) {
+                    errorMessage += "⚠️ ERREUR TEMPLATE ID.\n\n";
+                    errorMessage += `Template ID utilisé: ${EMAILJS_CONFIG.templateID}\n\n`;
+                    errorMessage += "Vérifiez votre Template ID dans le dashboard EmailJS.";
                 } else {
-                    errorMessage += "Détails: " + (error.text || error.message || error);
+                    errorMessage += "Détails de l'erreur:\n";
+                    errorMessage += error.text || error.message || error;
                 }
                 
                 alert(errorMessage);
