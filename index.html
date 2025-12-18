@@ -724,11 +724,20 @@
         }
 
         async function envoyerClient() {
+            // Vérifier que EmailJS est chargé
+            if (typeof emailjs === 'undefined') {
+                alert("Erreur: EmailJS n'est pas chargé. Veuillez recharger la page.");
+                console.error("EmailJS n'est pas disponible");
+                return;
+            }
+            
             const email = (document.getElementById('clientEmail').value || '').trim();
             if (!email) {
                 alert("Veuillez renseigner l'email du client avant d'envoyer.");
                 return;
             }
+            
+            console.log("Début de l'envoi d'email au client via EmailJS");
             
             // Récupérer les informations du formulaire
             const numeroBon = document.getElementById('bonNumber').textContent;
@@ -834,6 +843,11 @@
         // Fonction pour envoyer l'email au client via EmailJS
         async function envoyerEmailClient(bon) {
             try {
+                // Vérifier que EmailJS est chargé
+                if (typeof emailjs === 'undefined') {
+                    throw new Error("EmailJS n'est pas chargé. Veuillez recharger la page.");
+                }
+                
                 const emailDest = bon.email;
                 const serviceID = EMAILJS_CONFIG.serviceID;
                 const templateID = EMAILJS_CONFIG.templateID;
@@ -842,6 +856,7 @@
                 console.log("Email destination:", emailDest);
                 console.log("Service ID:", serviceID);
                 console.log("Template ID:", templateID);
+                console.log("EmailJS disponible:", typeof emailjs !== 'undefined');
                 
                 const result = await emailjs.send(serviceID, templateID, {
                     email: emailDest,
