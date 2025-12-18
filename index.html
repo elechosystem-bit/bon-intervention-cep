@@ -145,6 +145,13 @@
             .header, .footer, .totals-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
+    <!-- EmailJS pour l'envoi automatique d'emails -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function() {
+            emailjs.init("GXDaMfa8u-ZzmkvNn");
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
@@ -494,6 +501,17 @@
         const storage = firebase.storage();
         let photosBon = [];
 
+        // ============================================
+        // CONFIGURATION EMAILJS
+        // ============================================
+        const EMAILJS_CONFIG = {
+            publicKey: "GXDaMfa8u-ZzmkvNn",  // Public Key (déjà dans emailjs.init)
+            serviceID: "service_b6ibqvh",     // Service ID depuis le dashboard EmailJS
+            templateID: "template_qsnhl5e",  // Template ID depuis le dashboard EmailJS (peut être différent pour le client)
+            // Note: Pour l'envoi au client, vous pouvez créer un template spécifique dans EmailJS
+        };
+        // ============================================
+
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
@@ -705,7 +723,7 @@
             }
         }
 
-        function envoyerClient() {
+        async function envoyerClient() {
             const email = (document.getElementById('clientEmail').value || '').trim();
             if (!email) {
                 alert("Veuillez renseigner l'email du client avant d'envoyer.");
@@ -794,10 +812,77 @@
             body += 'Cordialement,\n';
             body += 'Compagnie d\'Électricité Parisienne\n';
             
-            // Créer le lien mailto
-            const subject = encodeURIComponent(`Bon d'intervention ${numeroBon} - ${client}`);
-            const bodyEncoded = encodeURIComponent(body);
-            window.location.href = `mailto:${email}?subject=${subject}&body=${bodyEncoded}`;
+            // Envoyer l'email automatiquement via EmailJS
+            await envoyerEmailClient({
+                email: email,
+                subject: `Bon d'intervention ${numeroBon} - ${client}`,
+                numero: numeroBon,
+                date: date,
+                client: client,
+                adresse: clientAddress,
+                telephone: clientPhone,
+                technicien: technicien,
+                description: description,
+                produits: produitsHtml,
+                mainOeuvre: `Durée : ${moDuree}`,
+                deplacement: `Nombre de déplacements : ${deplNombre}`,
+                photos: photosHtml,
+                message: body
+            });
+        }
+
+        // Fonction pour envoyer l'email au client via EmailJS
+        async function envoyerEmailClient(bon) {
+            try {
+                const emailDest = bon.email;
+                const serviceID = EMAILJS_CONFIG.serviceID;
+                const templateID = EMAILJS_CONFIG.templateID;
+                
+                console.log("=== ENVOI EMAIL CLIENT ===");
+                console.log("Email destination:", emailDest);
+                console.log("Service ID:", serviceID);
+                console.log("Template ID:", templateID);
+                
+                const result = await emailjs.send(serviceID, templateID, {
+                    email: emailDest,
+                    subject: bon.subject || `Bon d'intervention ${bon.numero}`,
+                    numero: bon.numero || '',
+                    date: bon.date || '',
+                    client: bon.client || '',
+                    adresse: bon.adresse || '',
+                    telephone: bon.telephone || '',
+                    technicien: bon.technicien || '',
+                    description: bon.description || '',
+                    produits: bon.produits || 'Aucun',
+                    main_oeuvre: bon.mainOeuvre || '',
+                    deplacement: bon.deplacement || '',
+                    photos: bon.photos || 'Aucune photo',
+                    message: bon.message || ''
+                });
+                
+                console.log('Email envoyé avec succès:', result);
+                alert("✓ Email envoyé au client avec succès !");
+                return true;
+            } catch (error) {
+                console.error("Erreur envoi email EmailJS:", error);
+                console.error("Détails de l'erreur:", {
+                    status: error.status,
+                    text: error.text,
+                    message: error.message
+                });
+                
+                let errorMessage = "❌ Erreur lors de l'envoi de l'email.\n\n";
+                if (error.text && (error.text.includes("service ID not found") || error.text.includes("Service ID not found"))) {
+                    errorMessage += "⚠️ LE SERVICE ID EMAILJS N'EST PAS TROUVÉ.\n\n";
+                    errorMessage += "Vérifiez votre configuration dans le dashboard EmailJS.\n";
+                    errorMessage += "https://dashboard.emailjs.com/admin";
+                } else {
+                    errorMessage += "Détails: " + (error.text || error.message || error);
+                }
+                
+                alert(errorMessage);
+                return false;
+            }
         }
 
         // --- Enregistrement du bon côté technicien (Firestore) ---
