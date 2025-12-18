@@ -419,10 +419,11 @@
                     <div class="product-total" id="moTotal" style="display:none;">0.00€</div>
                 </div>
                 <div class="service-row">
-                    <label>🚗 Déplacement (70€/déplacement)</label>
+                    <label>🚗 Déplacement</label>
                     <input type="number" id="deplNombre" value="0" min="0" max="10" placeholder="0, 1, 2..." onchange="updateDepl()">
-                    <input type="number" id="deplTarif" value="70" min="0" style="display:none;">
-                    <div class="product-total" id="deplTotal" style="display:none;">0.00€</div>
+                    <!-- Champ caché pour le calcul (non visible pour le technicien) -->
+                    <input type="number" id="deplTarif" value="70" min="0" style="display:none !important; visibility:hidden; position:absolute; width:0; height:0; opacity:0;">
+                    <div class="product-total" id="deplTotal" style="display:none !important;">0.00€</div>
                 </div>
             </div>
 
@@ -696,6 +697,8 @@
             const code = prompt("Code administrateur :");
             // Pour le patron : accès à la page récap avec tous les bons chiffrés
             if (code === "CEP2024") {
+                // Stocker l'authentification dans sessionStorage pour éviter de redemander le code
+                sessionStorage.setItem('adminAuthenticated', 'true');
                 window.location.href = "admin.html";
             } else if (code !== null) {
                 alert("Code incorrect.");
