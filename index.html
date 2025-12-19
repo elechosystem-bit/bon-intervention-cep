@@ -821,6 +821,10 @@
             body += 'Cordialement,\n';
             body += 'Compagnie d\'Électricité Parisienne\n';
             
+            // Récupérer les heures d'arrivée et de départ
+            const heureArrivee = document.getElementById('heureArrivee').value || '';
+            const heureDepart = document.getElementById('heureDepart').value || '';
+            
             // Envoyer l'email automatiquement via EmailJS
             await envoyerEmailClient({
                 email: email,
@@ -832,6 +836,8 @@
                 telephone: clientPhone,
                 technicien: technicien,
                 description: description,
+                heure_arrivee: heureArrivee,
+                heure_depart: heureDepart,
                 produits: produitsHtml,
                 mainOeuvre: `Durée : ${moDuree}`,
                 deplacement: `Nombre de déplacements : ${deplNombre}`,
@@ -872,6 +878,9 @@
                     telephone: bon.telephone || '',
                     technicien: bon.technicien || '',
                     description: bon.description || '',
+                    statut: 'En attente',
+                    heure_arrivee: bon.heure_arrivee || '',
+                    heure_depart: bon.heure_depart || '',
                     produits: bon.produits || 'Aucun',
                     main_oeuvre: bon.mainOeuvre || '',
                     deplacement: bon.deplacement || '',

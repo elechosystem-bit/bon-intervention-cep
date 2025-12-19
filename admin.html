@@ -878,6 +878,10 @@
                 body += 'Compagnie d\'Électricité Parisienne\n';
                 body += 'Bon généré automatiquement\n';
                 
+                // Récupérer les heures d'arrivée et de départ
+                const heureArrivee = document.getElementById('heureArrivee').value || '';
+                const heureDepart = document.getElementById('heureDepart').value || '';
+                
                 // Envoyer l'email via EmailJS
                 await envoyerEmailCompta({
                     email: "a.mathieu@elechosystem.com",
@@ -889,6 +893,8 @@
                     emailClient: clientEmail,
                     technicien: technicien,
                     description: description,
+                    heure_arrivee: heureArrivee,
+                    heure_depart: heureDepart,
                     produits: produitsHtml,
                     mainOeuvre: `Durée: ${moDuree} | ${moDemiHeures} | Montant: ${moTotal}`,
                     deplacement: `Nombre: ${deplNombre} | Montant: ${deplTotal}`,
@@ -896,6 +902,7 @@
                     totalHT: totalHT,
                     totalTVA: totalTVA,
                     totalTTC: totalTTC,
+                    statut: 'Validé',
                     photos: photosHtml,
                     corpsComplet: body
                 });
@@ -1332,6 +1339,9 @@
                     adresse: bon.adresse || bon.address || '',
                     technicien: bon.technicien || '',
                     description: bon.description || '',
+                    statut: bon.statut || 'Validé',
+                    heure_arrivee: bon.heure_arrivee || '',
+                    heure_depart: bon.heure_depart || '',
                     totalHT: bon.totalHT || '',
                     totalTVA: bon.totalTVA || '',
                     totalTTC: bon.totalTTC || '',
