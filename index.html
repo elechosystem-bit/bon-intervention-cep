@@ -784,8 +784,9 @@
             if (photosBon && photosBon.length > 0) {
                 photosHtml = '\n\n📷 PHOTOS DE L\'INTERVENTION :\n';
                 photosHtml += '─'.repeat(50) + '\n';
-                photosBon.forEach((url, index) => {
-                    if (url && typeof url === 'string') {
+                photosBon.forEach((photo, index) => {
+                    const url = typeof photo === 'string' ? photo : photo.url;
+                    if (url) {
                         photosHtml += `Photo ${index + 1}: ${url}\n`;
                     }
                 });
@@ -1035,8 +1036,40 @@
                 const spacing = 10; // Espacement entre les photos
                 
                 for (let i = 0; i < photosBon.length; i++) {
-                    const photoUrl = photosBon[i];
-                    if (!photoUrl) continue;
+                    const photo = photosBon[i];
+                    if (!photo) continue;
+                    
+                    // Récupérer le base64 (nouveau format) ou l'URL (ancien format pour compatibilité)
+                    let imgData;
+                    if (typeof photo === 'object' && photo.base64) {
+                        // Nouveau format : utiliser directement le base64 stocké
+                        imgData = photo.base64;
+                        console.log(`Photo ${i + 1}: utilisation base64 stocké (${imgData.length} caractères)`);
+                    } else if (typeof photo === 'string') {
+                        // Ancien format : convertir l'URL en base64 (fallback pour compatibilité)
+                        console.warn(`Photo ${i + 1}: format ancien détecté, conversion nécessaire`);
+                        try {
+                            const img = await new Promise((resolve, reject) => {
+                                const imgElement = new Image();
+                                imgElement.crossOrigin = 'anonymous';
+                                imgElement.onload = () => resolve(imgElement);
+                                imgElement.onerror = reject;
+                                imgElement.src = photo;
+                            });
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            imgData = canvas.toDataURL('image/jpeg', 0.8);
+                        } catch (err) {
+                            console.error(`Erreur conversion photo ${i + 1}:`, err);
+                            continue; // Passer à la photo suivante
+                        }
+                    } else {
+                        console.warn(`Photo ${i + 1}: format inconnu, ignorée`);
+                        continue;
+                    }
                     
                     // Vérifier si on a besoin d'une nouvelle page
                     if (yPos + photoHeight > 270) {
@@ -1049,94 +1082,7 @@
                     const xPos = 20 + col * (photoWidth + spacing);
                     
                     try {
-                        console.log(`Chargement photo ${i + 1}:`, photoUrl);
-                        
-                        let imgData;
-                        
-                        // Si c'est une URL blob locale, utiliser directement
-                        if (photoUrl.startsWith('blob:')) {
-                            const img = await new Promise((resolve, reject) => {
-                                const imgElement = new Image();
-                                imgElement.onload = () => resolve(imgElement);
-                                imgElement.onerror = reject;
-                                imgElement.src = photoUrl;
-                            });
-                            
-                            const canvas = document.createElement('canvas');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                            imgData = canvas.toDataURL('image/jpeg', 0.8);
-                        } else {
-                            // Pour les URLs Firebase Storage, utiliser un proxy CORS ou charger directement
-                            // Méthode 1: Essayer avec un élément Image et crossOrigin
-                            try {
-                                const img = await new Promise((resolve, reject) => {
-                                    const imgElement = new Image();
-                                    imgElement.crossOrigin = 'anonymous';
-                                    
-                                    // Timeout pour éviter d'attendre indéfiniment
-                                    const timeout = setTimeout(() => {
-                                        reject(new Error('Timeout chargement image'));
-                                    }, 10000);
-                                    
-                                    imgElement.onload = () => {
-                                        clearTimeout(timeout);
-                                        resolve(imgElement);
-                                    };
-                                    imgElement.onerror = (err) => {
-                                        clearTimeout(timeout);
-                                        reject(new Error('Erreur chargement image: ' + err));
-                                    };
-                                    
-                                    imgElement.src = photoUrl;
-                                });
-                                
-                                // Convertir l'image en canvas puis en base64
-                                const canvas = document.createElement('canvas');
-                                canvas.width = img.width;
-                                canvas.height = img.height;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0);
-                                imgData = canvas.toDataURL('image/jpeg', 0.8);
-                                
-                            } catch (imgError) {
-                                console.warn('Méthode Image échouée, tentative avec proxy CORS...', imgError);
-                                
-                                // Méthode 2: Utiliser un proxy CORS public
-                                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(photoUrl)}`;
-                                
-                                const response = await fetch(proxyUrl);
-                                if (!response.ok) {
-                                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                                }
-                                const blob = await response.blob();
-                                
-                                // Convertir le blob en image
-                                const img = await new Promise((resolve, reject) => {
-                                    const imgElement = new Image();
-                                    imgElement.onload = () => resolve(imgElement);
-                                    imgElement.onerror = reject;
-                                    imgElement.src = URL.createObjectURL(blob);
-                                });
-                                
-                                // Convertir l'image en canvas puis en base64
-                                const canvas = document.createElement('canvas');
-                                canvas.width = img.width;
-                                canvas.height = img.height;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0);
-                                imgData = canvas.toDataURL('image/jpeg', 0.8);
-                                
-                                // Nettoyer l'URL blob temporaire
-                                URL.revokeObjectURL(img.src);
-                            }
-                        }
-                        
-                        console.log(`Photo ${i + 1} chargée avec succès, taille base64:`, imgData.length);
-                        
-                        // Ajouter l'image au PDF
+                        // Ajouter l'image au PDF directement depuis le base64
                         doc.addImage(imgData, 'JPEG', xPos, yPos, photoWidth, photoHeight);
                         
                         // Ajouter un numéro sous la photo
@@ -1146,16 +1092,10 @@
                         
                     } catch (photoError) {
                         console.error(`❌ Erreur ajout photo ${i + 1} au PDF:`, photoError);
-                        console.error('URL de la photo:', photoUrl);
-                        console.error('Type d\'erreur:', photoError.name);
-                        console.error('Message:', photoError.message);
-                        
                         // En cas d'erreur, afficher un message et continuer
                         doc.setFontSize(9);
                         doc.setFont(undefined, 'normal');
-                        doc.text(`Photo ${i + 1} (erreur de chargement)`, xPos, yPos + 10);
-                        doc.setFontSize(7);
-                        doc.text('Voir console pour détails', xPos, yPos + 16);
+                        doc.text(`Photo ${i + 1} (erreur)`, xPos, yPos + 10);
                     }
                     
                     // Passer à la ligne suivante après 2 photos
@@ -1455,7 +1395,7 @@
                     statut: 'en_attente',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     produits: [],
-                    photos: photosBon.slice(),
+                    photos: photosBon.map(photo => typeof photo === 'string' ? photo : photo.url), // Sauvegarder seulement les URLs
                     signatures: {
                         technicien: (function () { const c = document.getElementById('signatureTech'); try { return c && c.toDataURL ? c.toDataURL() : null; } catch(e){ return null; } })(),
                         client: (function () { const c = document.getElementById('signatureClient'); try { return c && c.toDataURL ? c.toDataURL() : null; } catch(e){ return null; } })()
@@ -1536,10 +1476,26 @@
                 .replace(/[^a-zA-Z0-9-_]/g, '_');
 
             for (const file of toUpload) {
+                // Convertir le fichier en base64 pour l'utiliser dans le PDF
+                const base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        // Le résultat est au format "data:image/jpeg;base64,..."
+                        resolve(reader.result);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                
                 // Afficher immédiatement une vignette locale pour le technicien
                 const localUrl = URL.createObjectURL(file);
                 const tempIndex = photosBon.length;
-                photosBon.push(localUrl);
+                
+                // Stocker l'objet avec URL locale temporaire et base64
+                photosBon.push({
+                    url: localUrl,
+                    base64: base64
+                });
                 renderPhotosPreview();
 
                 try {
@@ -1573,10 +1529,13 @@
                         throw new Error('URL invalide générée: ' + url);
                     }
                     
-                    // Remplacer l'URL locale par l'URL Firebase Storage
-                    photosBon[tempIndex] = url;
-                    console.log('URL ajoutée au tableau photosBon à l\'index', tempIndex);
-                    console.log('Tableau photosBon maintenant:', photosBon);
+                    // Remplacer l'URL locale par l'URL Firebase Storage, mais garder le base64
+                    photosBon[tempIndex] = {
+                        url: url,
+                        base64: base64  // Garder le base64 pour le PDF
+                    };
+                    console.log('URL et base64 ajoutés au tableau photosBon à l\'index', tempIndex);
+                    console.log('Tableau photosBon maintenant:', photosBon.map(p => ({url: p.url, hasBase64: !!p.base64})));
                     
                     URL.revokeObjectURL(localUrl);
                     renderPhotosPreview();
@@ -1606,12 +1565,14 @@
                 return;
             }
             container.innerHTML = photosBon
-                .map((url, idx) =>
-                    `<div class="photo-thumb" data-index="${idx}">
+                .map((photo, idx) => {
+                    // Gérer les deux formats : ancien (string) et nouveau (objet {url, base64})
+                    const url = typeof photo === 'string' ? photo : photo.url;
+                    return `<div class="photo-thumb" data-index="${idx}">
                         <img src="${url}" alt="Photo" onclick="openPhotoLightbox('${url.replace(/'/g, "\\'")}')" />
                         <button type="button" class="photo-remove" onclick="removePhoto(${idx}); event.stopPropagation();">×</button>
-                    </div>`
-                )
+                    </div>`;
+                })
                 .join("");
         }
 
@@ -1633,9 +1594,12 @@
             if (index < 0 || index >= photosBon.length) return;
             // Optionnel : suppression dans Storage à partir de l'URL
             try {
-                const url = photosBon[index];
-                if (url && storage && storage.refFromURL) {
+                const photo = photosBon[index];
+                const url = typeof photo === 'string' ? photo : photo.url;
+                if (url && url.startsWith('http') && storage && storage.refFromURL) {
                     await storage.refFromURL(url).delete();
+                } else if (url && url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
                 }
             } catch (e) {
                 console.warn('Erreur lors de la suppression du fichier Storage (ignorée)', e);
