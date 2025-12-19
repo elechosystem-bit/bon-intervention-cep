@@ -152,6 +152,8 @@
             emailjs.init("GXDaMfa8u-ZzmkvNn");
         })();
     </script>
+    <!-- jsPDF pour générer les PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -824,6 +826,32 @@
             const heureArrivee = document.getElementById('heureArrivee').value || '';
             const heureDepart = document.getElementById('heureDepart').value || '';
             
+            // Générer le PDF et le stocker dans Firebase Storage
+            let pdfUrl = '';
+            try {
+                console.log('Génération du PDF...');
+                const pdfBlob = await genererPDFBon();
+                
+                // Stocker le PDF dans Firebase Storage
+                const bonIdSafe = numeroBon.replace(/[^a-zA-Z0-9-_]/g, '_');
+                const fileName = `bon_${bonIdSafe}_${Date.now()}.pdf`;
+                const filePath = `bons/${bonIdSafe}/${fileName}`;
+                
+                const ref = storage.ref(filePath);
+                const metadata = {
+                    contentType: 'application/pdf',
+                    cacheControl: 'public, max-age=31536000',
+                };
+                
+                console.log('Upload du PDF vers Firebase Storage...');
+                const snap = await ref.put(pdfBlob, metadata);
+                pdfUrl = await snap.ref.getDownloadURL();
+                console.log('PDF uploadé, URL:', pdfUrl);
+            } catch (pdfError) {
+                console.error('Erreur lors de la génération/upload du PDF:', pdfError);
+                // Continuer même si le PDF échoue
+            }
+            
             // Envoyer l'email automatiquement via EmailJS
             await envoyerEmailClient({
                 email: email,
@@ -841,10 +869,208 @@
                 mainOeuvre: `Durée : ${moDuree}`,
                 deplacement: `Nombre de déplacements : ${deplNombre}`,
                 photos: photosHtml,
-                message: body
+                message: body,
+                pdf_url: pdfUrl
             });
         }
 
+        // Fonction pour générer le PDF du bon d'intervention
+        async function genererPDFBon() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Informations CEP
+            const infoCEP = {
+                nom: "CEP - Électricité Générale, Installation, Dépannage",
+                adresse: "6, rue de Metz, 94240 L'Haÿ-les-Roses",
+                tel: "Tél. 01 56 04 19 96",
+                email: "contact@cep75.fr",
+                web: "www.cep75.fr"
+            };
+            
+            // Récupérer les données du formulaire
+            const numeroBon = document.getElementById('bonNumber').textContent;
+            const date = document.getElementById('interventionDate').value || '';
+            const client = document.getElementById('clientName').value || '';
+            const clientAddress = document.getElementById('clientAddress').value || '';
+            const technicien = document.getElementById('technicien').value || '';
+            const heureArrivee = document.getElementById('heureArrivee').value || '';
+            const heureDepart = document.getElementById('heureDepart').value || '';
+            const description = document.getElementById('description').value || '';
+            const totalTTC = document.getElementById('totalTTC').textContent || '0.00€';
+            const statut = 'En attente';
+            
+            // Récupérer les produits
+            const produits = [];
+            document.querySelectorAll('.product-row').forEach(row => {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                const qtyInput = row.querySelector('.product-qty input');
+                const qty = parseFloat(qtyInput.value) || 0;
+                if (checkbox && checkbox.checked && qty > 0) {
+                    const name = row.querySelector('.product-name')?.textContent || '';
+                    const ref = row.querySelector('.product-ref')?.textContent || '';
+                    const price = parseFloat(qtyInput.dataset.price || '0');
+                    produits.push({ nom: name, reference: ref, quantite: qty, prix: price });
+                }
+            });
+            
+            // Récupérer les signatures
+            const signatureTech = document.getElementById('signatureTech');
+            const signatureClient = document.getElementById('signatureClient');
+            let sigTechData = null;
+            let sigClientData = null;
+            try {
+                if (signatureTech && signatureTech.toDataURL) {
+                    sigTechData = signatureTech.toDataURL('image/png');
+                }
+                if (signatureClient && signatureClient.toDataURL) {
+                    sigClientData = signatureClient.toDataURL('image/png');
+                }
+            } catch(e) {
+                console.error('Erreur récupération signatures:', e);
+            }
+            
+            let yPos = 20;
+            
+            // En-tête CEP
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text(infoCEP.nom, 105, yPos, { align: 'center' });
+            yPos += 8;
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(infoCEP.adresse, 105, yPos, { align: 'center' });
+            yPos += 5;
+            doc.text(infoCEP.tel, 105, yPos, { align: 'center' });
+            yPos += 5;
+            doc.text(infoCEP.email + ' / ' + infoCEP.web, 105, yPos, { align: 'center' });
+            yPos += 10;
+            
+            // Ligne de séparation
+            doc.setLineWidth(0.5);
+            doc.line(20, yPos, 190, yPos);
+            yPos += 8;
+            
+            // Numéro du bon et titre
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('FICHE D\'INTERVENTION', 105, yPos, { align: 'center' });
+            yPos += 6;
+            doc.setFontSize(12);
+            doc.text('N° ' + numeroBon, 105, yPos, { align: 'center' });
+            yPos += 10;
+            
+            // Informations client
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('CLIENT :', 20, yPos);
+            yPos += 6;
+            doc.setFont(undefined, 'normal');
+            doc.text(client, 20, yPos);
+            yPos += 5;
+            if (clientAddress) {
+                doc.text(clientAddress, 20, yPos);
+                yPos += 5;
+            }
+            yPos += 3;
+            
+            // Informations intervention
+            doc.setFont(undefined, 'bold');
+            doc.text('INTERVENTION :', 20, yPos);
+            yPos += 6;
+            doc.setFont(undefined, 'normal');
+            doc.text('Date : ' + date, 20, yPos);
+            yPos += 5;
+            doc.text('Intervenant : ' + technicien, 20, yPos);
+            yPos += 5;
+            if (heureArrivee) doc.text('Heure d\'arrivée : ' + heureArrivee, 20, yPos);
+            if (heureDepart) {
+                if (heureArrivee) yPos += 5;
+                doc.text('Heure de départ : ' + heureDepart, 20, yPos);
+            }
+            yPos += 8;
+            
+            // Description
+            if (description) {
+                doc.setFont(undefined, 'bold');
+                doc.text('DESCRIPTION :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                const descLines = doc.splitTextToSize(description, 170);
+                doc.text(descLines, 20, yPos);
+                yPos += descLines.length * 5 + 3;
+            }
+            
+            // Matériel posé
+            if (produits.length > 0) {
+                doc.setFont(undefined, 'bold');
+                doc.text('MATÉRIEL POSÉ :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(9);
+                
+                produits.forEach(p => {
+                    const ligne = `${p.nom}${p.reference ? ' (Ref: ' + p.reference + ')' : ''} - Qté: ${p.quantite}${p.prix > 0 ? ' - Prix unitaire: ' + p.prix.toFixed(2) + '€' : ''}`;
+                    const lignes = doc.splitTextToSize(ligne, 170);
+                    doc.text(lignes, 20, yPos);
+                    yPos += lignes.length * 4;
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                });
+                yPos += 3;
+            }
+            
+            // Total TTC
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('TOTAL TTC : ' + totalTTC, 20, yPos);
+            yPos += 8;
+            
+            // Statut
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text('Statut : ' + statut, 20, yPos);
+            yPos += 10;
+            
+            // Signatures
+            if (sigTechData || sigClientData) {
+                const sigWidth = 70;
+                const sigHeight = 30;
+                
+                if (sigTechData) {
+                    doc.setFontSize(9);
+                    doc.text('Signature Intervenant :', 20, yPos);
+                    yPos += 5;
+                    try {
+                        doc.addImage(sigTechData, 'PNG', 20, yPos, sigWidth, sigHeight);
+                    } catch(e) {
+                        console.error('Erreur ajout signature technicien:', e);
+                    }
+                }
+                
+                if (sigClientData) {
+                    if (sigTechData) {
+                        yPos = yPos - 5; // Réaligner
+                    }
+                    doc.setFontSize(9);
+                    doc.text('Signature Client :', 120, yPos - 5);
+                    if (!sigTechData) yPos += 5;
+                    try {
+                        doc.addImage(sigClientData, 'PNG', 120, yPos, sigWidth, sigHeight);
+                    } catch(e) {
+                        console.error('Erreur ajout signature client:', e);
+                    }
+                }
+            }
+            
+            // Générer le PDF en blob
+            const pdfBlob = doc.output('blob');
+            return pdfBlob;
+        }
+        
         // Fonction pour envoyer l'email au client via EmailJS
         async function envoyerEmailClient(bon) {
             try {
@@ -867,6 +1093,13 @@
                     console.warn("⚠️ ATTENTION: Template ID non configuré. Vérifiez votre configuration!");
                 }
                 
+                // Ajouter le lien PDF dans le message si disponible
+                let messageComplet = bon.message || '';
+                if (bon.pdf_url) {
+                    messageComplet += '\n\n📄 PDF du bon d\'intervention :\n';
+                    messageComplet += bon.pdf_url;
+                }
+                
                 const result = await emailjs.send(serviceID, templateID, {
                     email: emailDest,
                     subject: bon.subject || `Bon d'intervention ${bon.numero}`,
@@ -884,7 +1117,8 @@
                     main_oeuvre: bon.mainOeuvre || '',
                     deplacement: bon.deplacement || '',
                     photos: bon.photos || 'Aucune photo',
-                    message: bon.message || ''
+                    pdf_url: bon.pdf_url || '',
+                    message: messageComplet
                 });
                 
                 console.log('Email envoyé avec succès:', result);
