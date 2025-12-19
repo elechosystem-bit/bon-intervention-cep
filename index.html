@@ -730,20 +730,13 @@
         }
 
         async function envoyerClient() {
-            // Vérifier que EmailJS est chargé
-            if (typeof emailjs === 'undefined') {
-                alert("Erreur: EmailJS n'est pas chargé. Veuillez recharger la page.");
-                console.error("EmailJS n'est pas disponible");
-                return;
-            }
-            
             const email = (document.getElementById('clientEmail').value || '').trim();
             if (!email) {
                 alert("Veuillez renseigner l'email du client avant d'envoyer.");
                 return;
             }
             
-            console.log("Début de l'envoi d'email au client via EmailJS");
+            console.log("=== DÉBUT ENVOI EMAIL CLIENT VIA SMTP OVH ===");
             
             // Récupérer les informations du formulaire
             const numeroBon = document.getElementById('bonNumber').textContent;
@@ -866,57 +859,13 @@
                 };
                 
                 // Envoyer l'email avec PDF en pièce jointe via SMTP OVH (Nodemailer)
-                try {
-                    await envoyerEmailAvecPDFSMTP({
-                        email: email,
-                        subject: `Bon d'intervention ${numeroBon} - ${client}`,
-                        pdfBase64: pdfBase64,
-                        pdfFileName: `bon-intervention-${numeroBon}.pdf`,
-                        bonData: bonData
-                    });
-                } catch (smtpError) {
-                    // En cas d'erreur SMTP, fallback sur EmailJS (backup)
-                    console.warn('Erreur SMTP, fallback sur EmailJS:', smtpError);
-                    console.log('Tentative d\'envoi via EmailJS en backup...');
-                    
-                    // Stocker le PDF dans Firebase Storage pour le lien
-                    let pdfUrl = '';
-                    try {
-                        const bonIdSafe = numeroBon.replace(/[^a-zA-Z0-9-_]/g, '_');
-                        const fileName = `bon_${bonIdSafe}_${Date.now()}.pdf`;
-                        const filePath = `bons/${bonIdSafe}/${fileName}`;
-                        const ref = storage.ref(filePath);
-                        const metadata = {
-                            contentType: 'application/pdf',
-                            cacheControl: 'public, max-age=31536000',
-                        };
-                        const snap = await ref.put(pdfBlob, metadata);
-                        pdfUrl = await snap.ref.getDownloadURL();
-                    } catch (storageError) {
-                        console.error('Erreur stockage PDF:', storageError);
-                    }
-                    
-                    // Envoyer via EmailJS avec lien PDF
-                    await envoyerEmailClient({
-                        email: email,
-                        subject: `Bon d'intervention ${numeroBon} - ${client}`,
-                        numero: numeroBon,
-                        date: date,
-                        client: client,
-                        adresse: clientAddress,
-                        telephone: clientPhone,
-                        technicien: technicien,
-                        description: description,
-                        heure_arrivee: heureArrivee,
-                        heure_depart: heureDepart,
-                        produits: produitsHtml,
-                        mainOeuvre: `Durée : ${moDuree}`,
-                        deplacement: `Nombre de déplacements : ${deplNombre}`,
-                        photos: photosHtml,
-                        message: body,
-                        pdf_url: pdfUrl
-                    });
-                }
+                await envoyerEmailAvecPDFSMTP({
+                    email: email,
+                    subject: `Bon d'intervention ${numeroBon} - ${client}`,
+                    pdfBase64: pdfBase64,
+                    pdfFileName: `bon-intervention-${numeroBon}.pdf`,
+                    bonData: bonData
+                });
                 
             } catch (pdfError) {
                 console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
