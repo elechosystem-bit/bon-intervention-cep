@@ -1009,6 +1009,93 @@
                 yPos += descLines.length * 5 + 3;
             }
             
+            // Photos de l'intervention
+            if (photosBon && photosBon.length > 0) {
+                // Vérifier si on a besoin d'une nouvelle page
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('PHOTOS DE L\'INTERVENTION :', 20, yPos);
+                yPos += 8;
+                
+                const photoWidth = 80; // Largeur des photos en mm
+                const photoHeight = 60; // Hauteur des photos en mm
+                const photosPerRow = 2; // 2 photos par ligne
+                const spacing = 10; // Espacement entre les photos
+                
+                for (let i = 0; i < photosBon.length; i++) {
+                    const photoUrl = photosBon[i];
+                    if (!photoUrl) continue;
+                    
+                    // Vérifier si on a besoin d'une nouvelle page
+                    if (yPos + photoHeight > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Calculer la position X (2 photos par ligne)
+                    const col = i % photosPerRow;
+                    const xPos = 20 + col * (photoWidth + spacing);
+                    
+                    try {
+                        // Charger l'image depuis l'URL
+                        const img = await new Promise((resolve, reject) => {
+                            const imgElement = new Image();
+                            // Pour les URLs blob locales, pas besoin de crossOrigin
+                            // Pour les URLs Firebase Storage, utiliser crossOrigin
+                            if (photoUrl.startsWith('http') && !photoUrl.startsWith('blob:')) {
+                                imgElement.crossOrigin = 'anonymous';
+                            }
+                            imgElement.onload = () => resolve(imgElement);
+                            imgElement.onerror = (err) => {
+                                console.error('Erreur chargement photo:', photoUrl, err);
+                                reject(err);
+                            };
+                            imgElement.src = photoUrl;
+                        });
+                        
+                        // Convertir l'image en canvas puis en base64
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const imgData = canvas.toDataURL('image/jpeg', 0.8); // Qualité 80%
+                        
+                        // Ajouter l'image au PDF
+                        doc.addImage(imgData, 'JPEG', xPos, yPos, photoWidth, photoHeight);
+                        
+                        // Ajouter un numéro sous la photo
+                        doc.setFontSize(8);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(`Photo ${i + 1}`, xPos + photoWidth / 2, yPos + photoHeight + 4, { align: 'center' });
+                        
+                    } catch (photoError) {
+                        console.error('Erreur ajout photo au PDF:', photoError);
+                        // En cas d'erreur, afficher juste le numéro de la photo
+                        doc.setFontSize(9);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(`Photo ${i + 1} (non disponible)`, xPos, yPos + 10);
+                    }
+                    
+                    // Passer à la ligne suivante après 2 photos
+                    if ((i + 1) % photosPerRow === 0) {
+                        yPos += photoHeight + 12; // Hauteur photo + espacement
+                    }
+                }
+                
+                // Si le nombre de photos est impair, passer à la ligne suivante
+                if (photosBon.length % photosPerRow !== 0) {
+                    yPos += photoHeight + 12;
+                }
+                
+                yPos += 5; // Espacement avant la section suivante
+            }
+            
             // Matériel posé
             if (produits.length > 0) {
                 doc.setFont(undefined, 'bold');
