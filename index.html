@@ -176,7 +176,6 @@
                     <div class="input-group">
                         <label>Email</label>
                         <input type="email" id="clientEmail" placeholder="email@exemple.fr">
-                        <button type="button" class="btn-email" onclick="envoyerClient()">Envoyer au client</button>
                     </div>
                     <div class="input-group"><label>Adresse</label><input type="text" id="clientAddress" placeholder="Adresse complète"></div>
                 </div>
@@ -208,9 +207,9 @@
                     <div class="input-group" style="grid-column: 1 / -1;">
                         <label>Description</label>
                         <textarea id="description" rows="2" placeholder="Travaux effectués..."></textarea>
-                        <!-- iOS Safari : le clic doit se faire directement sur l'input (via label for) -->
+                        <!-- Permet de prendre une photo OU choisir depuis la galerie -->
                         <label for="photoInput" class="btn-photo">📷 Ajouter une photo</label>
-                        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoSelect(event)">
+                        <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event)">
                         <div id="photosPreview" class="photos-preview"></div>
                     </div>
                 </div>
@@ -458,7 +457,7 @@
 
             <div class="actions">
                 <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimer</button>
-                <button class="btn btn-primary" onclick="saveBonTech()">💾 Enregistrer le bon</button>
+                <button class="btn btn-primary" onclick="saveBonTech()">💾 Enregistrer le bon et envoyer au client</button>
             </div>
             <div id="saveMessage" class="save-message">Bon enregistré.</div>
         </div>
@@ -1014,13 +1013,33 @@
                 });
 
                 await db.collection('bons').add(bon);
+                
+                // Envoyer l'email au client automatiquement après l'enregistrement
+                const clientEmail = (document.getElementById('clientEmail').value || '').trim();
+                if (clientEmail) {
+                    try {
+                        await envoyerClient();
+                    } catch (emailError) {
+                        console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
+                        // Ne pas bloquer si l'email échoue, le bon est déjà enregistré
+                    }
+                }
+                
                 const msg = document.getElementById('saveMessage');
                 if (msg) {
-                    msg.textContent = "Bon enregistré et envoyé à l'administratif.";
+                    if (clientEmail) {
+                        msg.textContent = "Bon enregistré et email envoyé au client.";
+                    } else {
+                        msg.textContent = "Bon enregistré (email non envoyé - adresse manquante).";
+                    }
                     msg.classList.add('show');
                     setTimeout(() => { msg.classList.remove('show'); }, 4000);
                 } else {
-                    alert("Bon enregistré pour l'admin (Firestore).");
+                    if (clientEmail) {
+                        alert("Bon enregistré et email envoyé au client.");
+                    } else {
+                        alert("Bon enregistré (email non envoyé - adresse manquante).");
+                    }
                 }
             } catch (e) {
                 console.error('Erreur Firestore saveBonTech', e);
