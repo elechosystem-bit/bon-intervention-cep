@@ -1010,7 +1010,14 @@
             }
             
             // Photos de l'intervention
+            console.log('=== VÉRIFICATION PHOTOS ===');
+            console.log('photosBon existe?', typeof photosBon !== 'undefined');
+            console.log('photosBon:', photosBon);
+            console.log('Nombre de photos:', photosBon ? photosBon.length : 0);
+            
             if (photosBon && photosBon.length > 0) {
+                console.log(`Ajout de ${photosBon.length} photo(s) au PDF...`);
+                
                 // Vérifier si on a besoin d'une nouvelle page
                 if (yPos > 200) {
                     doc.addPage();
@@ -1042,29 +1049,63 @@
                     const xPos = 20 + col * (photoWidth + spacing);
                     
                     try {
-                        // Charger l'image depuis l'URL
-                        const img = await new Promise((resolve, reject) => {
-                            const imgElement = new Image();
-                            // Pour les URLs blob locales, pas besoin de crossOrigin
-                            // Pour les URLs Firebase Storage, utiliser crossOrigin
-                            if (photoUrl.startsWith('http') && !photoUrl.startsWith('blob:')) {
-                                imgElement.crossOrigin = 'anonymous';
-                            }
-                            imgElement.onload = () => resolve(imgElement);
-                            imgElement.onerror = (err) => {
-                                console.error('Erreur chargement photo:', photoUrl, err);
-                                reject(err);
-                            };
-                            imgElement.src = photoUrl;
-                        });
+                        console.log(`Chargement photo ${i + 1}:`, photoUrl);
                         
-                        // Convertir l'image en canvas puis en base64
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        const imgData = canvas.toDataURL('image/jpeg', 0.8); // Qualité 80%
+                        let imgData;
+                        
+                        // Si c'est une URL blob locale, utiliser directement
+                        if (photoUrl.startsWith('blob:')) {
+                            const img = await new Promise((resolve, reject) => {
+                                const imgElement = new Image();
+                                imgElement.onload = () => resolve(imgElement);
+                                imgElement.onerror = reject;
+                                imgElement.src = photoUrl;
+                            });
+                            
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            imgData = canvas.toDataURL('image/jpeg', 0.8);
+                        } else {
+                            // Pour les URLs Firebase Storage, utiliser fetch
+                            // Essayer d'abord sans mode cors (pour les URLs publiques)
+                            let response;
+                            try {
+                                response = await fetch(photoUrl);
+                            } catch (fetchError) {
+                                // Si ça échoue, essayer avec mode cors
+                                console.log('Tentative avec mode cors...');
+                                response = await fetch(photoUrl, { mode: 'cors' });
+                            }
+                            
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                            }
+                            const blob = await response.blob();
+                            
+                            // Convertir le blob en image
+                            const img = await new Promise((resolve, reject) => {
+                                const imgElement = new Image();
+                                imgElement.onload = () => resolve(imgElement);
+                                imgElement.onerror = reject;
+                                imgElement.src = URL.createObjectURL(blob);
+                            });
+                            
+                            // Convertir l'image en canvas puis en base64
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            imgData = canvas.toDataURL('image/jpeg', 0.8);
+                            
+                            // Nettoyer l'URL blob temporaire
+                            URL.revokeObjectURL(img.src);
+                        }
+                        
+                        console.log(`Photo ${i + 1} chargée avec succès, taille base64:`, imgData.length);
                         
                         // Ajouter l'image au PDF
                         doc.addImage(imgData, 'JPEG', xPos, yPos, photoWidth, photoHeight);
@@ -1075,11 +1116,17 @@
                         doc.text(`Photo ${i + 1}`, xPos + photoWidth / 2, yPos + photoHeight + 4, { align: 'center' });
                         
                     } catch (photoError) {
-                        console.error('Erreur ajout photo au PDF:', photoError);
-                        // En cas d'erreur, afficher juste le numéro de la photo
+                        console.error(`❌ Erreur ajout photo ${i + 1} au PDF:`, photoError);
+                        console.error('URL de la photo:', photoUrl);
+                        console.error('Type d\'erreur:', photoError.name);
+                        console.error('Message:', photoError.message);
+                        
+                        // En cas d'erreur, afficher un message et continuer
                         doc.setFontSize(9);
                         doc.setFont(undefined, 'normal');
-                        doc.text(`Photo ${i + 1} (non disponible)`, xPos, yPos + 10);
+                        doc.text(`Photo ${i + 1} (erreur de chargement)`, xPos, yPos + 10);
+                        doc.setFontSize(7);
+                        doc.text('Voir console pour détails', xPos, yPos + 16);
                     }
                     
                     // Passer à la ligne suivante après 2 photos
