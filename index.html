@@ -906,7 +906,6 @@
             const heureDepart = document.getElementById('heureDepart').value || '';
             const description = document.getElementById('description').value || '';
             const totalTTC = document.getElementById('totalTTC').textContent || '0.00€';
-            const statut = 'En attente';
             
             // Récupérer les produits
             const produits = [];
@@ -1137,12 +1136,6 @@
             doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
             doc.text('TOTAL TTC : ' + totalTTC, 20, yPos);
-            yPos += 8;
-            
-            // Statut
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            doc.text('Statut : ' + statut, 20, yPos);
             yPos += 10;
             
             // Signatures
