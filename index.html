@@ -503,14 +503,19 @@
         let photosBon = [];
 
         // ============================================
-        // CONFIGURATION EMAILJS
+        // CONFIGURATION EMAILJS (pour comptabilité)
         // ============================================
         const EMAILJS_CONFIG = {
             publicKey: "GXDaMfa8u-ZzmkvNn",  // Public Key (déjà dans emailjs.init)
             serviceID: "service_b6ibqvh",     // Service ID depuis le dashboard EmailJS
-            templateID: "template_qsnhl5e",  // Template ID depuis le dashboard EmailJS (peut être différent pour le client)
-            // Note: Pour l'envoi au client, vous pouvez créer un template spécifique dans EmailJS
+            templateID: "template_qsnhl5e",  // Template ID depuis le dashboard EmailJS
         };
+        // ============================================
+        
+        // ============================================
+        // CONFIGURATION SMTP OVH (pour envoi client avec PDF)
+        // ============================================
+        const SMTP_API_URL = 'https://bon-intervention-cep.vercel.app/api/send-email';
         // ============================================
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -826,58 +831,111 @@
             const heureArrivee = document.getElementById('heureArrivee').value || '';
             const heureDepart = document.getElementById('heureDepart').value || '';
             
-            // Générer le PDF et le stocker dans Firebase Storage
-            let pdfUrl = '';
+            // Générer le PDF et l'envoyer en pièce jointe via Resend
             try {
-                console.log('Génération du PDF...');
+                console.log('=== DÉBUT GÉNÉRATION PDF ===');
+                console.log('Vérification jsPDF...', typeof window.jspdf !== 'undefined');
+                
                 const pdfBlob = await genererPDFBon();
+                console.log('PDF généré, taille:', pdfBlob.size, 'bytes');
                 
-                // Stocker le PDF dans Firebase Storage
-                const bonIdSafe = numeroBon.replace(/[^a-zA-Z0-9-_]/g, '_');
-                const fileName = `bon_${bonIdSafe}_${Date.now()}.pdf`;
-                const filePath = `bons/${bonIdSafe}/${fileName}`;
+                // Convertir le PDF en base64 pour l'envoyer via l'API
+                const pdfBase64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1]; // Enlever le préfixe data:application/pdf;base64,
+                        resolve(base64String);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(pdfBlob);
+                });
                 
-                const ref = storage.ref(filePath);
-                const metadata = {
-                    contentType: 'application/pdf',
-                    cacheControl: 'public, max-age=31536000',
+                console.log('PDF converti en base64, longueur:', pdfBase64.length);
+                
+                // Préparer les données du bon pour l'email
+                const bonData = {
+                    numero: numeroBon,
+                    date: date,
+                    client: client,
+                    adresse: clientAddress,
+                    telephone: clientPhone,
+                    technicien: technicien,
+                    description: description,
+                    heure_arrivee: heureArrivee,
+                    heure_depart: heureDepart
                 };
                 
-                console.log('Upload du PDF vers Firebase Storage...');
-                const snap = await ref.put(pdfBlob, metadata);
-                pdfUrl = await snap.ref.getDownloadURL();
-                console.log('PDF uploadé, URL:', pdfUrl);
+                // Envoyer l'email avec PDF en pièce jointe via SMTP OVH (Nodemailer)
+                try {
+                    await envoyerEmailAvecPDFSMTP({
+                        email: email,
+                        subject: `Bon d'intervention ${numeroBon} - ${client}`,
+                        pdfBase64: pdfBase64,
+                        pdfFileName: `bon-intervention-${numeroBon}.pdf`,
+                        bonData: bonData
+                    });
+                } catch (smtpError) {
+                    // En cas d'erreur SMTP, fallback sur EmailJS (backup)
+                    console.warn('Erreur SMTP, fallback sur EmailJS:', smtpError);
+                    console.log('Tentative d\'envoi via EmailJS en backup...');
+                    
+                    // Stocker le PDF dans Firebase Storage pour le lien
+                    let pdfUrl = '';
+                    try {
+                        const bonIdSafe = numeroBon.replace(/[^a-zA-Z0-9-_]/g, '_');
+                        const fileName = `bon_${bonIdSafe}_${Date.now()}.pdf`;
+                        const filePath = `bons/${bonIdSafe}/${fileName}`;
+                        const ref = storage.ref(filePath);
+                        const metadata = {
+                            contentType: 'application/pdf',
+                            cacheControl: 'public, max-age=31536000',
+                        };
+                        const snap = await ref.put(pdfBlob, metadata);
+                        pdfUrl = await snap.ref.getDownloadURL();
+                    } catch (storageError) {
+                        console.error('Erreur stockage PDF:', storageError);
+                    }
+                    
+                    // Envoyer via EmailJS avec lien PDF
+                    await envoyerEmailClient({
+                        email: email,
+                        subject: `Bon d'intervention ${numeroBon} - ${client}`,
+                        numero: numeroBon,
+                        date: date,
+                        client: client,
+                        adresse: clientAddress,
+                        telephone: clientPhone,
+                        technicien: technicien,
+                        description: description,
+                        heure_arrivee: heureArrivee,
+                        heure_depart: heureDepart,
+                        produits: produitsHtml,
+                        mainOeuvre: `Durée : ${moDuree}`,
+                        deplacement: `Nombre de déplacements : ${deplNombre}`,
+                        photos: photosHtml,
+                        message: body,
+                        pdf_url: pdfUrl
+                    });
+                }
+                
             } catch (pdfError) {
-                console.error('Erreur lors de la génération/upload du PDF:', pdfError);
-                // Continuer même si le PDF échoue
+                console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
+                console.error('Détails:', pdfError.message, pdfError.stack);
+                alert("⚠️ Erreur lors de l'envoi de l'email avec PDF.\n\nErreur: " + (pdfError.message || pdfError));
+                throw pdfError; // Arrêter l'envoi si le PDF échoue
             }
-            
-            // Envoyer l'email automatiquement via EmailJS
-            await envoyerEmailClient({
-                email: email,
-                subject: `Bon d'intervention ${numeroBon} - ${client}`,
-                numero: numeroBon,
-                date: date,
-                client: client,
-                adresse: clientAddress,
-                telephone: clientPhone,
-                technicien: technicien,
-                description: description,
-                heure_arrivee: heureArrivee,
-                heure_depart: heureDepart,
-                produits: produitsHtml,
-                mainOeuvre: `Durée : ${moDuree}`,
-                deplacement: `Nombre de déplacements : ${deplNombre}`,
-                photos: photosHtml,
-                message: body,
-                pdf_url: pdfUrl
-            });
         }
 
         // Fonction pour générer le PDF du bon d'intervention
         async function genererPDFBon() {
+            // Vérifier que jsPDF est chargé
+            if (typeof window.jspdf === 'undefined') {
+                throw new Error("jsPDF n'est pas chargé. Veuillez recharger la page.");
+            }
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            console.log('jsPDF initialisé, début génération PDF...');
             
             // Informations CEP
             const infoCEP = {
@@ -1071,7 +1129,65 @@
             return pdfBlob;
         }
         
-        // Fonction pour envoyer l'email au client via EmailJS
+        // Fonction pour envoyer l'email au client avec PDF en pièce jointe via SMTP OVH (Nodemailer)
+        async function envoyerEmailAvecPDFSMTP(data) {
+            try {
+                console.log('=== ENVOI EMAIL AVEC PDF VIA SMTP OVH ===');
+                console.log('Email destination:', data.email);
+                console.log('URL API:', SMTP_API_URL);
+                
+                if (!SMTP_API_URL || SMTP_API_URL.includes('votre-projet')) {
+                    throw new Error('SMTP_API_URL non configurée. Veuillez configurer l\'URL de votre API Vercel dans index.html (ligne ~520)');
+                }
+                
+                const response = await fetch(SMTP_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: data.email,
+                        subject: data.subject,
+                        pdfBase64: data.pdfBase64,
+                        pdfFileName: data.pdfFileName,
+                        bonData: data.bonData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Erreur lors de l\'envoi de l\'email');
+                }
+                
+                console.log('Email envoyé avec succès via SMTP OVH:', result);
+                alert("✓ Email envoyé au client avec PDF en pièce jointe !");
+                return true;
+                
+            } catch (error) {
+                console.error("Erreur envoi email SMTP OVH:", error);
+                console.error("Détails de l'erreur:", {
+                    message: error.message,
+                    stack: error.stack
+                });
+                
+                let errorMessage = "❌ Erreur lors de l'envoi de l'email.\n\n";
+                if (error.message.includes('SMTP_API_URL')) {
+                    errorMessage += "⚠️ CONFIGURATION REQUISE:\n\n";
+                    errorMessage += "1. Déployez la fonction serverless sur Vercel\n";
+                    errorMessage += "2. Configurez OVH_SMTP_PASSWORD dans Vercel\n";
+                    errorMessage += "3. Mettez à jour SMTP_API_URL dans index.html\n";
+                    errorMessage += "4. Voir INSTRUCTIONS_SMTP_OVH.md pour plus de détails";
+                } else {
+                    errorMessage += "Détails: " + (error.message || error);
+                }
+                
+                alert(errorMessage);
+                throw error;
+            }
+        }
+        
+        // Fonction pour envoyer l'email au client via EmailJS (ancienne méthode, gardée pour compatibilité)
         async function envoyerEmailClient(bon) {
             try {
                 const emailDest = bon.email;
@@ -1095,9 +1211,16 @@
                 
                 // Ajouter le lien PDF dans le message si disponible
                 let messageComplet = bon.message || '';
-                if (bon.pdf_url) {
-                    messageComplet += '\n\n📄 PDF du bon d\'intervention :\n';
-                    messageComplet += bon.pdf_url;
+                if (bon.pdf_url && bon.pdf_url.trim() !== '') {
+                    messageComplet += '\n\n═══════════════════════════════════════\n';
+                    messageComplet += '📄 PDF DU BON D\'INTERVENTION\n';
+                    messageComplet += '═══════════════════════════════════════\n';
+                    messageComplet += 'Téléchargez le PDF complet :\n';
+                    messageComplet += bon.pdf_url + '\n';
+                    messageComplet += '═══════════════════════════════════════\n';
+                    console.log('Lien PDF ajouté au message:', bon.pdf_url);
+                } else {
+                    console.warn('⚠️ Pas de lien PDF disponible pour l\'email');
                 }
                 
                 const result = await emailjs.send(serviceID, templateID, {

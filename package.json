@@ -1,0 +1,13 @@
+{
+  "name": "bon-intervention-cep",
+  "version": "1.0.0",
+  "description": "Système de gestion des bons d'intervention CEP",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.7"
+  },
+  "devDependencies": {}
+}
+
