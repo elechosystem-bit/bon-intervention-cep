@@ -1069,40 +1069,69 @@
                             ctx.drawImage(img, 0, 0);
                             imgData = canvas.toDataURL('image/jpeg', 0.8);
                         } else {
-                            // Pour les URLs Firebase Storage, utiliser fetch
-                            // Essayer d'abord sans mode cors (pour les URLs publiques)
-                            let response;
+                            // Pour les URLs Firebase Storage, utiliser un proxy CORS ou charger directement
+                            // Méthode 1: Essayer avec un élément Image et crossOrigin
                             try {
-                                response = await fetch(photoUrl);
-                            } catch (fetchError) {
-                                // Si ça échoue, essayer avec mode cors
-                                console.log('Tentative avec mode cors...');
-                                response = await fetch(photoUrl, { mode: 'cors' });
+                                const img = await new Promise((resolve, reject) => {
+                                    const imgElement = new Image();
+                                    imgElement.crossOrigin = 'anonymous';
+                                    
+                                    // Timeout pour éviter d'attendre indéfiniment
+                                    const timeout = setTimeout(() => {
+                                        reject(new Error('Timeout chargement image'));
+                                    }, 10000);
+                                    
+                                    imgElement.onload = () => {
+                                        clearTimeout(timeout);
+                                        resolve(imgElement);
+                                    };
+                                    imgElement.onerror = (err) => {
+                                        clearTimeout(timeout);
+                                        reject(new Error('Erreur chargement image: ' + err));
+                                    };
+                                    
+                                    imgElement.src = photoUrl;
+                                });
+                                
+                                // Convertir l'image en canvas puis en base64
+                                const canvas = document.createElement('canvas');
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0);
+                                imgData = canvas.toDataURL('image/jpeg', 0.8);
+                                
+                            } catch (imgError) {
+                                console.warn('Méthode Image échouée, tentative avec proxy CORS...', imgError);
+                                
+                                // Méthode 2: Utiliser un proxy CORS public
+                                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(photoUrl)}`;
+                                
+                                const response = await fetch(proxyUrl);
+                                if (!response.ok) {
+                                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                }
+                                const blob = await response.blob();
+                                
+                                // Convertir le blob en image
+                                const img = await new Promise((resolve, reject) => {
+                                    const imgElement = new Image();
+                                    imgElement.onload = () => resolve(imgElement);
+                                    imgElement.onerror = reject;
+                                    imgElement.src = URL.createObjectURL(blob);
+                                });
+                                
+                                // Convertir l'image en canvas puis en base64
+                                const canvas = document.createElement('canvas');
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0);
+                                imgData = canvas.toDataURL('image/jpeg', 0.8);
+                                
+                                // Nettoyer l'URL blob temporaire
+                                URL.revokeObjectURL(img.src);
                             }
-                            
-                            if (!response.ok) {
-                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                            }
-                            const blob = await response.blob();
-                            
-                            // Convertir le blob en image
-                            const img = await new Promise((resolve, reject) => {
-                                const imgElement = new Image();
-                                imgElement.onload = () => resolve(imgElement);
-                                imgElement.onerror = reject;
-                                imgElement.src = URL.createObjectURL(blob);
-                            });
-                            
-                            // Convertir l'image en canvas puis en base64
-                            const canvas = document.createElement('canvas');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                            imgData = canvas.toDataURL('image/jpeg', 0.8);
-                            
-                            // Nettoyer l'URL blob temporaire
-                            URL.revokeObjectURL(img.src);
                         }
                         
                         console.log(`Photo ${i + 1} chargée avec succès, taille base64:`, imgData.length);
