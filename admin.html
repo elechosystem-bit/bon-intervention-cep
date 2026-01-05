@@ -447,10 +447,18 @@
             <!-- Historique des bons -->
             <div class="section">
                 <h3 class="section-title">Historique des bons enregistrés</h3>
+                <div style="margin-bottom:10px;">
+                    <button id="btnSupprimerSelection" onclick="supprimerBonsSelectionnes()" style="padding:8px 16px; background:#e53e3e; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; display:none;" disabled>
+                        Supprimer la sélection (<span id="nbSelectionnes">0</span>)
+                    </button>
+                </div>
                 <div style="overflow-x:auto;">
                     <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
                         <thead>
                             <tr style="background:#edf2f7;">
+                                <th style="text-align:center; padding:8px; border-bottom:1px solid var(--border); width:40px;">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" style="cursor:pointer;">
+                                </th>
                                 <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Date</th>
                                 <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">N° Bon</th>
                                 <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Client</th>
@@ -1009,6 +1017,7 @@
 
                 bons.forEach(bon => {
                 const tr = document.createElement('tr');
+                tr.setAttribute('data-bon-id', bon.id);
                 const statut = bon.statut || 'en_attente';
                 const estValide = statut === 'validé' || statut === 'valide';
                 
@@ -1023,6 +1032,9 @@
                     : '<button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon(\'' + bon.id + '\', \'' + statut + '\')">Supprimer</button>';
                 
                 tr.innerHTML = `
+                    <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">
+                        <input type="checkbox" class="bon-checkbox" data-bon-id="${bon.id}" data-statut="${statut}" onchange="updateSelectionCount()" style="cursor:pointer;">
+                    </td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.date}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:'Space Mono', monospace;">${bon.numero || ''}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.client}</td>
@@ -1036,9 +1048,12 @@
                 `;
                 tbody.appendChild(tr);
                 });
+                
+                // Réinitialiser la sélection après le chargement
+                updateSelectionCount();
             } catch (e) {
                 console.error(e);
-                tbody.innerHTML = '<tr><td colspan="6" style="padding:8px; text-align:center; color:var(--text-light);">Erreur de chargement des bons.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:8px; text-align:center; color:var(--text-light);">Erreur de chargement des bons.</td></tr>';
             }
         }
 
@@ -1434,6 +1449,103 @@
                 console.error(e);
                 alert("Erreur lors de la suppression du bon.");
             }
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.bon-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateSelectionCount();
+        }
+
+        function updateSelectionCount() {
+            const checkboxes = document.querySelectorAll('.bon-checkbox:checked');
+            const count = checkboxes.length;
+            const btnSupprimer = document.getElementById('btnSupprimerSelection');
+            const nbSelectionnes = document.getElementById('nbSelectionnes');
+            
+            if (nbSelectionnes) {
+                nbSelectionnes.textContent = count;
+            }
+            
+            if (btnSupprimer) {
+                if (count > 0) {
+                    btnSupprimer.style.display = 'inline-block';
+                    btnSupprimer.disabled = false;
+                } else {
+                    btnSupprimer.style.display = 'none';
+                    btnSupprimer.disabled = true;
+                }
+            }
+            
+            // Mettre à jour la case "Tout sélectionner"
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const allCheckboxes = document.querySelectorAll('.bon-checkbox');
+            if (selectAllCheckbox && allCheckboxes.length > 0) {
+                selectAllCheckbox.checked = count === allCheckboxes.length && count > 0;
+            }
+        }
+
+        async function supprimerBonsSelectionnes() {
+            const checkboxes = document.querySelectorAll('.bon-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert("Aucun bon sélectionné.");
+                return;
+            }
+            
+            // Récupérer les IDs et statuts des bons sélectionnés
+            const bonsASupprimer = [];
+            let aDesBonsValides = false;
+            
+            checkboxes.forEach(checkbox => {
+                const id = checkbox.getAttribute('data-bon-id');
+                const statut = checkbox.getAttribute('data-statut');
+                const estValide = statut === 'validé' || statut === 'valide';
+                if (estValide) aDesBonsValides = true;
+                bonsASupprimer.push({ id, statut, estValide });
+            });
+            
+            // Si des bons validés sont sélectionnés, demander le code admin
+            if (aDesBonsValides) {
+                const code = prompt(`${bonsASupprimer.length} bon(s) sélectionné(s), dont certains envoyés à la compta.\nEntrez le code admin pour supprimer :`);
+                if (code !== 'CEP2024') {
+                    alert("Code incorrect. Suppression annulée.");
+                    return;
+                }
+            }
+            
+            // Confirmation de suppression
+            const message = `Êtes-vous sûr de vouloir supprimer ${bonsASupprimer.length} bon(s) ?\n\nCette action est irréversible.`;
+            if (!confirm(message)) {
+                return;
+            }
+            
+            // Supprimer les bons un par un
+            let succes = 0;
+            let erreurs = 0;
+            
+            for (const bon of bonsASupprimer) {
+                try {
+                    await db.collection('bons').doc(bon.id).delete();
+                    if (currentBonId === bon.id) currentBonId = null;
+                    succes++;
+                } catch (e) {
+                    console.error(`Erreur suppression bon ${bon.id}:`, e);
+                    erreurs++;
+                }
+            }
+            
+            // Afficher le résultat
+            if (erreurs === 0) {
+                alert(`${succes} bon(s) supprimé(s) avec succès.`);
+            } else {
+                alert(`${succes} bon(s) supprimé(s), ${erreurs} erreur(s).`);
+            }
+            
+            // Recharger l'historique
+            await renderHistorique();
         }
 
         function openPhotoLightbox(url) {
