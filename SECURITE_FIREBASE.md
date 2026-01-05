@@ -73,3 +73,4 @@ allow write: if request.auth != null;
 3. ⚠️ Implémenter Firebase Authentication (recommandé)
 4. ⚠️ Restreindre les domaines autorisés (recommandé)
 
+

@@ -134,6 +134,8 @@
     </script>
     <!-- jsPDF pour la génération de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SheetJS pour lire et écrire les fichiers Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -474,6 +476,26 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Gestion des clients -->
+            <div class="section">
+                <h3 class="section-title">Gestion des clients</h3>
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="exporterClientsExcel()" style="padding: 10px 20px; font-size: 1rem;">
+                        📥 Exporter la liste des clients vers Excel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('excelFileInput').click()" style="padding: 10px 20px; font-size: 1rem;">
+                        📤 Importer des clients depuis Excel
+                    </button>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display: none;" onchange="importerClientsExcel(event)">
+                </div>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 10px;">
+                    <strong>Export :</strong> Exportez tous les clients enregistrés dans un fichier Excel pour sauvegarde ou transfert.
+                </p>
+                <p style="color: var(--text-light); font-size: 0.9rem;">
+                    <strong>Import :</strong> Importez des clients depuis un fichier Excel. Format attendu : Colonnes "Nom", "Email", "Téléphone", "Adresse" (première ligne = en-têtes). Les clients avec le même email seront mis à jour.
+                </p>
             </div>
 
         <div class="footer">Compagnie d'Électricité Parisienne — Bon d'intervention (Admin)</div>
@@ -2022,6 +2044,189 @@
             } catch (e) {
                 console.error('Erreur suppression photo', e);
                 alert("Erreur lors de la suppression de la photo.");
+            }
+        }
+
+        // Exporter la liste des clients vers Excel (Admin uniquement)
+        async function exporterClientsExcel() {
+            try {
+                // Charger tous les clients depuis Firestore (sans orderBy pour éviter les problèmes d'index)
+                const snapshot = await db.collection('clients').get();
+                const clients = [];
+                snapshot.forEach(doc => {
+                    clients.push({ id: doc.id, ...doc.data() });
+                });
+                // Trier localement par nom
+                clients.sort((a, b) => {
+                    const nomA = (a.nom || '').toLowerCase();
+                    const nomB = (b.nom || '').toLowerCase();
+                    return nomA.localeCompare(nomB);
+                });
+                
+                if (clients.length === 0) {
+                    alert('Aucun client à exporter.');
+                    return;
+                }
+
+                // Préparer les données pour Excel
+                const data = clients.map(client => ({
+                    'Nom / Société': client.nom || '',
+                    'Email': client.email || '',
+                    'Téléphone': client.telephone || '',
+                    'Adresse': client.adresse || ''
+                }));
+
+                // Créer un nouveau workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Créer une feuille de calcul à partir des données
+                const ws = XLSX.utils.json_to_sheet(data);
+                
+                // Ajuster la largeur des colonnes
+                const colWidths = [
+                    { wch: 30 }, // Nom
+                    { wch: 30 }, // Email
+                    { wch: 20 }, // Téléphone
+                    { wch: 40 }  // Adresse
+                ];
+                ws['!cols'] = colWidths;
+                
+                // Ajouter la feuille au workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Clients');
+                
+                // Générer le nom du fichier avec la date
+                const date = new Date();
+                const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+                const fileName = `clients_${dateStr}.xlsx`;
+                
+                // Télécharger le fichier
+                XLSX.writeFile(wb, fileName);
+                
+                alert(`✅ ${clients.length} client(s) exporté(s) avec succès !\n\nFichier : ${fileName}`);
+            } catch (error) {
+                console.error('Erreur export Excel:', error);
+                alert('Erreur lors de l\'export : ' + error.message);
+            }
+        }
+
+        // Importer des clients depuis un fichier Excel (Admin uniquement)
+        async function importerClientsExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Vérifier le type de fichier
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                alert('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)');
+                return;
+            }
+
+            try {
+                // Lire le fichier
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Prendre la première feuille
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convertir en JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        if (jsonData.length === 0) {
+                            alert('Le fichier Excel est vide ou ne contient pas de données');
+                            return;
+                        }
+
+                        console.log('Données Excel lues:', jsonData);
+
+                        // Demander confirmation
+                        const confirmMsg = `Vous allez importer ${jsonData.length} client(s).\n\n` +
+                            `Les clients avec le même email seront mis à jour.\n\n` +
+                            `Continuer ?`;
+                        
+                        if (!confirm(confirmMsg)) {
+                            event.target.value = '';
+                            return;
+                        }
+
+                        // Importer les clients
+                        let succes = 0;
+                        let erreurs = 0;
+                        let misAJour = 0;
+                        let crees = 0;
+
+                        for (const row of jsonData) {
+                            try {
+                                // Normaliser les noms de colonnes (insensible à la casse)
+                                const nom = (row.Nom || row.nom || row.NOM || row['Nom / Société'] || row['Nom/Société'] || '').trim();
+                                const email = (row.Email || row.email || row.EMAIL || row['E-mail'] || row['E-Mail'] || '').trim();
+                                const telephone = (row.Téléphone || row.telephone || row.TELEPHONE || row.Tel || row.tel || row['Téléphone'] || '').trim();
+                                const adresse = (row.Adresse || row.adresse || row.ADRESSE || row['Adresse complète'] || row['Adresse'] || '').trim();
+
+                                if (!nom || !email) {
+                                    console.warn('Ligne ignorée (nom ou email manquant):', row);
+                                    erreurs++;
+                                    continue;
+                                }
+
+                                // Vérifier si le client existe déjà (par email)
+                                const existing = await db.collection('clients').where('email', '==', email).get();
+                                
+                                if (!existing.empty) {
+                                    // Mettre à jour
+                                    const clientId = existing.docs[0].id;
+                                    await db.collection('clients').doc(clientId).update({
+                                        nom: nom,
+                                        telephone: telephone,
+                                        adresse: adresse,
+                                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                    misAJour++;
+                                } else {
+                                    // Créer
+                                    await db.collection('clients').add({
+                                        nom: nom,
+                                        email: email,
+                                        telephone: telephone,
+                                        adresse: adresse,
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                    crees++;
+                                }
+                                succes++;
+                            } catch (error) {
+                                console.error('Erreur import ligne:', row, error);
+                                erreurs++;
+                            }
+                        }
+
+                        // Afficher le résultat
+                        let message = `✅ Import terminé !\n\n`;
+                        message += `✓ ${succes} client(s) traité(s)\n`;
+                        message += `  - ${crees} créé(s)\n`;
+                        message += `  - ${misAJour} mis à jour\n`;
+                        if (erreurs > 0) {
+                            message += `\n⚠️ ${erreurs} erreur(s)`;
+                        }
+                        alert(message);
+
+                        // Réinitialiser l'input
+                        event.target.value = '';
+                    } catch (error) {
+                        console.error('Erreur lecture Excel:', error);
+                        alert('Erreur lors de la lecture du fichier Excel: ' + error.message);
+                        event.target.value = '';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error('Erreur import Excel:', error);
+                alert('Erreur lors de l\'import: ' + error.message);
+                event.target.value = '';
             }
         }
     </script>

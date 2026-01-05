@@ -6,12 +6,12 @@ service cloud.firestore {
       // Lecture : autorisée pour tous (nécessaire pour l'affichage)
       allow read: if true;
       
-      // Écriture : seulement pour les utilisateurs authentifiés
+      // Écriture : autorisée pour tous (temporaire)
       // Pour l'instant, on permet l'écriture car l'app n'utilise pas Firebase Auth
       // TODO: Implémenter Firebase Authentication pour sécuriser l'écriture
       allow create: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
       allow update: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
-      allow delete: if request.auth != null; // Suppression seulement pour utilisateurs authentifiés
+      allow delete: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
     }
     
     // Collection des clients
