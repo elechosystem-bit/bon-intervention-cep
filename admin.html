@@ -132,6 +132,8 @@
             emailjs.init("GXDaMfa8u-ZzmkvNn");
         })();
     </script>
+    <!-- jsPDF pour la génération de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -931,6 +933,11 @@
                     };
                     
                     // Envoyer l'email avec PDF en pièce jointe via SMTP OVH (Nodemailer)
+                    console.log('=== PRÉPARATION ENVOI EMAIL COMPTABILITÉ ===');
+                    console.log('Email destinataire:', "a.mathieu@elechosystem.com");
+                    console.log('Sujet:', `Bon d'intervention ${numeroBon} - ${client}`);
+                    console.log('Taille PDF base64:', pdfBase64.length, 'caractères');
+                    
                     await envoyerEmailAvecPDFSMTP({
                         email: "a.mathieu@elechosystem.com",
                         subject: `Bon d'intervention ${numeroBon} - ${client}`,
@@ -938,6 +945,8 @@
                         pdfFileName: `bon-intervention-${numeroBon}.pdf`,
                         bonData: bonData
                     });
+                    
+                    console.log('✅ Email envoyé avec succès à la comptabilité');
                     
                 } catch (pdfError) {
                     console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
@@ -1722,12 +1731,17 @@
                 
                 const result = await response.json();
                 
+                console.log('Réponse API Vercel:', result);
+                console.log('Status HTTP:', response.status);
+                
                 if (!response.ok) {
-                    throw new Error(result.error || 'Erreur lors de l\'envoi de l\'email');
+                    console.error('❌ Erreur API:', result);
+                    throw new Error(result.error || `Erreur HTTP ${response.status}: ${result.message || 'Erreur lors de l\'envoi de l\'email'}`);
                 }
                 
-                console.log('Email envoyé avec succès via SMTP OVH:', result);
-                alert("✓ Email envoyé à la comptabilité avec PDF en pièce jointe !");
+                console.log('✅ Email envoyé avec succès via SMTP OVH:', result);
+                console.log('Message ID:', result.messageId);
+                alert("✓ Email envoyé à la comptabilité avec PDF en pièce jointe !\n\nMessage ID: " + (result.messageId || 'N/A'));
                 return true;
                 
             } catch (error) {
