@@ -116,7 +116,7 @@
         .btn-secondary:hover { background: var(--primary); color: white; }
         .btn-admin-toggle { padding: 4px 10px; font-size: 0.7rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.7); background: rgba(0,0,0,0.15); color: #fff; cursor: pointer; }
         .btn-admin-toggle:hover { background: rgba(0,0,0,0.3); }
-        .notification-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .notification-badge { position: absolute; top: -8px; right: -8px; background: transparent; color: #ef4444; font-size: 1rem; font-weight: bold; text-shadow: 0 0 3px rgba(255,255,255,0.8), 0 0 6px rgba(255,255,255,0.6); }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
         .btn-email:hover { background: var(--primary); color: #fff; }
         .btn-photo { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px dashed var(--primary); background: #ebf8ff; color: var(--primary); cursor: pointer; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }
@@ -1991,9 +1991,23 @@
                     alert(`✅ Adresse enregistrée pour ${nom} !\n\nLe client a été mis à jour dans la base de données.`);
                 } else {
                     // Créer un nouveau client
-                    // Générer un ID unique basé sur le nom (nettoyé) ou timestamp
-                    const nomNettoye = nom.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20).toUpperCase();
-                    const nouveauClientId = email || `${nomNettoye}_${Date.now()}`;
+                    // Générer un ID unique valide pour Firestore
+                    // Firestore n'accepte que : lettres, chiffres, tirets, underscores
+                    let nouveauClientId;
+                    if (email) {
+                        // Nettoyer l'email pour en faire un ID valide (remplacer @ et . par _)
+                        nouveauClientId = email.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 150);
+                    } else {
+                        // Utiliser le nom nettoyé + timestamp
+                        const nomNettoye = nom.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
+                        nouveauClientId = `${nomNettoye}_${Date.now()}`;
+                    }
+                    
+                    // S'assurer que l'ID n'est pas vide et respecte les règles Firestore
+                    if (!nouveauClientId || nouveauClientId.length === 0) {
+                        nouveauClientId = `CLIENT_${Date.now()}`;
+                    }
+                    
                     donneesClient.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     
                     await db.collection('clients').doc(nouveauClientId).set(donneesClient);
