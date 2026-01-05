@@ -926,13 +926,26 @@
                     heure_depart: heureDepart
                 };
                 
-                // Envoyer l'email avec PDF en pièce jointe via SMTP OVH (Nodemailer)
+                // Préparer les photos pour l'email
+                const photosPourEmail = [];
+                if (photosBon && photosBon.length > 0) {
+                    photosBon.forEach(photo => {
+                        if (photo.base64) {
+                            photosPourEmail.push({
+                                base64: photo.base64
+                            });
+                        }
+                    });
+                }
+                
+                // Envoyer l'email avec PDF et photos en pièces jointes via SMTP OVH (Nodemailer)
                 await envoyerEmailAvecPDFSMTP({
                     email: email,
                     subject: `Bon d'intervention ${numeroBon} - ${client}`,
                     pdfBase64: pdfBase64,
                     pdfFileName: `bon-intervention-${numeroBon}.pdf`,
-                    bonData: bonData
+                    bonData: bonData,
+                    photos: photosPourEmail
                 });
                 
             } catch (pdfError) {
@@ -1253,6 +1266,7 @@
                 console.log('=== ENVOI EMAIL AVEC PDF VIA SMTP OVH ===');
                 console.log('Email destination:', data.email);
                 console.log('URL API:', SMTP_API_URL);
+                console.log('Nombre de photos:', data.photos ? data.photos.length : 0);
                 
                 if (!SMTP_API_URL || SMTP_API_URL.includes('votre-projet')) {
                     throw new Error('SMTP_API_URL non configurée. Veuillez configurer l\'URL de votre API Vercel dans index.html (ligne ~520)');
@@ -1268,7 +1282,8 @@
                         subject: data.subject,
                         pdfBase64: data.pdfBase64,
                         pdfFileName: data.pdfFileName,
-                        bonData: data.bonData
+                        bonData: data.bonData,
+                        photos: data.photos || []
                     })
                 });
                 
@@ -1279,7 +1294,12 @@
                 }
                 
                 console.log('Email envoyé avec succès via SMTP OVH:', result);
-                alert("✓ Email envoyé au client avec PDF en pièce jointe !");
+                const photosCount = data.photos ? data.photos.length : 0;
+                if (photosCount > 0) {
+                    alert(`✓ Email envoyé au client avec PDF et ${photosCount} photo(s) en pièces jointes !`);
+                } else {
+                    alert("✓ Email envoyé au client avec PDF en pièce jointe !");
+                }
                 return true;
                 
             } catch (error) {

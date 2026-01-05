@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { email, subject, pdfBase64, pdfFileName, bonData } = req.body;
+        const { email, subject, pdfBase64, pdfFileName, bonData, photos } = req.body;
 
         // Vérifier les paramètres requis
         if (!email || !subject || !pdfBase64) {
@@ -49,7 +49,57 @@ export default async function handler(req, res) {
             }
         });
 
-        // Construire le contenu HTML de l'email
+        // Préparer les pièces jointes (PDF + photos)
+        const attachments = [
+            {
+                filename: pdfFileName || 'bon-intervention.pdf',
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+            }
+        ];
+
+        // Ajouter les photos comme pièces jointes
+        if (photos && Array.isArray(photos) && photos.length > 0) {
+            photos.forEach((photo, index) => {
+                if (photo.base64) {
+                    // Extraire le type MIME et les données base64
+                    const base64Data = photo.base64.includes(',') 
+                        ? photo.base64.split(',')[1] 
+                        : photo.base64;
+                    
+                    // Déterminer le type MIME
+                    let mimeType = 'image/jpeg';
+                    if (photo.base64.includes('data:image/png')) {
+                        mimeType = 'image/png';
+                    } else if (photo.base64.includes('data:image/jpeg') || photo.base64.includes('data:image/jpg')) {
+                        mimeType = 'image/jpeg';
+                    }
+                    
+                    attachments.push({
+                        filename: `photo-${index + 1}.${mimeType === 'image/png' ? 'png' : 'jpg'}`,
+                        content: base64Data,
+                        encoding: 'base64',
+                        contentType: mimeType
+                    });
+                }
+            });
+        }
+
+        // Construire le contenu HTML de l'email avec les photos intégrées
+        let photosHtml = '';
+        if (photos && photos.length > 0) {
+            photosHtml = '<div style="margin-top: 20px;"><h4 style="color: #1a365d;">📷 Photos de l\'intervention :</h4>';
+            photos.forEach((photo, index) => {
+                if (photo.base64) {
+                    photosHtml += `<div style="margin: 10px 0;">
+                        <p style="margin: 5px 0; font-weight: bold;">Photo ${index + 1} :</p>
+                        <img src="${photo.base64}" alt="Photo ${index + 1}" style="max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #e2e8f0;" />
+                    </div>`;
+                }
+            });
+            photosHtml += '</div>';
+        }
+
         const htmlContent = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -58,7 +108,7 @@ export default async function handler(req, res) {
                 <div style="background: #f7fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
                     <h3 style="color: #1a365d; margin-top: 0;">Bon d'Intervention ${bonData?.numero || ''}</h3>
                     <p>Bonjour,</p>
-                    <p>Veuillez trouver ci-joint le PDF de votre bon d'intervention.</p>
+                    <p>Veuillez trouver ci-joint le PDF de votre bon d'intervention${photos && photos.length > 0 ? ' ainsi que les photos de l\'intervention' : ''}.</p>
                     ${bonData ? `
                         <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
                             <p style="margin: 5px 0;"><strong>Date :</strong> ${bonData.date || ''}</p>
@@ -69,6 +119,7 @@ export default async function handler(req, res) {
                             ${bonData.heure_depart ? `<p style="margin: 5px 0;"><strong>Heure de départ :</strong> ${bonData.heure_depart}</p>` : ''}
                         </div>
                     ` : ''}
+                    ${photosHtml}
                     <p style="margin-top: 20px;">Cordialement,<br><strong>Compagnie d'Électricité Parisienne</strong></p>
                     <p style="font-size: 12px; color: #718096; margin-top: 20px;">
                         6, rue de Metz, 94240 L'Haÿ-les-Roses<br>
@@ -84,13 +135,7 @@ export default async function handler(req, res) {
             to: email,
             subject: subject,
             html: htmlContent,
-            attachments: [
-                {
-                    filename: pdfFileName || 'bon-intervention.pdf',
-                    content: pdfBuffer,
-                    contentType: 'application/pdf'
-                }
-            ]
+            attachments: attachments
         });
 
         console.log('Email envoyé avec succès:', info.messageId);
