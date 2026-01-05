@@ -825,7 +825,7 @@
             const heureArrivee = document.getElementById('heureArrivee').value || '';
             const heureDepart = document.getElementById('heureDepart').value || '';
             
-            // Générer le PDF et l'envoyer en pièce jointe via Resend
+            // Générer le PDF et l'envoyer en pièce jointe via SMTP OVH
             try {
                 console.log('=== DÉBUT GÉNÉRATION PDF ===');
                 console.log('Vérification jsPDF...', typeof window.jspdf !== 'undefined');
@@ -872,7 +872,7 @@
                 console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
                 console.error('Détails:', pdfError.message, pdfError.stack);
                 alert("⚠️ Erreur lors de l'envoi de l'email avec PDF.\n\nErreur: " + (pdfError.message || pdfError));
-                throw pdfError; // Arrêter l'envoi si le PDF échoue
+                throw pdfError;
             }
         }
 

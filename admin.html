@@ -522,6 +522,12 @@
             emailDest: "a.mathieu@elechosystem.com"  // Email de destination
         };
         // ============================================
+        
+        // ============================================
+        // CONFIGURATION SMTP OVH (pour envoi comptabilité avec PDF)
+        // ============================================
+        const SMTP_API_URL = 'https://bon-intervention-cep.vercel.app/api/send-email';
+        // ============================================
 
         // Utilise le même compteur que la page technicien si besoin de créer un nouveau bon vierge
         function getNextBonNumberFromStorage() {
@@ -890,30 +896,55 @@
                 const heureArrivee = document.getElementById('heureArrivee').value || '';
                 const heureDepart = document.getElementById('heureDepart').value || '';
                 
-                // Envoyer l'email via EmailJS
-                await envoyerEmailCompta({
-                    email: "a.mathieu@elechosystem.com",
-                    numero: numeroBon,
-                    date: date,
-                    client: client,
-                    adresse: clientAddress,
-                    telephone: clientPhone,
-                    emailClient: clientEmail,
-                    technicien: technicien,
-                    description: description,
-                    heure_arrivee: heureArrivee,
-                    heure_depart: heureDepart,
-                    produits: produitsHtml,
-                    mainOeuvre: `Durée: ${moDuree} | ${moDemiHeures} | Montant: ${moTotal}`,
-                    deplacement: `Nombre: ${deplNombre} | Montant: ${deplTotal}`,
-                    subtotalProduits: subtotalProduits,
-                    totalHT: totalHT,
-                    totalTVA: totalTVA,
-                    totalTTC: totalTTC,
-                    statut: 'Validé',
-                    photos: photosHtml,
-                    corpsComplet: body
-                });
+                // Générer le PDF et l'envoyer en pièce jointe via SMTP OVH
+                try {
+                    console.log('=== DÉBUT GÉNÉRATION PDF POUR COMPTABILITÉ ===');
+                    console.log('Vérification jsPDF...', typeof window.jspdf !== 'undefined');
+                    
+                    const pdfBlob = await genererPDFBon();
+                    console.log('PDF généré, taille:', pdfBlob.size, 'bytes');
+                    
+                    // Convertir le PDF en base64 pour l'envoyer via l'API
+                    const pdfBase64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const base64String = reader.result.split(',')[1]; // Enlever le préfixe data:application/pdf;base64,
+                            resolve(base64String);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(pdfBlob);
+                    });
+                    
+                    console.log('PDF converti en base64, longueur:', pdfBase64.length);
+                    
+                    // Préparer les données du bon pour l'email
+                    const bonData = {
+                        numero: numeroBon,
+                        date: date,
+                        client: client,
+                        adresse: clientAddress,
+                        telephone: clientPhone,
+                        technicien: technicien,
+                        description: description,
+                        heure_arrivee: heureArrivee,
+                        heure_depart: heureDepart
+                    };
+                    
+                    // Envoyer l'email avec PDF en pièce jointe via SMTP OVH (Nodemailer)
+                    await envoyerEmailAvecPDFSMTP({
+                        email: "a.mathieu@elechosystem.com",
+                        subject: `Bon d'intervention ${numeroBon} - ${client}`,
+                        pdfBase64: pdfBase64,
+                        pdfFileName: `bon-intervention-${numeroBon}.pdf`,
+                        bonData: bonData
+                    });
+                    
+                } catch (pdfError) {
+                    console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
+                    console.error('Détails:', pdfError.message, pdfError.stack);
+                    alert("⚠️ Erreur lors de l'envoi de l'email avec PDF.\n\nErreur: " + (pdfError.message || pdfError));
+                    throw pdfError;
+                }
 
                 await renderHistorique();
             } catch (e) {
@@ -1409,6 +1440,316 @@
                 
                 alert(errorMessage);
                 return false;
+            }
+        }
+
+        // Fonction pour générer le PDF du bon d'intervention (pour admin.html)
+        async function genererPDFBon() {
+            if (typeof window.jspdf === 'undefined') {
+                throw new Error("jsPDF n'est pas chargé. Veuillez recharger la page.");
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            console.log('jsPDF initialisé, début génération PDF...');
+            
+            const infoCEP = {
+                nom: "CEP - Électricité Générale, Installation, Dépannage",
+                adresse: "6, rue de Metz, 94240 L'Haÿ-les-Roses",
+                tel: "Tél. 01 56 04 19 96",
+                email: "contact@cep75.fr",
+                web: "www.cep75.fr"
+            };
+            
+            const numeroBon = document.getElementById('bonNumber').textContent;
+            const date = document.getElementById('interventionDate').value || '';
+            const client = document.getElementById('clientName').value || '';
+            const clientAddress = document.getElementById('clientAddress').value || '';
+            const technicien = document.getElementById('technicien').value || '';
+            const heureArrivee = document.getElementById('heureArrivee').value || '';
+            const heureDepart = document.getElementById('heureDepart').value || '';
+            const description = document.getElementById('description').value || '';
+            const totalTTC = document.getElementById('totalTTC').textContent || '0.00€';
+            
+            const produits = [];
+            document.querySelectorAll('.product-row').forEach(row => {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                const qtyInput = row.querySelector('.product-qty input');
+                const qty = parseFloat(qtyInput.value) || 0;
+                if (checkbox && checkbox.checked && qty > 0) {
+                    const name = row.querySelector('.product-name')?.textContent || '';
+                    const ref = row.querySelector('.product-ref')?.textContent || '';
+                    const price = parseFloat(qtyInput.dataset.price || '0');
+                    produits.push({ nom: name, reference: ref, quantite: qty, prix: price });
+                }
+            });
+            
+            const signatureTech = document.getElementById('signatureTech');
+            const signatureClient = document.getElementById('signatureClient');
+            let sigTechData = null;
+            let sigClientData = null;
+            try {
+                if (signatureTech && signatureTech.toDataURL) {
+                    sigTechData = signatureTech.toDataURL('image/png');
+                }
+                if (signatureClient && signatureClient.toDataURL) {
+                    sigClientData = signatureClient.toDataURL('image/png');
+                }
+            } catch(e) {
+                console.error('Erreur récupération signatures:', e);
+            }
+            
+            let yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text(infoCEP.nom, 105, yPos, { align: 'center' });
+            yPos += 8;
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(infoCEP.adresse, 105, yPos, { align: 'center' });
+            yPos += 5;
+            doc.text(infoCEP.tel, 105, yPos, { align: 'center' });
+            yPos += 5;
+            doc.text(infoCEP.email + ' / ' + infoCEP.web, 105, yPos, { align: 'center' });
+            yPos += 10;
+            
+            doc.setLineWidth(0.5);
+            doc.line(20, yPos, 190, yPos);
+            yPos += 8;
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('FICHE D\'INTERVENTION', 105, yPos, { align: 'center' });
+            yPos += 6;
+            doc.setFontSize(12);
+            doc.text('N° ' + numeroBon, 105, yPos, { align: 'center' });
+            yPos += 10;
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('CLIENT :', 20, yPos);
+            yPos += 6;
+            doc.setFont(undefined, 'normal');
+            doc.text(client, 20, yPos);
+            yPos += 5;
+            if (clientAddress) {
+                doc.text(clientAddress, 20, yPos);
+                yPos += 5;
+            }
+            yPos += 3;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('INTERVENTION :', 20, yPos);
+            yPos += 6;
+            doc.setFont(undefined, 'normal');
+            doc.text('Date : ' + date, 20, yPos);
+            yPos += 5;
+            doc.text('Intervenant : ' + technicien, 20, yPos);
+            yPos += 5;
+            if (heureArrivee) doc.text('Heure d\'arrivée : ' + heureArrivee, 20, yPos);
+            if (heureDepart) {
+                if (heureArrivee) yPos += 5;
+                doc.text('Heure de départ : ' + heureDepart, 20, yPos);
+            }
+            yPos += 8;
+            
+            if (description) {
+                doc.setFont(undefined, 'bold');
+                doc.text('DESCRIPTION :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                const descLines = doc.splitTextToSize(description, 170);
+                doc.text(descLines, 20, yPos);
+                yPos += descLines.length * 5 + 3;
+            }
+            
+            if (photosAdmin && photosAdmin.length > 0) {
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('PHOTOS DE L\'INTERVENTION :', 20, yPos);
+                yPos += 8;
+                
+                const photoWidth = 80;
+                const photoHeight = 60;
+                const photosPerRow = 2;
+                const spacing = 10;
+                
+                for (let i = 0; i < photosAdmin.length; i++) {
+                    const photoUrl = photosAdmin[i];
+                    if (!photoUrl) continue;
+                    
+                    let imgData;
+                    try {
+                        const img = await new Promise((resolve, reject) => {
+                            const imgElement = new Image();
+                            imgElement.crossOrigin = 'anonymous';
+                            imgElement.onload = () => resolve(imgElement);
+                            imgElement.onerror = reject;
+                            imgElement.src = photoUrl;
+                        });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        imgData = canvas.toDataURL('image/jpeg', 0.8);
+                    } catch (err) {
+                        console.error(`Erreur conversion photo ${i + 1}:`, err);
+                        continue;
+                    }
+                    
+                    if (yPos + photoHeight > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    const col = i % photosPerRow;
+                    const xPos = 20 + col * (photoWidth + spacing);
+                    
+                    try {
+                        doc.addImage(imgData, 'JPEG', xPos, yPos, photoWidth, photoHeight);
+                        doc.setFontSize(8);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(`Photo ${i + 1}`, xPos + photoWidth / 2, yPos + photoHeight + 4, { align: 'center' });
+                    } catch (photoError) {
+                        console.error(`Erreur ajout photo ${i + 1}:`, photoError);
+                        doc.setFontSize(9);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(`Photo ${i + 1} (erreur)`, xPos, yPos + 10);
+                    }
+                    
+                    if ((i + 1) % photosPerRow === 0) {
+                        yPos += photoHeight + 12;
+                    }
+                }
+                
+                if (photosAdmin.length % photosPerRow !== 0) {
+                    yPos += photoHeight + 12;
+                }
+                yPos += 5;
+            }
+            
+            if (produits.length > 0) {
+                doc.setFont(undefined, 'bold');
+                doc.text('MATÉRIEL POSÉ :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(9);
+                
+                produits.forEach(p => {
+                    const ligne = `${p.nom}${p.reference ? ' (Ref: ' + p.reference + ')' : ''} - Qté: ${p.quantite}${p.prix > 0 ? ' - Prix unitaire: ' + p.prix.toFixed(2) + '€' : ''}`;
+                    const lignes = doc.splitTextToSize(ligne, 170);
+                    doc.text(lignes, 20, yPos);
+                    yPos += lignes.length * 4;
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                });
+                yPos += 3;
+            }
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('TOTAL TTC : ' + totalTTC, 20, yPos);
+            yPos += 10;
+            
+            if (sigTechData || sigClientData) {
+                const sigWidth = 70;
+                const sigHeight = 30;
+                
+                if (sigTechData) {
+                    doc.setFontSize(9);
+                    doc.text('Signature Intervenant :', 20, yPos);
+                    yPos += 5;
+                    try {
+                        doc.addImage(sigTechData, 'PNG', 20, yPos, sigWidth, sigHeight);
+                    } catch(e) {
+                        console.error('Erreur ajout signature technicien:', e);
+                    }
+                }
+                
+                if (sigClientData) {
+                    if (sigTechData) {
+                        yPos = yPos - 5;
+                    }
+                    doc.setFontSize(9);
+                    doc.text('Signature Client :', 120, yPos - 5);
+                    if (!sigTechData) yPos += 5;
+                    try {
+                        doc.addImage(sigClientData, 'PNG', 120, yPos, sigWidth, sigHeight);
+                    } catch(e) {
+                        console.error('Erreur ajout signature client:', e);
+                    }
+                }
+            }
+            
+            const pdfBlob = doc.output('blob');
+            return pdfBlob;
+        }
+
+        // Fonction pour envoyer l'email avec PDF en pièce jointe via SMTP OVH
+        async function envoyerEmailAvecPDFSMTP(data) {
+            try {
+                console.log('=== ENVOI EMAIL AVEC PDF VIA SMTP OVH ===');
+                console.log('Email destination:', data.email);
+                console.log('URL API:', SMTP_API_URL);
+                
+                if (!SMTP_API_URL || SMTP_API_URL.includes('votre-projet')) {
+                    throw new Error('SMTP_API_URL non configurée. Veuillez configurer l\'URL de votre API Vercel dans admin.html');
+                }
+                
+                const response = await fetch(SMTP_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: data.email,
+                        subject: data.subject,
+                        pdfBase64: data.pdfBase64,
+                        pdfFileName: data.pdfFileName,
+                        bonData: data.bonData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Erreur lors de l\'envoi de l\'email');
+                }
+                
+                console.log('Email envoyé avec succès via SMTP OVH:', result);
+                alert("✓ Email envoyé à la comptabilité avec PDF en pièce jointe !");
+                return true;
+                
+            } catch (error) {
+                console.error("Erreur envoi email SMTP OVH:", error);
+                console.error("Détails de l'erreur:", {
+                    message: error.message,
+                    stack: error.stack
+                });
+                
+                let errorMessage = "❌ Erreur lors de l'envoi de l'email.\n\n";
+                if (error.message.includes('SMTP_API_URL')) {
+                    errorMessage += "⚠️ CONFIGURATION REQUISE:\n\n";
+                    errorMessage += "1. Déployez la fonction serverless sur Vercel\n";
+                    errorMessage += "2. Configurez OVH_SMTP_PASSWORD dans Vercel\n";
+                    errorMessage += "3. Mettez à jour SMTP_API_URL dans admin.html\n";
+                    errorMessage += "4. Voir INSTRUCTIONS_SMTP_OVH.md pour plus de détails";
+                } else {
+                    errorMessage += "Détails: " + (error.message || error);
+                }
+                
+                alert(errorMessage);
+                throw error;
             }
         }
 
