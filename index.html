@@ -1120,8 +1120,13 @@
                 doc.setFontSize(9);
                 
                 produits.forEach(p => {
-                    // Version client : sans prix
+                    // Version client : SANS AUCUN PRIX - uniquement nom, référence et quantité
+                    // Vérifier qu'aucun prix n'est présent dans l'objet produit
+                    if (p.prix !== undefined) {
+                        console.warn('⚠️ ATTENTION: Prix détecté dans produit pour client:', p);
+                    }
                     const ligne = `${p.nom}${p.reference ? ' (Ref: ' + p.reference + ')' : ''} - Quantité: ${p.quantite}`;
+                    console.log('Ligne produit (client, sans prix):', ligne);
                     const lignes = doc.splitTextToSize(ligne, 170);
                     doc.text(lignes, 20, yPos);
                     yPos += lignes.length * 4;
