@@ -905,9 +905,9 @@
             const heureArrivee = document.getElementById('heureArrivee').value || '';
             const heureDepart = document.getElementById('heureDepart').value || '';
             const description = document.getElementById('description').value || '';
-            const totalTTC = document.getElementById('totalTTC').textContent || '0.00€';
+            // totalTTC non utilisé pour le client (PDF sans montants)
             
-            // Récupérer les produits
+            // Récupérer les produits (sans prix pour le client)
             const produits = [];
             document.querySelectorAll('.product-row').forEach(row => {
                 const checkbox = row.querySelector('input[type="checkbox"]');
@@ -916,8 +916,8 @@
                 if (checkbox && checkbox.checked && qty > 0) {
                     const name = row.querySelector('.product-name')?.textContent || '';
                     const ref = row.querySelector('.product-ref')?.textContent || '';
-                    const price = parseFloat(qtyInput.dataset.price || '0');
-                    produits.push({ nom: name, reference: ref, quantite: qty, prix: price });
+                    // Prix non utilisé pour le client (PDF sans montants)
+                    produits.push({ nom: name, reference: ref, quantite: qty });
                 }
             });
             
