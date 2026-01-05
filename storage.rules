@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Photos des bons d'intervention
+    match /bons/{bonId}/{allPaths=**} {
+      // Lecture publique : nécessaire pour afficher les photos dans les PDFs et emails
+      allow read: if true;
+      
+      // Écriture : seulement pour les utilisateurs authentifiés
+      // Pour l'instant, on permet l'écriture car l'app n'utilise pas Firebase Auth
+      // TODO: Implémenter Firebase Authentication pour sécuriser l'écriture
+      allow write: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+    }
+    
+    // Bloquer l'accès à tous les autres fichiers
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

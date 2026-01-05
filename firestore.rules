@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Collection des bons d'intervention
+    match /bons/{bonId} {
+      // Lecture : autorisée pour tous (nécessaire pour l'affichage)
+      allow read: if true;
+      
+      // Écriture : seulement pour les utilisateurs authentifiés
+      // Pour l'instant, on permet l'écriture car l'app n'utilise pas Firebase Auth
+      // TODO: Implémenter Firebase Authentication pour sécuriser l'écriture
+      allow create: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+      allow update: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+      allow delete: if request.auth != null; // Suppression seulement pour utilisateurs authentifiés
+    }
+    
+    // Bloquer l'accès à toutes les autres collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
