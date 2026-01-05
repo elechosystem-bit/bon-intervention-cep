@@ -192,7 +192,15 @@
                         <label>Email</label>
                         <input type="email" id="clientEmail" placeholder="email@exemple.fr">
                     </div>
-                    <div class="input-group"><label>Adresse</label><input type="text" id="clientAddress" placeholder="Adresse complète"></div>
+                    <div class="input-group">
+                        <label>Adresse complète</label>
+                        <div style="display: flex; gap: 8px; align-items: flex-end;">
+                            <input type="text" id="clientAddress" placeholder="Adresse complète" style="flex: 1;">
+                            <button type="button" class="btn btn-secondary" onclick="enregistrerAdresseClient()" style="padding: 8px 16px; white-space: nowrap; font-size: 0.9rem;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -813,7 +821,7 @@
             body += '═'.repeat(50) + '\n\n';
             body += `📅 Date : ${date}\n`;
             body += `👤 Client : ${client}\n`;
-            if (clientPhone) body += `📞 Téléphone : ${clientPhone}\n`;
+            if (clientPhone) body += `Téléphone : ${clientPhone}\n`;
             if (clientAddress) body += `📍 Adresse : ${clientAddress}\n`;
             body += `🔧 Technicien : ${technicien}\n`;
             if (description) body += `📝 Description : ${description}\n`;
@@ -1726,6 +1734,87 @@
             }
         }
 
+        // Enregistrer l'adresse (et créer/mettre à jour le client)
+        async function enregistrerAdresseClient() {
+            const nom = (document.getElementById('clientName').value || '').trim();
+            const email = (document.getElementById('clientEmail').value || '').trim();
+            const telephone = (document.getElementById('clientPhone').value || '').trim();
+            const adresse = (document.getElementById('clientAddress').value || '').trim();
+
+            if (!nom) {
+                alert('⚠️ Veuillez renseigner au moins le nom du client pour enregistrer.');
+                return;
+            }
+
+            if (!adresse) {
+                alert('⚠️ Veuillez renseigner l\'adresse à enregistrer.');
+                return;
+            }
+
+            try {
+                // Charger les clients si nécessaire
+                if (tousLesClients.length === 0) {
+                    await chargerTousLesClients();
+                }
+
+                // Chercher si un client existe déjà (d'abord dans le cache local)
+                let clientExistant = null;
+                let clientId = null;
+
+                // Chercher par email si disponible
+                if (email) {
+                    clientExistant = tousLesClients.find(c => 
+                        c.email && c.email.toLowerCase() === email.toLowerCase()
+                    );
+                    if (clientExistant) {
+                        clientId = clientExistant.id;
+                    }
+                }
+
+                // Si pas trouvé par email, chercher par nom exact
+                if (!clientExistant) {
+                    clientExistant = tousLesClients.find(c => 
+                        c.nom && c.nom.toLowerCase() === nom.toLowerCase()
+                    );
+                    if (clientExistant) {
+                        clientId = clientExistant.id;
+                    }
+                }
+
+                // Préparer les données à sauvegarder
+                const donneesClient = {
+                    nom: nom,
+                    email: email || '',
+                    telephone: telephone || '', // Toujours utiliser la valeur du champ (vide si non renseigné)
+                    adresse: adresse,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (clientExistant && clientId) {
+                    // Mettre à jour le client existant
+                    await db.collection('clients').doc(clientId).update(donneesClient);
+                    console.log('✅ Client mis à jour:', nom);
+                    alert(`✅ Adresse enregistrée pour ${nom} !\n\nLe client a été mis à jour dans la base de données.`);
+                } else {
+                    // Créer un nouveau client
+                    // Générer un ID unique basé sur le nom (nettoyé) ou timestamp
+                    const nomNettoye = nom.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20).toUpperCase();
+                    const nouveauClientId = email || `${nomNettoye}_${Date.now()}`;
+                    donneesClient.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    
+                    await db.collection('clients').doc(nouveauClientId).set(donneesClient);
+                    console.log('✅ Nouveau client créé:', nom);
+                    alert(`✅ Nouveau client créé : ${nom} !\n\nL'adresse a été enregistrée dans la base de données.`);
+                }
+
+                // Recharger la liste des clients pour mettre à jour le cache
+                await chargerTousLesClients();
+
+            } catch (error) {
+                console.error('Erreur enregistrement adresse:', error);
+                alert('❌ Erreur lors de l\'enregistrement de l\'adresse.\n\nDétails: ' + error.message);
+            }
+        }
 
         async function removePhoto(index) {
             if (index < 0 || index >= photosBon.length) return;
