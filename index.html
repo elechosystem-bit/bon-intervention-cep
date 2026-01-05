@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bon d'Intervention - CEP</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bon CEP">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -111,6 +116,7 @@
         .btn-secondary:hover { background: var(--primary); color: white; }
         .btn-admin-toggle { padding: 4px 10px; font-size: 0.7rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.7); background: rgba(0,0,0,0.15); color: #fff; cursor: pointer; }
         .btn-admin-toggle:hover { background: rgba(0,0,0,0.3); }
+        .notification-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
         .btn-email:hover { background: var(--primary); color: #fff; }
         .btn-photo { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px dashed var(--primary); background: #ebf8ff; color: var(--primary); cursor: pointer; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }
@@ -171,7 +177,13 @@
             <div class="bon-number">
                 <span id="bonNumber">CEP-2024-0001</span>
                 <p id="currentDate"></p>
-                <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()">Mode admin</button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="position: relative; cursor: pointer;" onclick="toggleAdmin()" title="Notifications">
+                        <span style="font-size: 1.5rem;">🔔</span>
+                        <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+                    </div>
+                    <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()">Mode admin</button>
+                </div>
             </div>
         </div>
 
@@ -187,7 +199,6 @@
                 </div>
                 <div class="input-grid">
                     <div class="input-group"><label>Nom / Société</label><input type="text" id="clientName" placeholder="Nom du client"></div>
-                    <div class="input-group"><label>Téléphone</label><input type="tel" id="clientPhone" placeholder="06 12 34 56 78"></div>
                     <div class="input-group">
                         <label>Email</label>
                         <input type="email" id="clientEmail" placeholder="email@exemple.fr">
@@ -524,6 +535,74 @@
         let photosBon = [];
 
         // ============================================
+        // NOTIFICATIONS - Comptage des bons en attente
+        // ============================================
+        async function mettreAJourBadgeNotifications() {
+            try {
+                // Charger tous les bons et filtrer localement (évite les problèmes d'index)
+                const snapshot = await db.collection('bons').get();
+                const nombreEnAttente = snapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.statut === 'en_attente' || (!data.statut && data.createdAt); // Si pas de statut, considérer comme en attente
+                }).length;
+                
+                // Mettre à jour le badge visuel dans l'interface
+                const badge = document.getElementById('notificationBadge');
+                if (badge) {
+                    if (nombreEnAttente > 0) {
+                        badge.textContent = nombreEnAttente > 99 ? '99+' : nombreEnAttente;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+                
+                // Mettre à jour le badge de l'icône d'application (iOS/Android)
+                if ('setAppBadge' in navigator) {
+                    if (nombreEnAttente > 0) {
+                        await navigator.setAppBadge(nombreEnAttente);
+                    } else {
+                        await navigator.clearAppBadge();
+                    }
+                }
+                
+                // Envoyer au service worker pour les appareils qui le nécessitent
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SET_BADGE',
+                        count: nombreEnAttente
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du comptage des bons en attente:', error);
+                // Masquer le badge en cas d'erreur
+                const badge = document.getElementById('notificationBadge');
+                if (badge) badge.style.display = 'none';
+                // Effacer le badge de l'icône en cas d'erreur
+                if ('clearAppBadge' in navigator) {
+                    navigator.clearAppBadge().catch(() => {});
+                }
+            }
+        }
+
+        // Enregistrer le service worker pour les badges
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker enregistré:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Erreur enregistrement Service Worker:', error);
+                    });
+            });
+        }
+
+        // Mettre à jour le badge au chargement et toutes les 30 secondes
+        mettreAJourBadgeNotifications();
+        setInterval(mettreAJourBadgeNotifications, 30000); // Mise à jour toutes les 30 secondes
+
+        // ============================================
         // CONFIGURATION EMAILJS (pour comptabilité)
         // ============================================
         const EMAILJS_CONFIG = {
@@ -763,7 +842,7 @@
             const numeroBon = document.getElementById('bonNumber').textContent;
             const date = document.getElementById('interventionDate').value || '';
             const client = document.getElementById('clientName').value || 'Client';
-            const clientPhone = document.getElementById('clientPhone').value || '';
+            const clientPhone = (document.getElementById('clientPhone')?.value || '').trim();
             const clientAddress = document.getElementById('clientAddress').value || '';
             const technicien = document.getElementById('technicien').value || 'Non spécifié';
             const description = document.getElementById('description').value || '';
@@ -883,14 +962,39 @@
                 // Préparer les photos pour l'email
                 const photosPourEmail = [];
                 if (photosBon && photosBon.length > 0) {
-                    photosBon.forEach(photo => {
-                        if (photo.base64) {
-                            photosPourEmail.push({
-                                base64: photo.base64
-                            });
+                    photosBon.forEach((photo, index) => {
+                        try {
+                            let base64Data = null;
+                            
+                            // Si c'est un objet avec base64
+                            if (photo && photo.base64) {
+                                base64Data = photo.base64;
+                            }
+                            // Si c'est une chaîne (URL ou base64 direct)
+                            else if (typeof photo === 'string') {
+                                // Si c'est déjà en base64 (commence par data:)
+                                if (photo.startsWith('data:')) {
+                                    base64Data = photo;
+                                }
+                                // Sinon c'est une URL, on ne peut pas l'utiliser directement
+                                else {
+                                    console.warn(`Photo ${index + 1}: URL non supportée pour l'email, base64 requis`);
+                                    return;
+                                }
+                            }
+                            
+                            if (base64Data) {
+                                photosPourEmail.push({
+                                    base64: base64Data
+                                });
+                            }
+                        } catch (error) {
+                            console.error(`Erreur lors de la préparation de la photo ${index + 1}:`, error);
                         }
                     });
                 }
+                
+                console.log(`Photos préparées pour l'email: ${photosPourEmail.length} sur ${photosBon.length}`);
                 
                 // Envoyer l'email avec PDF et photos en pièces jointes via SMTP OVH (Nodemailer)
                 await envoyerEmailAvecPDFSMTP({
@@ -1226,25 +1330,57 @@
                     throw new Error('SMTP_API_URL non configurée. Veuillez configurer l\'URL de votre API Vercel dans index.html (ligne ~520)');
                 }
                 
+                const requestBody = {
+                    email: data.email,
+                    subject: data.subject,
+                    pdfBase64: data.pdfBase64,
+                    pdfFileName: data.pdfFileName,
+                    bonData: data.bonData,
+                    photos: data.photos || []
+                };
+                
+                console.log('Données envoyées:', {
+                    email: requestBody.email,
+                    subject: requestBody.subject,
+                    pdfSize: requestBody.pdfBase64.length,
+                    photosCount: requestBody.photos.length
+                });
+                
+                // Détecter si on est sur mobile
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const timeout = isMobile ? 60000 : 30000; // 60s sur mobile, 30s sur PC
+                
+                console.log('Appareil détecté:', isMobile ? 'Mobile' : 'PC', '- Timeout:', timeout + 'ms');
+                
+                // Créer un AbortController pour gérer le timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
                 const response = await fetch(SMTP_API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        email: data.email,
-                        subject: data.subject,
-                        pdfBase64: data.pdfBase64,
-                        pdfFileName: data.pdfFileName,
-                        bonData: data.bonData,
-                        photos: data.photos || []
-                    })
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
                 });
                 
-                const result = await response.json();
+                clearTimeout(timeoutId);
+                
+                console.log('Réponse reçue, status:', response.status, response.statusText);
+                
+                let result;
+                try {
+                    const responseText = await response.text();
+                    console.log('Réponse texte:', responseText.substring(0, 200));
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Erreur parsing réponse:', parseError);
+                    throw new Error(`Erreur de réponse du serveur (${response.status}): ${response.statusText}`);
+                }
                 
                 if (!response.ok) {
-                    throw new Error(result.error || 'Erreur lors de l\'envoi de l\'email');
+                    throw new Error(result.error || `Erreur HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 console.log('Email envoyé avec succès via SMTP OVH:', result);
@@ -1260,18 +1396,38 @@
                 console.error("Erreur envoi email SMTP OVH:", error);
                 console.error("Détails de l'erreur:", {
                     message: error.message,
-                    stack: error.stack
+                    stack: error.stack,
+                    name: error.name
                 });
                 
                 let errorMessage = "❌ Erreur lors de l'envoi de l'email.\n\n";
-                if (error.message.includes('SMTP_API_URL')) {
+                
+                // Gestion spécifique du timeout
+                if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                    errorMessage += "⚠️ TIMEOUT:\n\n";
+                    errorMessage += "La requête a pris trop de temps (probablement à cause de la taille des photos).\n";
+                    errorMessage += "Sur mobile, essayez avec moins de photos ou des photos plus petites.\n\n";
+                    errorMessage += "Solution: Réduisez le nombre de photos ou leur taille.";
+                } else if (error.message.includes('SMTP_API_URL')) {
                     errorMessage += "⚠️ CONFIGURATION REQUISE:\n\n";
                     errorMessage += "1. Déployez la fonction serverless sur Vercel\n";
                     errorMessage += "2. Configurez OVH_SMTP_PASSWORD dans Vercel\n";
                     errorMessage += "3. Mettez à jour SMTP_API_URL dans index.html\n";
                     errorMessage += "4. Voir INSTRUCTIONS_SMTP_OVH.md pour plus de détails";
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage += "⚠️ PROBLÈME DE CONNEXION:\n\n";
+                    errorMessage += "Impossible de contacter le serveur d'envoi d'email.\n";
+                    errorMessage += "Vérifiez votre connexion internet et que l'API est accessible.\n\n";
+                    errorMessage += "URL API: " + SMTP_API_URL + "\n\n";
+                    errorMessage += "Détails: " + (error.message || error);
+                } else if (error.message.includes('CORS')) {
+                    errorMessage += "⚠️ PROBLÈME CORS:\n\n";
+                    errorMessage += "L'API bloque les requêtes depuis ce domaine.\n";
+                    errorMessage += "Vérifiez la configuration CORS sur Vercel.\n\n";
+                    errorMessage += "Détails: " + (error.message || error);
                 } else {
                     errorMessage += "Détails: " + (error.message || error);
+                    errorMessage += "\n\nVérifiez la console (F12) pour plus d'informations.";
                 }
                 
                 alert(errorMessage);
@@ -1414,7 +1570,7 @@
                     numero: numeroDefinitif,
                     date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
                     client: document.getElementById('clientName').value || '',
-                    phone: document.getElementById('clientPhone').value || '',
+                    phone: (document.getElementById('clientPhone')?.value || '').trim(),
                     email: document.getElementById('clientEmail').value || '',
                     address: document.getElementById('clientAddress').value || '',
                     technicien: document.getElementById('technicien').value || '',
@@ -1463,6 +1619,9 @@
 
                 await db.collection('bons').add(bon);
                 
+                // Mettre à jour le badge de notifications
+                await mettreAJourBadgeNotifications();
+                
                 // Envoyer l'email au client automatiquement après l'enregistrement
                 const clientEmail = (document.getElementById('clientEmail').value || '').trim();
                 if (clientEmail) {
@@ -1497,6 +1656,42 @@
         }
 
         // --- Gestion des photos côté technicien ---
+        
+        // Fonction pour compresser une image (réduit la taille pour l'envoi mobile)
+        function compressImage(file, maxWidth = 1200, quality = 0.8) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Redimensionner si nécessaire
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convertir en base64 avec compression
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                        resolve(compressedBase64);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
         function ouvrirPhotoPicker() {
             if (photosBon.length >= 5) {
                 alert("Maximum 5 photos par bon.");
@@ -1516,22 +1711,22 @@
                 .replace(/[^a-zA-Z0-9-_]/g, '_');
 
             for (const file of toUpload) {
-                // Convertir le fichier en base64 pour l'utiliser dans le PDF
-                const base64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        // Le résultat est au format "data:image/jpeg;base64,..."
-                        resolve(reader.result);
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
+                // Détecter si on est sur mobile pour ajuster la compression
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const maxWidth = isMobile ? 1000 : 1200; // Plus petit sur mobile
+                const quality = isMobile ? 0.7 : 0.8; // Compression plus agressive sur mobile
+                
+                // Compresser l'image pour réduire la taille (important pour mobile)
+                console.log('Compression de l\'image:', file.name, 'Taille originale:', (file.size / 1024 / 1024).toFixed(2), 'MB', isMobile ? '(Mobile)' : '(PC)');
+                const base64 = await compressImage(file, maxWidth, quality);
+                const compressedSize = (base64.length * 3 / 4 / 1024 / 1024).toFixed(2);
+                console.log('Taille compressée:', compressedSize, 'MB');
                 
                 // Afficher immédiatement une vignette locale pour le technicien
                 const localUrl = URL.createObjectURL(file);
                 const tempIndex = photosBon.length;
                 
-                // Stocker l'objet avec URL locale temporaire et base64
+                // Stocker l'objet avec URL locale temporaire et base64 compressé
                 photosBon.push({
                     url: localUrl,
                     base64: base64
@@ -1656,8 +1851,7 @@
                 const term = searchTerm.toLowerCase();
                 const filtered = tousLesClients.filter(client => 
                     client.nom.toLowerCase().includes(term) ||
-                    (client.email && client.email.toLowerCase().includes(term)) ||
-                    (client.telephone && client.telephone.includes(term))
+                    (client.email && client.email.toLowerCase().includes(term))
                 ).slice(0, 5); // Limiter à 5 résultats
 
                 if (filtered.length === 0) {
@@ -1671,7 +1865,6 @@
                          onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
                         <div style="font-weight: 600;">${client.nom}</div>
                         ${client.email ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.email}</div>` : ''}
-                        ${client.telephone ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.telephone}</div>` : ''}
                     </div>
                 `).join('');
                 resultsDiv.style.display = 'block';
@@ -1717,7 +1910,8 @@
 
                 // Remplir le formulaire
                 document.getElementById('clientName').value = client.nom || '';
-                document.getElementById('clientPhone').value = client.telephone || '';
+                const phoneField = document.getElementById('clientPhone');
+                if (phoneField) phoneField.value = client.telephone || '';
                 document.getElementById('clientEmail').value = client.email || '';
                 document.getElementById('clientAddress').value = client.adresse || '';
 
@@ -1738,7 +1932,7 @@
         async function enregistrerAdresseClient() {
             const nom = (document.getElementById('clientName').value || '').trim();
             const email = (document.getElementById('clientEmail').value || '').trim();
-            const telephone = (document.getElementById('clientPhone').value || '').trim();
+            const telephone = (document.getElementById('clientPhone')?.value || '').trim();
             const adresse = (document.getElementById('clientAddress').value || '').trim();
 
             if (!nom) {
@@ -1784,7 +1978,7 @@
                 // Préparer les données à sauvegarder
                 const donneesClient = {
                     nom: nom,
-                    email: email || '',
+                    email: email || clientExistant?.email || '', // Garder l'ancien email si le champ est vide
                     telephone: telephone || '', // Toujours utiliser la valeur du champ (vide si non renseigné)
                     adresse: adresse,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
