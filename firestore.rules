@@ -14,6 +14,18 @@ service cloud.firestore {
       allow delete: if request.auth != null; // Suppression seulement pour utilisateurs authentifiés
     }
     
+    // Collection des clients
+    match /clients/{clientId} {
+      // Lecture : autorisée pour tous (nécessaire pour la recherche)
+      allow read: if true;
+      
+      // Écriture : autorisée pour tous (temporaire)
+      // TODO: Implémenter Firebase Authentication pour sécuriser l'écriture
+      allow create: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+      allow update: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+      allow delete: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+    }
+    
     // Bloquer l'accès à toutes les autres collections
     match /{document=**} {
       allow read, write: if false;

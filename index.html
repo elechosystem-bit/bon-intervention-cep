@@ -33,10 +33,14 @@
         .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
         .section-title::before { content: ''; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
         .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; position: relative; }
         .input-group label { font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
         .input-group input, .input-group textarea, .input-group select { padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 1rem; transition: all 0.2s ease; background: white; }
         .input-group input:focus, .input-group textarea:focus, .input-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1); }
+        
+        /* Modal overlay */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: white; padding: 30px; border-radius: 16px; max-width: 600px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         
         /* Style pour le sélecteur de matériel */
         .material-selector { background: #f0f7ff; border: 2px solid var(--primary); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
@@ -172,6 +176,14 @@
         <div class="form-body">
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: flex-end;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Rechercher un client existant</label>
+                        <input type="text" id="clientSearch" placeholder="Tapez le nom du client..." autocomplete="off" oninput="rechercherClient(this.value)" style="position: relative;">
+                        <div id="clientSearchResults" style="display: none; position: absolute; background: white; border: 2px solid var(--border); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;"></div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="ouvrirGestionClients()" style="white-space: nowrap;">📋 Gérer les clients</button>
+                </div>
                 <div class="input-grid">
                     <div class="input-group"><label>Nom / Société</label><input type="text" id="clientName" placeholder="Nom du client"></div>
                     <div class="input-group"><label>Téléphone</label><input type="tel" id="clientPhone" placeholder="06 12 34 56 78"></div>
@@ -180,6 +192,9 @@
                         <input type="email" id="clientEmail" placeholder="email@exemple.fr">
                     </div>
                     <div class="input-group"><label>Adresse</label><input type="text" id="clientAddress" placeholder="Adresse complète"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="sauvegarderClient()" style="font-size: 0.9rem; padding: 8px 16px;">💾 Enregistrer ce client</button>
                 </div>
             </div>
 
@@ -473,12 +488,64 @@
         <img id="photoLightboxImg" src="" alt="Aperçu photo">
     </div>
 
+    <!-- Modal de gestion des clients -->
+    <div id="clientsModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) fermerGestionClients()">
+        <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📋 Gestion des clients</h2>
+                <button type="button" onclick="fermerGestionClients()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text);">×</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="clientSearchModal" placeholder="Rechercher un client..." style="width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 8px;" oninput="filtrerClients(this.value)">
+            </div>
+            <div id="clientsList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Liste des clients -->
+            </div>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border);">
+                <h3 style="margin-bottom: 15px;">Ajouter un nouveau client</h3>
+                <div class="input-grid">
+                    <div class="input-group"><label>Nom / Société</label><input type="text" id="newClientName" placeholder="Nom du client"></div>
+                    <div class="input-group"><label>Téléphone</label><input type="tel" id="newClientPhone" placeholder="06 12 34 56 78"></div>
+                    <div class="input-group"><label>Email</label><input type="email" id="newClientEmail" placeholder="email@exemple.fr"></div>
+                    <div class="input-group"><label>Adresse</label><input type="text" id="newClientAddress" placeholder="Adresse complète"></div>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="ajouterClient()" style="margin-top: 15px;">➕ Ajouter le client</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="successModal">
         <div class="modal">
             <div class="modal-icon">✓</div>
             <h3>Envoyé !</h3>
             <p>Le bon a été envoyé à<br><strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="dab9b5b7aaaebb9ab9bfaaedeff4bca8">[email&#160;protected]</a></strong></p>
             <button class="btn btn-primary" onclick="closeModal()" style="width:100%">Fermer</button>
+        </div>
+    </div>
+
+    <!-- Modal de gestion des clients -->
+    <div id="clientsModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) fermerGestionClients()">
+        <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📋 Gestion des clients</h2>
+                <button type="button" onclick="fermerGestionClients()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text);">×</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="clientSearchModal" placeholder="Rechercher un client..." style="width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 8px;" oninput="filtrerClients(this.value)">
+            </div>
+            <div id="clientsList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Liste des clients -->
+            </div>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border);">
+                <h3 style="margin-bottom: 15px;">Ajouter un nouveau client</h3>
+                <div class="input-grid">
+                    <div class="input-group"><label>Nom / Société</label><input type="text" id="newClientName" placeholder="Nom du client"></div>
+                    <div class="input-group"><label>Téléphone</label><input type="tel" id="newClientPhone" placeholder="06 12 34 56 78"></div>
+                    <div class="input-group"><label>Email</label><input type="email" id="newClientEmail" placeholder="email@exemple.fr"></div>
+                    <div class="input-group"><label>Adresse</label><input type="text" id="newClientAddress" placeholder="Adresse complète"></div>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="ajouterClient()" style="margin-top: 15px;">➕ Ajouter le client</button>
+            </div>
         </div>
     </div>
 
@@ -1587,6 +1654,335 @@
             const overlay = document.getElementById('photoLightbox');
             if (!overlay) return;
             overlay.classList.remove('show');
+        }
+
+        // ============================================
+        // GESTION DE LA BASE DE DONNÉES CLIENTS
+        // ============================================
+
+        let tousLesClients = []; // Cache des clients
+
+        // Rechercher un client dans la liste déroulante
+        async function rechercherClient(searchTerm) {
+            const resultsDiv = document.getElementById('clientSearchResults');
+            if (!resultsDiv) return;
+            
+            if (!searchTerm || searchTerm.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            try {
+                // Charger les clients depuis Firestore si nécessaire
+                if (tousLesClients.length === 0) {
+                    await chargerTousLesClients();
+                }
+
+                // Filtrer les clients
+                const term = searchTerm.toLowerCase();
+                const filtered = tousLesClients.filter(client => 
+                    client.nom.toLowerCase().includes(term) ||
+                    (client.email && client.email.toLowerCase().includes(term)) ||
+                    (client.telephone && client.telephone.includes(term))
+                ).slice(0, 5); // Limiter à 5 résultats
+
+                if (filtered.length === 0) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+
+                // Afficher les résultats
+                resultsDiv.innerHTML = filtered.map(client => `
+                    <div onclick="selectionnerClient('${client.id}')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s;" 
+                         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+                        <div style="font-weight: 600;">${client.nom}</div>
+                        ${client.email ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.email}</div>` : ''}
+                        ${client.telephone ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.telephone}</div>` : ''}
+                    </div>
+                `).join('');
+                resultsDiv.style.display = 'block';
+            } catch (error) {
+                console.error('Erreur recherche client:', error);
+            }
+        }
+
+        // Charger tous les clients depuis Firestore
+        async function chargerTousLesClients() {
+            try {
+                const snapshot = await db.collection('clients').orderBy('nom').get();
+                tousLesClients = [];
+                snapshot.forEach(doc => {
+                    tousLesClients.push({ id: doc.id, ...doc.data() });
+                });
+                return tousLesClients;
+            } catch (error) {
+                console.error('Erreur chargement clients:', error);
+                return [];
+            }
+        }
+
+        // Sélectionner un client et remplir le formulaire
+        async function selectionnerClient(clientId) {
+            try {
+                let client = tousLesClients.find(c => c.id === clientId);
+                if (!client) {
+                    const doc = await db.collection('clients').doc(clientId).get();
+                    if (!doc.exists) {
+                        alert('Client introuvable');
+                        return;
+                    }
+                    client = { id: doc.id, ...doc.data() };
+                }
+
+                // Remplir le formulaire
+                document.getElementById('clientName').value = client.nom || '';
+                document.getElementById('clientPhone').value = client.telephone || '';
+                document.getElementById('clientEmail').value = client.email || '';
+                document.getElementById('clientAddress').value = client.adresse || '';
+
+                // Masquer les résultats de recherche
+                const resultsDiv = document.getElementById('clientSearchResults');
+                if (resultsDiv) resultsDiv.style.display = 'none';
+                const searchInput = document.getElementById('clientSearch');
+                if (searchInput) searchInput.value = '';
+
+                console.log('Client sélectionné:', client.nom);
+            } catch (error) {
+                console.error('Erreur sélection client:', error);
+                alert('Erreur lors de la sélection du client');
+            }
+        }
+
+        // Sauvegarder le client actuel dans le formulaire
+        async function sauvegarderClient() {
+            const nom = (document.getElementById('clientName').value || '').trim();
+            const email = (document.getElementById('clientEmail').value || '').trim();
+            const telephone = (document.getElementById('clientPhone').value || '').trim();
+            const adresse = (document.getElementById('clientAddress').value || '').trim();
+
+            if (!nom) {
+                alert('Veuillez renseigner au moins le nom du client');
+                return;
+            }
+
+            if (!email) {
+                alert('Veuillez renseigner l\'email du client');
+                return;
+            }
+
+            try {
+                // Vérifier si un client avec cet email existe déjà
+                const existing = await db.collection('clients').where('email', '==', email).get();
+                let clientId = null;
+
+                if (!existing.empty) {
+                    // Mettre à jour le client existant
+                    clientId = existing.docs[0].id;
+                    await db.collection('clients').doc(clientId).update({
+                        nom: nom,
+                        telephone: telephone,
+                        adresse: adresse,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert('✅ Client mis à jour avec succès');
+                } else {
+                    // Créer un nouveau client
+                    const newClient = {
+                        nom: nom,
+                        email: email,
+                        telephone: telephone,
+                        adresse: adresse,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    const docRef = await db.collection('clients').add(newClient);
+                    clientId = docRef.id;
+                    alert('✅ Client enregistré avec succès');
+                }
+
+                // Recharger la liste des clients
+                await chargerTousLesClients();
+            } catch (error) {
+                console.error('Erreur sauvegarde client:', error);
+                alert('Erreur lors de l\'enregistrement du client: ' + error.message);
+            }
+        }
+
+        // Ouvrir le modal de gestion des clients
+        async function ouvrirGestionClients() {
+            const modal = document.getElementById('clientsModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                await chargerClientsList();
+            }
+        }
+
+        // Fermer le modal
+        function fermerGestionClients() {
+            const modal = document.getElementById('clientsModal');
+            if (modal) modal.style.display = 'none';
+            // Réinitialiser le formulaire d'ajout
+            const newName = document.getElementById('newClientName');
+            const newPhone = document.getElementById('newClientPhone');
+            const newEmail = document.getElementById('newClientEmail');
+            const newAddress = document.getElementById('newClientAddress');
+            if (newName) newName.value = '';
+            if (newPhone) newPhone.value = '';
+            if (newEmail) newEmail.value = '';
+            if (newAddress) newAddress.value = '';
+        }
+
+        // Charger et afficher la liste des clients
+        async function chargerClientsList() {
+            try {
+                const clients = await chargerTousLesClients();
+                const listDiv = document.getElementById('clientsList');
+                if (!listDiv) return;
+                
+                if (clients.length === 0) {
+                    listDiv.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;">Aucun client enregistré</p>';
+                    return;
+                }
+
+                listDiv.innerHTML = clients.map(client => `
+                    <div style="padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: white;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">${client.nom || 'Sans nom'}</div>
+                                ${client.email ? `<div style="color: var(--text-light); margin-bottom: 3px;">📧 ${client.email}</div>` : ''}
+                                ${client.telephone ? `<div style="color: var(--text-light); margin-bottom: 3px;">📞 ${client.telephone}</div>` : ''}
+                                ${client.adresse ? `<div style="color: var(--text-light); margin-bottom: 3px;">📍 ${client.adresse}</div>` : ''}
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <button onclick="utiliserClient('${client.id}')" style="padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Utiliser</button>
+                                <button onclick="supprimerClient('${client.id}')" style="padding: 6px 12px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Supprimer</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Erreur chargement liste clients:', error);
+                const listDiv = document.getElementById('clientsList');
+                if (listDiv) listDiv.innerHTML = '<p style="color: var(--danger);">Erreur lors du chargement des clients</p>';
+            }
+        }
+
+        // Filtrer les clients dans le modal
+        function filtrerClients(searchTerm) {
+            const listDiv = document.getElementById('clientsList');
+            if (!listDiv) return;
+            
+            const clients = tousLesClients;
+            
+            if (!searchTerm || searchTerm.trim() === '') {
+                chargerClientsList();
+                return;
+            }
+
+            const term = searchTerm.toLowerCase();
+            const filtered = clients.filter(client => 
+                client.nom.toLowerCase().includes(term) ||
+                (client.email && client.email.toLowerCase().includes(term)) ||
+                (client.telephone && client.telephone.includes(term)) ||
+                (client.adresse && client.adresse.toLowerCase().includes(term))
+            );
+
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;">Aucun client trouvé</p>';
+                return;
+            }
+
+            listDiv.innerHTML = filtered.map(client => `
+                <div style="padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 5px;">${client.nom || 'Sans nom'}</div>
+                            ${client.email ? `<div style="color: var(--text-light); margin-bottom: 3px;">📧 ${client.email}</div>` : ''}
+                            ${client.telephone ? `<div style="color: var(--text-light); margin-bottom: 3px;">📞 ${client.telephone}</div>` : ''}
+                            ${client.adresse ? `<div style="color: var(--text-light); margin-bottom: 3px;">📍 ${client.adresse}</div>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="utiliserClient('${client.id}')" style="padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Utiliser</button>
+                            <button onclick="supprimerClient('${client.id}')" style="padding: 6px 12px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Supprimer</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Utiliser un client (remplir le formulaire)
+        async function utiliserClient(clientId) {
+            await selectionnerClient(clientId);
+            fermerGestionClients();
+        }
+
+        // Supprimer un client
+        async function supprimerClient(clientId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
+                return;
+            }
+
+            try {
+                await db.collection('clients').doc(clientId).delete();
+                alert('✅ Client supprimé avec succès');
+                await chargerTousLesClients();
+                await chargerClientsList();
+            } catch (error) {
+                console.error('Erreur suppression client:', error);
+                alert('Erreur lors de la suppression du client');
+            }
+        }
+
+        // Ajouter un nouveau client depuis le modal
+        async function ajouterClient() {
+            const nom = (document.getElementById('newClientName').value || '').trim();
+            const email = (document.getElementById('newClientEmail').value || '').trim();
+            const telephone = (document.getElementById('newClientPhone').value || '').trim();
+            const adresse = (document.getElementById('newClientAddress').value || '').trim();
+
+            if (!nom) {
+                alert('Veuillez renseigner le nom du client');
+                return;
+            }
+
+            if (!email) {
+                alert('Veuillez renseigner l\'email du client');
+                return;
+            }
+
+            try {
+                // Vérifier si un client avec cet email existe déjà
+                const existing = await db.collection('clients').where('email', '==', email).get();
+                if (!existing.empty) {
+                    alert('Un client avec cet email existe déjà');
+                    return;
+                }
+
+                const newClient = {
+                    nom: nom,
+                    email: email,
+                    telephone: telephone,
+                    adresse: adresse,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('clients').add(newClient);
+                alert('✅ Client ajouté avec succès');
+
+                // Réinitialiser le formulaire
+                document.getElementById('newClientName').value = '';
+                document.getElementById('newClientPhone').value = '';
+                document.getElementById('newClientEmail').value = '';
+                document.getElementById('newClientAddress').value = '';
+
+                // Recharger la liste
+                await chargerTousLesClients();
+                await chargerClientsList();
+            } catch (error) {
+                console.error('Erreur ajout client:', error);
+                alert('Erreur lors de l\'ajout du client: ' + error.message);
+            }
         }
 
         async function removePhoto(index) {
