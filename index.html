@@ -670,10 +670,8 @@
             updateTotal();
             
             // Réinitialiser les signatures avec la nouvelle couleur
-            setTimeout(() => {
-                initSignature('signatureTech');
-                initSignature('signatureClient');
-            }, 100);
+            initSignature('signatureTech');
+            initSignature('signatureClient');
         }
         
         // Initialiser la société au chargement
@@ -1040,28 +1038,79 @@
                 console.warn('Canvas de signature non trouvé:', id);
                 return;
             }
+            
+            // Réinitialiser complètement le canvas
             const ctx = canvas.getContext('2d');
-            let drawing = false;
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            
+            // Supprimer tous les anciens événements
+            canvas.onmousedown = null;
+            canvas.onmousemove = null;
+            canvas.onmouseup = null;
+            canvas.onmouseout = null;
+            canvas.ontouchstart = null;
+            canvas.ontouchmove = null;
+            canvas.ontouchend = null;
+            
+            // Réinitialiser les dimensions
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Réinitialiser le contexte
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             // Utiliser la couleur de la société active ou la couleur par défaut
-            const couleurSignature = societeActive ? societeActive.couleurPrimaire : '#1a365d';
+            const couleurSignature = (societeActive && societeActive.couleurPrimaire) ? societeActive.couleurPrimaire : '#1a365d';
             ctx.strokeStyle = couleurSignature;
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            let drawing = false;
 
             function pos(e) {
                 const r = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - r.left;
-                const y = (e.clientY || e.touches[0].clientY) - r.top;
+                const x = (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - r.left;
+                const y = (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)) - r.top;
                 return {x, y};
             }
-            canvas.onmousedown = e => { drawing = true; ctx.beginPath(); ctx.moveTo(pos(e).x, pos(e).y); };
-            canvas.onmousemove = e => { if (drawing) { ctx.lineTo(pos(e).x, pos(e).y); ctx.stroke(); } };
-            canvas.onmouseup = canvas.onmouseout = () => drawing = false;
-            canvas.ontouchstart = e => { e.preventDefault(); drawing = true; ctx.beginPath(); ctx.moveTo(pos(e).x, pos(e).y); };
-            canvas.ontouchmove = e => { e.preventDefault(); if (drawing) { ctx.lineTo(pos(e).x, pos(e).y); ctx.stroke(); } };
-            canvas.ontouchend = () => drawing = false;
+            
+            canvas.onmousedown = function(e) { 
+                drawing = true; 
+                ctx.beginPath(); 
+                const p = pos(e);
+                ctx.moveTo(p.x, p.y); 
+            };
+            
+            canvas.onmousemove = function(e) { 
+                if (drawing) { 
+                    const p = pos(e);
+                    ctx.lineTo(p.x, p.y); 
+                    ctx.stroke(); 
+                } 
+            };
+            
+            canvas.onmouseup = function() { drawing = false; };
+            canvas.onmouseout = function() { drawing = false; };
+            
+            canvas.ontouchstart = function(e) { 
+                e.preventDefault(); 
+                drawing = true; 
+                ctx.beginPath(); 
+                const p = pos(e);
+                ctx.moveTo(p.x, p.y); 
+            };
+            
+            canvas.ontouchmove = function(e) { 
+                e.preventDefault(); 
+                if (drawing) { 
+                    const p = pos(e);
+                    ctx.lineTo(p.x, p.y); 
+                    ctx.stroke(); 
+                } 
+            };
+            
+            canvas.ontouchend = function() { drawing = false; };
         }
 
         function clearSignature(id) {
