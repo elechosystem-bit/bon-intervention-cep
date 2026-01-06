@@ -999,6 +999,12 @@
                 console.log(`Photos préparées pour l'email: ${photosPourEmail.length} sur ${photosBon.length}`);
                 
                 // Envoyer l'email avec PDF et photos en pièces jointes via SMTP OVH (Nodemailer)
+                console.log('=== ENVOI EMAIL CLIENT VIA SMTP ===');
+                console.log('Email destinataire:', email);
+                console.log('Sujet:', `Bon d'intervention ${numeroBon} - ${client}`);
+                console.log('Taille PDF base64:', pdfBase64.length, 'caractères');
+                console.log('Nombre de photos:', photosPourEmail.length);
+                
                 await envoyerEmailAvecPDFSMTP({
                     email: email,
                     subject: `Bon d'intervention ${numeroBon} - ${client}`,
@@ -1008,10 +1014,13 @@
                     photos: photosPourEmail
                 });
                 
+                console.log('✅ Email envoyé avec succès au client');
+                alert(`✅ Email envoyé au client avec succès !\n\nLe bon d'intervention a été envoyé à ${email}`);
+                
             } catch (pdfError) {
                 console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
                 console.error('Détails:', pdfError.message, pdfError.stack);
-                alert("⚠️ Erreur lors de l'envoi de l'email avec PDF.\n\nErreur: " + (pdfError.message || pdfError));
+                alert("⚠️ Erreur lors de l'envoi de l'email avec PDF.\n\nErreur: " + (pdfError.message || pdfError) + "\n\nVérifiez la console (F12) pour plus de détails.");
                 throw pdfError;
             }
         }
@@ -1315,103 +1324,9 @@
                 }
             }
             
-            // Section Paiement rapide
-            yPos += 20;
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
-            }
-            
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
-            doc.text('PAIEMENT RAPIDE', 105, yPos, { align: 'center' });
-            yPos += 8;
-            
-            // Générer le lien de paiement
-            // Détecter si on est en local ou en production
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const paymentLink = isLocal 
-                ? `${window.location.origin}/BI-${numeroBon}`
-                : `https://pay.elecho-system.com/BI-${numeroBon}`;
-            
-            // Conditions de paiement
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'normal');
-            doc.text('Conditions de paiement :', 20, yPos);
-            yPos += 5;
-            doc.setFontSize(8);
-            doc.text('• Paiement sous 3 jours : réduction de 5%', 20, yPos);
-            yPos += 4;
-            doc.text('• Paiement sous 30 jours : montant normal', 20, yPos);
-            yPos += 4;
-            doc.text('• Au-delà de 30 jours : pénalités de retard', 20, yPos);
-            yPos += 8;
-            
-            // Générer le QR code
-            try {
-                if (typeof QRCode !== 'undefined') {
-                    // Créer un div temporaire pour le QR code (hors écran)
-                    const qrDiv = document.createElement('div');
-                    qrDiv.id = 'temp-qr-div-' + Date.now();
-                    qrDiv.style.position = 'absolute';
-                    qrDiv.style.left = '-9999px';
-                    qrDiv.style.top = '-9999px';
-                    document.body.appendChild(qrDiv);
-                    
-                    // Générer le QR code
-                    const qr = new QRCode(qrDiv, {
-                        text: paymentLink,
-                        width: 120,
-                        height: 120,
-                        colorDark: '#000000',
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
-                    
-                    // Attendre que le QR code soit généré
-                    await new Promise((resolve) => {
-                        // QRCode.js génère soit un canvas soit une img
-                        const checkQR = () => {
-                            const canvas = qrDiv.querySelector('canvas');
-                            const img = qrDiv.querySelector('img');
-                            
-                            if (canvas) {
-                                // Convertir le canvas en data URL
-                                const qrData = canvas.toDataURL('image/png');
-                                doc.addImage(qrData, 'PNG', 105 - 25, yPos, 50, 50);
-                                qrDiv.remove();
-                                resolve();
-                            } else if (img && img.complete) {
-                                // Utiliser l'image directement
-                                const qrData = img.src;
-                                doc.addImage(qrData, 'PNG', 105 - 25, yPos, 50, 50);
-                                qrDiv.remove();
-                                resolve();
-                            } else {
-                                // Réessayer après un court délai
-                                setTimeout(checkQR, 100);
-                            }
-                        };
-                        checkQR();
-                    });
-                } else {
-                    console.warn('QRCode.js non chargé, QR code non généré');
-                }
-            } catch (qrError) {
-                console.error('Erreur génération QR code:', qrError);
-            }
-            
-            yPos += 45;
-            
-            // Lien cliquable (texte)
-            doc.setFontSize(9);
-            doc.setTextColor(0, 0, 255);
-            doc.text('Lien de paiement :', 20, yPos);
-            yPos += 5;
-            doc.setFontSize(8);
-            const linkLines = doc.splitTextToSize(paymentLink, 170);
-            doc.text(linkLines, 20, yPos);
-            doc.setTextColor(0, 0, 0); // Remettre en noir
+            // Section Paiement rapide - UNIQUEMENT pour l'admin, PAS pour le technicien
+            // Le technicien envoie un "BON D'INTERVENTION" sans section paiement
+            // (Pas de section paiement dans le PDF du technicien)
             
             // Générer le PDF en blob
             const pdfBlob = doc.output('blob');
