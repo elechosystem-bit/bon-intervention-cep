@@ -1070,6 +1070,7 @@
                     console.log('Sujet:', `Bon d'intervention ${numeroBon} - ${client}`);
                     console.log('Taille PDF base64:', pdfBase64.length, 'caractères');
                     
+                    // Envoyer à la comptabilité
                     await envoyerEmailAvecPDFSMTP({
                         email: "a.mathieu@elechosystem.com",
                         subject: `Bon d'intervention ${numeroBon} - ${client}`,
@@ -1079,6 +1080,85 @@
                     });
                     
                     console.log('✅ Email envoyé avec succès à la comptabilité');
+                    
+                    // Envoyer aussi au client si l'email est renseigné
+                    if (clientEmail && clientEmail.trim() !== '') {
+                        try {
+                            console.log('=== ENVOI FACTURE PROVISOIRE AU CLIENT ===');
+                            
+                            // Générer le lien de paiement
+                            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                            const paymentLink = isLocal 
+                                ? `${window.location.origin}/BI-${numeroBon}`
+                                : `https://pay.elecho-system.com/BI-${numeroBon}`;
+                            
+                            // Mettre à jour le bon avec le lien de paiement
+                            await db.collection('bons').doc(currentBonId).update({
+                                paymentLink: paymentLink,
+                                paymentStatus: 'pending',
+                                paymentDate: null,
+                                paymentAmount: null
+                            });
+                            
+                            // Régénérer le PDF avec le lien de paiement pour le client
+                            const pdfBlobClient = await genererPDFBon(paymentLink);
+                            const pdfBase64Client = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64String = reader.result.split(',')[1];
+                                    resolve(base64String);
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(pdfBlobClient);
+                            });
+                            
+                            // Préparer les données pour l'email client
+                            const bonDataClient = {
+                                numero: numeroBon,
+                                date: date,
+                                client: client,
+                                adresse: clientAddress,
+                                telephone: clientPhone,
+                                technicien: technicien,
+                                description: description,
+                                heure_arrivee: heureArrivee,
+                                heure_depart: heureDepart,
+                                // Ajouter les montants pour le client
+                                subtotal_produits: subtotalProduits,
+                                main_oeuvre: moTotal,
+                                deplacement: deplTotal,
+                                total_ht: totalHT,
+                                total_tva: totalTVA,
+                                total_ttc: totalTTC
+                            };
+                            
+                            // Envoyer l'email au client avec la facture provisoire
+                            await envoyerEmailAvecPDFSMTP({
+                                email: clientEmail.trim(),
+                                subject: `FACTURE PROVISOIRE - Bon d'intervention ${numeroBon} - ${client}`,
+                                pdfBase64: pdfBase64Client,
+                                pdfFileName: `facture-provisoire-${numeroBon}.pdf`,
+                                bonData: bonDataClient,
+                                photos: []
+                            });
+                            
+                            console.log('✅ Email envoyé avec succès au client');
+                            
+                            // Message de succès
+                            if (clientEmail && clientEmail.trim() !== '') {
+                                alert(`✅ Emails envoyés avec succès !\n\n📧 Comptabilité : a.mathieu@elechosystem.com\n📧 Client : ${clientEmail}\n\nLa facture provisoire avec les montants et le lien de paiement a été envoyée au client.`);
+                            } else {
+                                alert('✅ Email envoyé avec succès à la comptabilité.\n\n⚠️ Email client non envoyé (adresse manquante).');
+                            }
+                            
+                        } catch (clientError) {
+                            console.error('❌ Erreur envoi email client:', clientError);
+                            alert(`✅ Email envoyé à la comptabilité.\n\n⚠️ Erreur lors de l'envoi au client: ${clientError.message || clientError}`);
+                            // Ne pas bloquer si l'envoi au client échoue, la compta a déjà reçu l'email
+                        }
+                    } else {
+                        alert('✅ Email envoyé avec succès à la comptabilité.\n\n⚠️ Email client non envoyé (adresse manquante).');
+                    }
                     
                 } catch (pdfError) {
                     console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
