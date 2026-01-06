@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Système de gestion des bons d'intervention CEP",
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "local": "node server-local.js",
+    "start": "node server-local.js"
   },
   "dependencies": {
     "nodemailer": "^6.9.7"

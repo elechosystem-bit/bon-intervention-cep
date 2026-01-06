@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement - Bon d'Intervention</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --accent: #f6ad55;
+            --success: #48bb78;
+            --danger: #fc8181;
+            --bg: #f7fafc;
+            --card: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            min-height: 100vh; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+        }
+        .header { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); 
+            color: white; 
+            padding: 30px; 
+            border-radius: 16px 16px 0 0; 
+            text-align: center; 
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
+        .header p { font-size: 0.9rem; opacity: 0.9; }
+        .content { 
+            background: var(--card); 
+            padding: 30px; 
+            border: 1px solid var(--border); 
+            border-top: none; 
+            border-radius: 0 0 16px 16px; 
+        }
+        .loading { 
+            text-align: center; 
+            padding: 40px; 
+            color: var(--text-light); 
+        }
+        .error { 
+            background: #fee; 
+            border: 2px solid var(--danger); 
+            border-radius: 12px; 
+            padding: 20px; 
+            color: #c53030; 
+            margin-bottom: 20px; 
+        }
+        .summary-section { 
+            margin-bottom: 30px; 
+        }
+        .summary-title { 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            color: var(--primary); 
+            margin-bottom: 15px; 
+            padding-bottom: 8px; 
+            border-bottom: 2px solid var(--accent); 
+        }
+        .summary-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px 0; 
+            border-bottom: 1px solid var(--border); 
+        }
+        .summary-row:last-child { 
+            border-bottom: none; 
+        }
+        .summary-label { 
+            color: var(--text-light); 
+        }
+        .summary-value { 
+            font-weight: 600; 
+            font-family: 'Space Mono', monospace; 
+        }
+        .amount-section { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); 
+            color: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin: 30px 0; 
+        }
+        .amount-label { 
+            font-size: 0.9rem; 
+            opacity: 0.9; 
+            margin-bottom: 8px; 
+        }
+        .amount-value { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            font-family: 'Space Mono', monospace; 
+        }
+        .discount-badge { 
+            background: var(--success); 
+            color: white; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            display: inline-block; 
+            margin-top: 10px; 
+        }
+        .penalty-badge { 
+            background: var(--danger); 
+            color: white; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            display: inline-block; 
+            margin-top: 10px; 
+        }
+        .payment-section { 
+            margin-top: 30px; 
+        }
+        .payment-title { 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            color: var(--primary); 
+            margin-bottom: 15px; 
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        .form-group label { 
+            display: block; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            color: var(--text-light); 
+            margin-bottom: 8px; 
+        }
+        .form-group input { 
+            width: 100%; 
+            padding: 12px 14px; 
+            border: 2px solid var(--border); 
+            border-radius: 10px; 
+            font-family: inherit; 
+            font-size: 1rem; 
+            transition: all 0.2s ease; 
+        }
+        .form-group input:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1); 
+        }
+        .btn-pay { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--success); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            margin-top: 20px; 
+        }
+        .btn-pay:hover { 
+            background: #38a169; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3); 
+        }
+        .btn-pay:disabled { 
+            background: var(--text-light); 
+            cursor: not-allowed; 
+            transform: none; 
+        }
+        .info-box { 
+            background: #ebf8ff; 
+            border: 2px solid var(--primary); 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            font-size: 0.9rem; 
+        }
+        .info-box strong { 
+            color: var(--primary); 
+        }
+        .success-message { 
+            background: #f0fff4; 
+            border: 2px solid var(--success); 
+            border-radius: 12px; 
+            padding: 20px; 
+            text-align: center; 
+            color: #22543d; 
+            margin-top: 20px; 
+        }
+        .success-message h3 { 
+            color: var(--success); 
+            margin-bottom: 10px; 
+        }
+    </style>
+    <!-- Firebase v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 Paiement en ligne</h1>
+            <p>Bon d'Intervention CEP</p>
+        </div>
+        <div class="content" id="content">
+            <div class="loading" id="loading">
+                Chargement des informations...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuX2gsGiRGqVbsk93y0wmwJOsT-RuEkE4",
+            authDomain: "bon-d-intervention-cep.firebaseapp.com",
+            projectId: "bon-d-intervention-cep",
+            storageBucket: "bon-d-intervention-cep.firebasestorage.app",
+            messagingSenderId: "323636987494",
+            appId: "1:323636987494:web:0b07cffbb086c767320fa7"
+        };
+        
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Configuration GoCardless (à configurer dans votre backend)
+        const GOCARDLESS_API_URL = 'https://api.gocardless.com'; // URL de l'API GoCardless
+        // Détecter si on est en local ou en production
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const localPort = window.location.port || '8000';
+        const PAYMENT_API_URL = isLocal 
+            ? `http://${window.location.hostname}:${localPort}/api/payment`  // URL locale pour les tests
+            : 'https://votre-api.vercel.app/api/payment'; // URL de production
+        
+        // Récupérer le numéro de bon depuis l'URL
+        function getBonNumberFromURL() {
+            // Essayer plusieurs formats d'URL
+            const path = window.location.pathname;
+            const hash = window.location.hash;
+            const search = window.location.search;
+            
+            // Format: /BI-20260001 ou /payment.html?bon=20260001 ou #BI-20260001
+            let match = path.match(/\/BI-(\d+)$/);
+            if (match) return match[1];
+            
+            match = path.match(/BI-(\d+)/);
+            if (match) return match[1];
+            
+            const urlParams = new URLSearchParams(search);
+            const bonParam = urlParams.get('bon');
+            if (bonParam) return bonParam;
+            
+            match = hash.match(/BI-(\d+)/);
+            if (match) return match[1];
+            
+            return null;
+        }
+        
+        // Calculer le montant selon les délais
+        function calculateAmount(totalTTC, dateIntervention) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normaliser à minuit pour le calcul des jours
+            
+            const interventionDate = new Date(dateIntervention);
+            interventionDate.setHours(0, 0, 0, 0);
+            
+            const daysDiff = Math.floor((today - interventionDate) / (1000 * 60 * 60 * 24));
+            
+            // Parser le montant (gérer les formats "150.00€", "157,89€", etc.)
+            let amountStr = totalTTC.toString().trim();
+            // Remplacer la virgule par un point et supprimer tout sauf chiffres et point
+            amountStr = amountStr.replace(',', '.').replace(/[^\d.]/g, '');
+            let amount = parseFloat(amountStr);
+            
+            if (isNaN(amount) || amount <= 0) {
+                console.warn('Montant invalide:', totalTTC);
+                amount = 0;
+            }
+            
+            let discount = 0;
+            let penalty = 0;
+            let status = 'normal';
+            
+            if (daysDiff <= 3) {
+                // Réduction de 5% si paiement sous 3 jours
+                discount = amount * 0.05;
+                amount = amount - discount;
+                status = 'early';
+            } else if (daysDiff > 30) {
+                // Pénalités de retard après 30 jours (5% par mois de retard)
+                const monthsLate = Math.floor((daysDiff - 30) / 30);
+                penalty = amount * 0.05 * monthsLate;
+                amount = amount + penalty;
+                status = 'overdue';
+            }
+            
+            return {
+                original: parseFloat(amountStr),
+                final: Math.round(amount * 100) / 100,
+                discount: Math.round(discount * 100) / 100,
+                penalty: Math.round(penalty * 100) / 100,
+                daysDiff: daysDiff,
+                status: status
+            };
+        }
+        
+        // Charger les données du bon
+        async function loadBonData() {
+            const bonNumber = getBonNumberFromURL();
+            if (!bonNumber) {
+                showError('Numéro de bon invalide dans l\'URL.');
+                return null;
+            }
+            
+            try {
+                const querySnapshot = await db.collection('bons')
+                    .where('numero', '==', bonNumber)
+                    .get();
+                
+                if (querySnapshot.empty) {
+                    showError('Bon d\'intervention non trouvé.');
+                    return null;
+                }
+                
+                const bonDoc = querySnapshot.docs[0];
+                return { id: bonDoc.id, ...bonDoc.data() };
+            } catch (error) {
+                console.error('Erreur chargement bon:', error);
+                showError('Erreur lors du chargement du bon: ' + error.message);
+                return null;
+            }
+        }
+        
+        // Afficher une erreur
+        function showError(message) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="error">
+                    <strong>❌ Erreur</strong><br>
+                    ${message}
+                </div>
+            `;
+        }
+        
+        // Afficher le formulaire de paiement
+        function displayPaymentForm(bon, amountInfo) {
+            const content = document.getElementById('content');
+            const discountText = amountInfo.discount > 0 
+                ? `<span class="discount-badge">Réduction de 5% appliquée !</span>` 
+                : '';
+            const penaltyText = amountInfo.penalty > 0 
+                ? `<span class="penalty-badge">Pénalités de retard: +${amountInfo.penalty.toFixed(2)}€</span>` 
+                : '';
+            
+            content.innerHTML = `
+                <div class="summary-section">
+                    <div class="summary-title">📋 Récapitulatif de l'intervention</div>
+                    <div class="summary-row">
+                        <span class="summary-label">Numéro de bon</span>
+                        <span class="summary-value">BI-${bon.numero}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Date d'intervention</span>
+                        <span class="summary-value">${new Date(bon.date).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Client</span>
+                        <span class="summary-value">${bon.client}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Intervenant</span>
+                        <span class="summary-value">${bon.technicien}</span>
+                    </div>
+                    ${bon.description ? `
+                    <div class="summary-row">
+                        <span class="summary-label">Description</span>
+                        <span class="summary-value" style="text-align: right; max-width: 60%;">${bon.description}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="amount-section">
+                    <div class="amount-label">Montant à payer</div>
+                    <div class="amount-value">${amountInfo.final.toFixed(2)}€</div>
+                    ${discountText}
+                    ${penaltyText}
+                </div>
+                
+                <div class="info-box">
+                    <strong>ℹ️ Informations importantes :</strong><br>
+                    • Paiement par prélèvement SEPA (votre IBAN sera enregistré pour les paiements futurs)<br>
+                    • Le prélèvement sera effectué dans les 3-5 jours ouvrés<br>
+                    • Vous recevrez un email de confirmation après le paiement
+                </div>
+                
+                <div class="payment-section">
+                    <div class="payment-title">💳 Informations de paiement</div>
+                    <form id="paymentForm">
+                        <div class="form-group">
+                            <label for="iban">IBAN *</label>
+                            <input type="text" id="iban" name="iban" placeholder="FR76 1234 5678 9012 3456 7890 123" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="accountHolder">Titulaire du compte *</label>
+                            <input type="text" id="accountHolder" name="accountHolder" value="${bon.client}" required>
+                        </div>
+                        <button type="submit" class="btn-pay" id="payButton">
+                            Payer ${amountInfo.final.toFixed(2)}€
+                        </button>
+                    </form>
+                </div>
+            `;
+            
+            // Gérer la soumission du formulaire
+            document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await processPayment(bon, amountInfo);
+            });
+        }
+        
+        // Traiter le paiement
+        async function processPayment(bon, amountInfo) {
+            const payButton = document.getElementById('payButton');
+            const iban = document.getElementById('iban').value.replace(/\s/g, '');
+            const accountHolder = document.getElementById('accountHolder').value;
+            
+            // Validation de l'IBAN (format basique)
+            if (!iban || iban.length < 15) {
+                alert('Veuillez entrer un IBAN valide.');
+                return;
+            }
+            
+            payButton.disabled = true;
+            payButton.textContent = 'Traitement en cours...';
+            
+            try {
+                // Créer le mandat de prélèvement via votre API backend
+                // L'API backend gérera l'intégration GoCardless
+                const paymentData = {
+                    bonId: bon.id,
+                    bonNumber: bon.numero,
+                    amount: amountInfo.final,
+                    originalAmount: amountInfo.original,
+                    discount: amountInfo.discount,
+                    penalty: amountInfo.penalty,
+                    iban: iban,
+                    accountHolder: accountHolder,
+                    clientEmail: bon.email,
+                    clientName: bon.client
+                };
+                
+                // Appeler votre API backend pour créer le mandat GoCardless
+                const response = await fetch(PAYMENT_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erreur lors de la création du mandat de prélèvement');
+                }
+                
+                const result = await response.json();
+                
+                // Enregistrer le paiement dans Firebase
+                await db.collection('paiements').add({
+                    bonId: bon.id,
+                    bonNumber: bon.numero,
+                    amount: amountInfo.final,
+                    originalAmount: amountInfo.original,
+                    discount: amountInfo.discount,
+                    penalty: amountInfo.penalty,
+                    status: 'pending',
+                    iban: iban.substring(0, 4) + '****' + iban.substring(iban.length - 4), // Masquer l'IBAN
+                    accountHolder: accountHolder,
+                    gocardlessMandateId: result.mandateId,
+                    gocardlessPaymentId: result.paymentId,
+                    paymentDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Mettre à jour le statut du bon
+                await db.collection('bons').doc(bon.id).update({
+                    paymentStatus: 'pending',
+                    paymentDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    paymentAmount: amountInfo.final,
+                    gocardlessMandateId: result.mandateId
+                });
+                
+                // Afficher le message de succès
+                showSuccessMessage(bon, amountInfo);
+                
+            } catch (error) {
+                console.error('Erreur paiement:', error);
+                alert('Erreur lors du traitement du paiement: ' + error.message);
+                payButton.disabled = false;
+                payButton.textContent = `Payer ${amountInfo.final.toFixed(2)}€`;
+            }
+        }
+        
+        // Afficher le message de succès
+        function showSuccessMessage(bon, amountInfo) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="success-message">
+                    <h3>✅ Paiement initié avec succès !</h3>
+                    <p>Votre demande de prélèvement a été enregistrée.</p>
+                    <p><strong>Montant :</strong> ${amountInfo.final.toFixed(2)}€</p>
+                    <p><strong>Bon d'intervention :</strong> BI-${bon.numero}</p>
+                    <p style="margin-top: 20px; font-size: 0.9rem; color: var(--text-light);">
+                        Vous recevrez un email de confirmation dans quelques instants.<br>
+                        Le prélèvement sera effectué dans les 3-5 jours ouvrés.
+                    </p>
+                </div>
+            `;
+        }
+        
+        // Initialisation
+        (async function() {
+            const bon = await loadBonData();
+            if (!bon) return;
+            
+            // Calculer le montant
+            const totalTTC = bon.totalTTC || '0.00€';
+            const amountInfo = calculateAmount(totalTTC, bon.date);
+            
+            // Afficher le formulaire
+            displayPaymentForm(bon, amountInfo);
+        })();
+    </script>
+</body>
+</html>
+
