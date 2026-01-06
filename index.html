@@ -176,10 +176,17 @@
     <div class="container">
         <div class="header">
             <div class="logo-section">
-                <h1>⚡ Compagnie d'Électricité Parisienne</h1>
+                <h1 id="societeNom">⚡ Compagnie d'Électricité Parisienne</h1>
                 <p>Bon d'Intervention</p>
             </div>
             <div class="bon-number">
+                <div style="margin-bottom: 10px;">
+                    <label for="societeSelect" style="font-size: 0.8rem; opacity: 0.9; margin-right: 8px;">Société :</label>
+                    <select id="societeSelect" onchange="changerSociete(this.value)" style="padding: 6px 12px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: white; font-size: 0.9rem; cursor: pointer; font-weight: 600;">
+                        <option value="cep">CEP</option>
+                        <option value="elechosystem">Elecho System</option>
+                    </select>
+                </div>
                 <span id="bonNumber">CEP-2024-0001</span>
                 <p id="currentDate"></p>
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -501,7 +508,7 @@
             <div id="saveMessage" class="save-message">Bon enregistré.</div>
         </div>
 
-        <div class="footer">Compagnie d'Électricité Parisienne — Bon d'intervention</div>
+        <div class="footer" id="footerSociete">Compagnie d'Électricité Parisienne — Bon d'intervention</div>
     </div>
 
     <!-- Lightbox d'aperçu des photos -->
@@ -520,6 +527,8 @@
     </div>
 
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+    <!-- Configuration des sociétés -->
+    <script src="config.js"></script>
     <!-- Firebase v8 (app + firestore + storage) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -535,9 +544,158 @@
             appId: "1:323636987494:web:0b07cffbb086c767320fa7"
         };
         firebase.initializeApp(firebaseConfig);
+        
+        // Variable globale pour la société active
+        let societeActive = null;
+        
+        // Fonction pour convertir hex en RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16),
+                parseInt(result[2], 16),
+                parseInt(result[3], 16)
+            ] : [0, 0, 0];
+        }
+        
+        // Fonction pour générer le HTML du matériel
+        function genererMateriel(societe) {
+            let html = '';
+            let indexGlobal = 0;
+            
+            societe.materiel.forEach(categorie => {
+                html += `<div class="category-section">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>${categorie.categorie}</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">`;
+                
+                categorie.produits.forEach(produit => {
+                    const prixAffichage = produit.prix + (produit.unite === 'm' ? '€/m' : '€');
+                    const refHtml = produit.reference ? `<div class="product-ref">${produit.reference}</div>` : '';
+                    html += `<div class="product-row" data-index="${indexGlobal}">
+                        <input type="checkbox" onchange="updateTotal(this)">
+                        <div>
+                            <div class="product-name">${produit.nom}</div>
+                            ${refHtml}
+                        </div>
+                        <div class="product-price">${prixAffichage}</div>
+                        <div class="product-qty">
+                            <input type="number" value="0" min="0" data-price="${produit.prix}" onchange="updateRowTotal(this)">
+                        </div>
+                        <div class="product-total">0.00€</div>
+                    </div>`;
+                    indexGlobal++;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            return html;
+        }
+        
+        // Fonction pour générer le select de matériel
+        function genererSelectMateriel(societe) {
+            let html = '<option value="">-- Choisir un produit --</option>';
+            let indexGlobal = 0;
+            
+            societe.materiel.forEach(categorie => {
+                html += `<optgroup label="${categorie.categorie}">`;
+                categorie.produits.forEach(produit => {
+                    html += `<option value="${indexGlobal}" data-price="${produit.prix}">${produit.nom}</option>`;
+                    indexGlobal++;
+                });
+                html += `</optgroup>`;
+            });
+            
+            return html;
+        }
+        
+        // Fonction principale pour changer de société
+        function changerSociete(societeId) {
+            const societe = SOCIETES[societeId];
+            if (!societe) return;
+            
+            societeActive = societe;
+            
+            // Sauvegarder le choix
+            localStorage.setItem('societeSelectionnee', societeId);
+            
+            // Mettre à jour le sélecteur
+            document.getElementById('societeSelect').value = societeId;
+            
+            // Changer le nom
+            document.getElementById('societeNom').innerHTML = '⚡ ' + societe.nom;
+            
+            // Changer le footer
+            const footer = document.getElementById('footerSociete');
+            if (footer) {
+                footer.textContent = societe.nom + ' — Bon d\'intervention';
+            }
+            
+            // Changer les couleurs
+            document.documentElement.style.setProperty('--primary', societe.couleurPrimaire);
+            document.documentElement.style.setProperty('--primary-light', societe.couleurSecondaire);
+            
+            // Changer les techniciens
+            const select = document.getElementById('technicien');
+            select.innerHTML = '<option value="">-- Sélectionner un technicien --</option>';
+            societe.techniciens.forEach(tech => {
+                select.innerHTML += '<option value="' + tech + '">' + tech + '</option>';
+            });
+            
+            // Régénérer le matériel
+            const materialSelect = document.getElementById('materialSelect');
+            if (materialSelect) {
+                materialSelect.innerHTML = genererSelectMateriel(societe);
+            }
+            
+            // Remplacer toutes les catégories de matériel
+            const materielSection = document.querySelector('.section:has(.material-selector)');
+            if (materielSection) {
+                // Trouver toutes les catégories existantes
+                const categories = materielSection.querySelectorAll('.category-section');
+                categories.forEach(cat => cat.remove());
+                
+                // Ajouter les nouvelles catégories après le material-selector
+                const materialSelector = materielSection.querySelector('.material-selector');
+                if (materialSelector) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = genererMateriel(societe);
+                    while (tempDiv.firstChild) {
+                        materialSelector.parentNode.insertBefore(tempDiv.firstChild, materialSelector.nextSibling);
+                    }
+                }
+            }
+            
+            // Réinitialiser les totaux
+            updateTotal();
+        }
+        
+        // Initialiser la société au chargement
+        function initialiserSociete() {
+            const societeId = localStorage.getItem('societeSelectionnee') || 'cep';
+            changerSociete(societeId);
+        }
+
         const db = firebase.firestore();
         const storage = firebase.storage();
         let photosBon = [];
+        
+        // Fonction helper pour obtenir le chemin de collection selon la société
+        function getCollectionPath(collectionName) {
+            if (!societeActive) {
+                console.warn('Aucune société active, utilisation de la collection par défaut');
+                return collectionName;
+            }
+            return `societes/${societeActive.id}/${collectionName}`;
+        }
+        
+        // Fonction helper pour obtenir la référence du compteur selon la société
+        function getCompteurRef() {
+            if (!societeActive) {
+                return db.collection('compteurs').doc('bons');
+            }
+            return db.collection(`societes/${societeActive.id}/compteurs`).doc('bons');
+        }
 
         // ============================================
         // NOTIFICATIONS - Comptage des bons en attente
@@ -545,7 +703,8 @@
         async function mettreAJourBadgeNotifications() {
             try {
                 // Charger tous les bons et filtrer localement (évite les problèmes d'index)
-                const snapshot = await db.collection('bons').get();
+                if (!societeActive) return;
+                const snapshot = await db.collection(getCollectionPath('bons')).get();
                 const nombreEnAttente = snapshot.docs.filter(doc => {
                     const data = doc.data();
                     return data.statut === 'en_attente' || (!data.statut && data.createdAt); // Si pas de statut, considérer comme en attente
@@ -690,6 +849,13 @@
         }
         
         document.addEventListener('DOMContentLoaded', function() {
+            const savedSociete = localStorage.getItem('societeSelectionnee') || 'cep';
+            const societeSelect = document.getElementById('societeSelect');
+            if (societeSelect) {
+                societeSelect.value = savedSociete;
+            }
+            changerSociete(savedSociete);
+            
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
             document.getElementById('interventionDate').valueAsDate = today;
@@ -988,7 +1154,7 @@
             
             body += '\n\n─'.repeat(50) + '\n';
             body += 'Cordialement,\n';
-            body += 'Compagnie d\'Électricité Parisienne\n';
+            body += (societeActive ? societeActive.nom : 'Compagnie d\'Électricité Parisienne') + '\n';
             
             // Récupérer les heures d'arrivée et de départ
             const heureArrivee = document.getElementById('heureArrivee').value || '';
@@ -1110,13 +1276,16 @@
             const doc = new jsPDF();
             console.log('jsPDF initialisé, début génération PDF...');
             
-            // Informations CEP
-            const infoCEP = {
-                nom: "CEP - Électricité Générale, Installation, Dépannage",
-                adresse: "6, rue de Metz, 94240 L'Haÿ-les-Roses",
-                tel: "Tél. 01 56 04 19 96",
-                email: "contact@cep75.fr",
-                web: "www.cep75.fr"
+            // Informations de la société active
+            if (!societeActive) {
+                throw new Error('Aucune société sélectionnée');
+            }
+            const infoSociete = {
+                nom: societeActive.nom,
+                adresse: societeActive.adresse || '',
+                tel: societeActive.telephone ? `Tél. ${societeActive.telephone}` : '',
+                email: societeActive.email || '',
+                web: societeActive.siteWeb || ''
             };
             
             // Récupérer les données du formulaire
@@ -1162,19 +1331,29 @@
             
             let yPos = 20;
             
-            // En-tête CEP
+            // En-tête société
             doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
-            doc.text(infoCEP.nom, 105, yPos, { align: 'center' });
+            doc.setTextColor(...hexToRgb(societeActive.couleurPrimaire));
+            doc.text(infoSociete.nom, 105, yPos, { align: 'center' });
             yPos += 8;
             
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            doc.text(infoCEP.adresse, 105, yPos, { align: 'center' });
-            yPos += 5;
-            doc.text(infoCEP.tel, 105, yPos, { align: 'center' });
-            yPos += 5;
-            doc.text(infoCEP.email + ' / ' + infoCEP.web, 105, yPos, { align: 'center' });
+            doc.setTextColor(0, 0, 0); // Noir pour le reste
+            if (infoSociete.adresse) {
+                doc.text(infoSociete.adresse, 105, yPos, { align: 'center' });
+                yPos += 5;
+            }
+            if (infoSociete.tel) {
+                doc.text(infoSociete.tel, 105, yPos, { align: 'center' });
+                yPos += 5;
+            }
+            if (infoSociete.email || infoSociete.web) {
+                const contactLine = [infoSociete.email, infoSociete.web].filter(Boolean).join(' / ');
+                doc.text(contactLine, 105, yPos, { align: 'center' });
+                yPos += 5;
+            }
             yPos += 10;
             
             // Ligne de séparation
@@ -1624,7 +1803,11 @@
         async function saveBonTech() {
             try {
                 // 1. Récupérer et incrémenter le compteur
-                const compteurRef = db.collection('compteurs').doc('bons');
+                if (!societeActive) {
+                    alert('Erreur: Aucune société sélectionnée');
+                    return;
+                }
+                const compteurRef = getCompteurRef();
                 const annee = new Date().getFullYear();
                 let numero;
                 
@@ -1676,6 +1859,7 @@
                     totalTVA: document.getElementById('totalTVA').textContent || '0.00€',
                     totalTTC: document.getElementById('totalTTC').textContent || '0.00€',
                     statut: 'en_attente',
+                    societe: societeActive.id,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     produits: [],
                     photos: photosBon.map(photo => typeof photo === 'string' ? photo : photo.url), // Sauvegarder seulement les URLs
@@ -1707,7 +1891,7 @@
                 // Le lien de paiement sera généré uniquement dans le PDF lors de l'envoi
                 // Pas besoin de l'enregistrer dans Firebase au moment de l'enregistrement
                 
-                await db.collection('bons').add(bon);
+                await db.collection(getCollectionPath('bons')).add(bon);
                 
                 // Mettre à jour le badge de notifications
                 await mettreAJourBadgeNotifications();
@@ -1964,7 +2148,8 @@
         async function chargerTousLesClients() {
             try {
                 // Charger tous les clients (sans orderBy pour éviter les problèmes d'index)
-                const snapshot = await db.collection('clients').get();
+                if (!societeActive) return;
+                const snapshot = await db.collection(getCollectionPath('clients')).get();
                 tousLesClients = [];
                 snapshot.forEach(doc => {
                     tousLesClients.push({ id: doc.id, ...doc.data() });
@@ -1987,7 +2172,7 @@
             try {
                 let client = tousLesClients.find(c => c.id === clientId);
                 if (!client) {
-                    const doc = await db.collection('clients').doc(clientId).get();
+                    const doc = await db.collection(getCollectionPath('clients')).doc(clientId).get();
                     if (!doc.exists) {
                         alert('Client introuvable');
                         return;
@@ -2071,7 +2256,7 @@
 
                 if (clientExistant && clientId) {
                     // Mettre à jour le client existant
-                    await db.collection('clients').doc(clientId).update(donneesClient);
+                    await db.collection(getCollectionPath('clients')).doc(clientId).update(donneesClient);
                     console.log('✅ Client mis à jour:', nom);
                     alert(`✅ Adresse enregistrée pour ${nom} !\n\nLe client a été mis à jour dans la base de données.`);
                 } else {
@@ -2095,7 +2280,7 @@
                     
                     donneesClient.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     
-                    await db.collection('clients').doc(nouveauClientId).set(donneesClient);
+                    await db.collection(getCollectionPath('clients')).doc(nouveauClientId).set(donneesClient);
                     console.log('✅ Nouveau client créé:', nom);
                     alert(`✅ Nouveau client créé : ${nom} !\n\nL'adresse a été enregistrée dans la base de données.`);
                 }

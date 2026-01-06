@@ -204,15 +204,17 @@
             margin-bottom: 10px; 
         }
     </style>
+    <!-- Configuration des sociétés -->
+    <script src="config.js"></script>
     <!-- Firebase v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div class="header" id="headerSociete">
             <h1>💳 Paiement en ligne</h1>
-            <p>Bon d'Intervention CEP</p>
+            <p id="societeNomPayment">Bon d'Intervention</p>
         </div>
         <div class="content" id="content">
             <div class="loading" id="loading">
@@ -235,6 +237,32 @@
         // Initialiser Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        
+        // Variable globale pour la société active
+        let societeActive = null;
+        
+        // Fonction helper pour obtenir le chemin de collection selon la société
+        function getCollectionPath(collectionName) {
+            if (!societeActive) {
+                console.warn('Aucune société active, utilisation de la collection par défaut');
+                return collectionName;
+            }
+            return `societes/${societeActive.id}/${collectionName}`;
+        }
+        
+        // Fonction pour adapter l'interface selon la société
+        function adapterInterfaceSociete(societe) {
+            if (!societe) return;
+            
+            societeActive = societe;
+            
+            // Changer le nom
+            document.getElementById('societeNomPayment').textContent = `Bon d'Intervention - ${societe.nom}`;
+            
+            // Changer les couleurs
+            document.documentElement.style.setProperty('--primary', societe.couleurPrimaire);
+            document.documentElement.style.setProperty('--primary-light', societe.couleurSecondaire);
+        }
         
         // Configuration GoCardless (à configurer dans votre backend)
         const GOCARDLESS_API_URL = 'https://api.gocardless.com'; // URL de l'API GoCardless
@@ -326,16 +354,30 @@
             }
             
             try {
-                const querySnapshot = await db.collection('bons')
-                    .where('numero', '==', bonNumber)
-                    .get();
+                // Chercher le bon dans toutes les sociétés
+                let bonDoc = null;
+                let societeId = null;
                 
-                if (querySnapshot.empty) {
+                for (const societeKey in SOCIETES) {
+                    const societe = SOCIETES[societeKey];
+                    const querySnapshot = await db.collection(`societes/${societe.id}/bons`)
+                        .where('numero', '==', bonNumber)
+                        .get();
+                    
+                    if (!querySnapshot.empty) {
+                        bonDoc = querySnapshot.docs[0];
+                        societeId = societe.id;
+                        // Adapter l'interface selon la société trouvée
+                        adapterInterfaceSociete(societe);
+                        break;
+                    }
+                }
+                
+                if (!bonDoc) {
                     showError('Bon d\'intervention non trouvé.');
                     return null;
                 }
                 
-                const bonDoc = querySnapshot.docs[0];
                 return { id: bonDoc.id, ...bonDoc.data() };
             } catch (error) {
                 console.error('Erreur chargement bon:', error);
@@ -479,7 +521,10 @@
                 const result = await response.json();
                 
                 // Enregistrer le paiement dans Firebase
-                await db.collection('paiements').add({
+                if (!societeActive) {
+                    throw new Error('Société non identifiée');
+                }
+                await db.collection(getCollectionPath('paiements')).add({
                     bonId: bon.id,
                     bonNumber: bon.numero,
                     amount: amountInfo.final,
@@ -496,7 +541,7 @@
                 });
                 
                 // Mettre à jour le statut du bon
-                await db.collection('bons').doc(bon.id).update({
+                await db.collection(getCollectionPath('bons')).doc(bon.id).update({
                     paymentStatus: 'pending',
                     paymentDate: firebase.firestore.FieldValue.serverTimestamp(),
                     paymentAmount: amountInfo.final,

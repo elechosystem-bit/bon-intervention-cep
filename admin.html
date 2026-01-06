@@ -147,10 +147,17 @@
     <div class="container">
         <div class="header">
             <div class="logo-section">
-                <h1>⚡ Compagnie d'Électricité Parisienne</h1>
+                <h1 id="societeNom">⚡ Compagnie d'Électricité Parisienne</h1>
                 <p>Bon d'Intervention (Admin)</p>
             </div>
             <div class="bon-number">
+                <div style="margin-bottom: 10px;">
+                    <label for="societeSelect" style="font-size: 0.8rem; opacity: 0.9; margin-right: 8px;">Société :</label>
+                    <select id="societeSelect" onchange="changerSociete(this.value)" style="padding: 6px 12px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: white; font-size: 0.9rem; cursor: pointer; font-weight: 600;">
+                        <option value="cep">CEP</option>
+                        <option value="elechosystem">Elecho System</option>
+                    </select>
+                </div>
                 <span id="bonNumber">CEP-2024-0001</span>
                 <p id="currentDate"></p>
             </div>
@@ -504,7 +511,7 @@
                 </p>
             </div>
 
-        <div class="footer">Compagnie d'Électricité Parisienne — Bon d'intervention (Admin)</div>
+        <div class="footer" id="footerSociete">Compagnie d'Électricité Parisienne — Bon d'intervention (Admin)</div>
     </div>
 
     <!-- Lightbox d'aperçu des photos -->
@@ -513,6 +520,8 @@
         <img id="photoLightboxImg" src="" alt="Aperçu photo">
     </div>
 
+    <!-- Configuration des sociétés -->
+    <script src="config.js"></script>
     <!-- Firebase v8 (app + firestore + storage) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -520,6 +529,9 @@
     <script>
         let currentBonId = null; // id du document Firestore courant
         let photosAdmin = [];
+        
+        // Variable globale pour la société active
+        let societeActive = null;
 
         // Configuration Firebase
         const firebaseConfig = {
@@ -533,6 +545,51 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const storage = firebase.storage();
+        
+        // Fonction helper pour obtenir le chemin de collection selon la société
+        function getCollectionPath(collectionName) {
+            if (!societeActive) {
+                console.warn('Aucune société active, utilisation de la collection par défaut');
+                return collectionName;
+            }
+            return `societes/${societeActive.id}/${collectionName}`;
+        }
+        
+        // Fonction pour changer de société
+        function changerSociete(societeId) {
+            const societe = SOCIETES[societeId];
+            if (!societe) return;
+            
+            societeActive = societe;
+            
+            // Sauvegarder le choix
+            localStorage.setItem('societeSelectionnee', societeId);
+            
+            // Mettre à jour le sélecteur
+            document.getElementById('societeSelect').value = societeId;
+            
+            // Changer le nom
+            document.getElementById('societeNom').innerHTML = '⚡ ' + societe.nom;
+            
+            // Changer le footer
+            const footer = document.getElementById('footerSociete');
+            if (footer) {
+                footer.textContent = societe.nom + ' — Bon d\'intervention (Admin)';
+            }
+            
+            // Changer les couleurs
+            document.documentElement.style.setProperty('--primary', societe.couleurPrimaire);
+            document.documentElement.style.setProperty('--primary-light', societe.couleurSecondaire);
+            
+            // Recharger les bons de la société sélectionnée
+            chargerBons();
+        }
+        
+        // Initialiser la société au chargement
+        function initialiserSociete() {
+            const societeId = localStorage.getItem('societeSelectionnee') || 'cep';
+            changerSociete(societeId);
+        }
 
         // ============================================
         // CONFIGURATION EMAILJS
@@ -603,6 +660,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser la société
+            initialiserSociete();
             // Protection par code admin
             // Vérifier si l'utilisateur est déjà authentifié (venant de index.html)
             const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
@@ -845,7 +904,7 @@
                 
                 // Mettre à jour le bon avec le lien de paiement AVANT de générer le PDF
                 console.log('Mise à jour du bon dans Firebase...');
-                await db.collection('bons').doc(currentBonId).update({
+                await db.collection(getCollectionPath('bons')).doc(currentBonId).update({
                     paymentLink: paymentLink,
                     paymentStatus: 'pending',
                     paymentDate: null,
@@ -873,7 +932,7 @@
                 let photosPourEmail = [];
                 try {
                     if (currentBonId) {
-                        const bonDoc = await db.collection('bons').doc(currentBonId).get();
+                        const bonDoc = await db.collection(getCollectionPath('bons')).doc(currentBonId).get();
                         if (bonDoc.exists) {
                             const bonData = bonDoc.data();
                             if (bonData.photos && Array.isArray(bonData.photos)) {
@@ -931,7 +990,7 @@
                 await saveBon();
 
                 // Récupérer les données du bon depuis Firestore
-                const doc = await db.collection('bons').doc(currentBonId).get();
+                const doc = await db.collection(getCollectionPath('bons')).doc(currentBonId).get();
                 if (!doc.exists) {
                     showToast("Bon introuvable", true);
                     return;
@@ -939,7 +998,7 @@
                 const bonData = doc.data();
 
                 // Mettre à jour le statut en 'validé'
-                await db.collection('bons').doc(currentBonId).update({ statut: 'validé' });
+                await db.collection(getCollectionPath('bons')).doc(currentBonId).update({ statut: 'validé' });
 
                 // Récupérer les informations du formulaire
                 const numeroBon = document.getElementById('bonNumber').textContent;
@@ -1120,7 +1179,7 @@
                                 : `https://pay.elecho-system.com/BI-${numeroBon}`;
                             
                             // Mettre à jour le bon avec le lien de paiement
-                            await db.collection('bons').doc(currentBonId).update({
+                            await db.collection(getCollectionPath('bons')).doc(currentBonId).update({
                                 paymentLink: paymentLink,
                                 paymentStatus: 'pending',
                                 paymentDate: null,
@@ -1243,6 +1302,7 @@
             const bon = {
                 id: currentBonId,
                 numero: numeroActuel,
+                societe: societeActive ? societeActive.id : 'cep',
                 date: document.getElementById('interventionDate').value || new Date().toISOString().slice(0,10),
                 client: document.getElementById('clientName').value || '',
                 phone: document.getElementById('clientPhone').value || '',
@@ -1295,7 +1355,8 @@
 
             try {
                 // Charger tous les bons (en_attente et validé)
-                const snap = await db.collection('bons').get();
+                if (!societeActive) return;
+                const snap = await db.collection(getCollectionPath('bons')).get();
                 const bons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
@@ -1348,7 +1409,7 @@
 
         async function chargerBon(id) {
             try {
-                const doc = await db.collection('bons').doc(id).get();
+                const doc = await db.collection(getCollectionPath('bons')).doc(id).get();
                 if (!doc.exists) {
                     showToast("Bon introuvable", true);
                     return;
@@ -1616,7 +1677,10 @@
         // Fonction pour envoyer l'email à la comptabilité via EmailJS
         async function envoyerEmailCompta(bon) {
             try {
-                const emailDest = bon.email || EMAILJS_CONFIG.emailDest;
+                if (!societeActive) {
+                    throw new Error('Aucune société sélectionnée');
+                }
+                const emailDest = societeActive.emailCompta || bon.email || EMAILJS_CONFIG.emailDest;
                 const serviceID = EMAILJS_CONFIG.serviceID;
                 const templateID = EMAILJS_CONFIG.templateID;
                 
@@ -1957,7 +2021,7 @@
             if (!paymentLink) {
                 try {
                     if (currentBonId) {
-                        const bonDoc = await db.collection('bons').doc(currentBonId).get();
+                        const bonDoc = await db.collection(getCollectionPath('bons')).doc(currentBonId).get();
                         if (bonDoc.exists && bonDoc.data().paymentLink) {
                             paymentLink = bonDoc.data().paymentLink;
                         }
@@ -2113,7 +2177,7 @@
             let bonStatut = statut;
             if (!bonStatut) {
                 try {
-                    const doc = await db.collection('bons').doc(id).get();
+                    const doc = await db.collection(getCollectionPath('bons')).doc(id).get();
                     if (doc.exists) {
                         bonStatut = doc.data().statut || 'en_attente';
                     }
@@ -2137,7 +2201,7 @@
             }
             
             try {
-                await db.collection('bons').doc(id).delete();
+                await db.collection(getCollectionPath('bons')).doc(id).delete();
                 if (currentBonId === id) currentBonId = null;
                 showToast('Bon supprimé');
                 await renderHistorique();
@@ -2224,7 +2288,7 @@
             
             for (const bon of bonsASupprimer) {
                 try {
-                    await db.collection('bons').doc(bon.id).delete();
+                    await db.collection(getCollectionPath('bons')).doc(bon.id).delete();
                     if (currentBonId === bon.id) currentBonId = null;
                     succes++;
                 } catch (e) {
@@ -2293,7 +2357,7 @@
                 photosAdmin.splice(index, 1);
                 
                 // Mettre à jour dans Firestore
-                await db.collection('bons').doc(currentBonId).update({
+                await db.collection(getCollectionPath('bons')).doc(currentBonId).update({
                     photos: photosAdmin
                 });
                 
@@ -2321,7 +2385,8 @@
         async function exporterClientsExcel() {
             try {
                 // Charger tous les clients depuis Firestore (sans orderBy pour éviter les problèmes d'index)
-                const snapshot = await db.collection('clients').get();
+                if (!societeActive) return;
+                const snapshot = await db.collection(getCollectionPath('clients')).get();
                 const clients = [];
                 snapshot.forEach(doc => {
                     clients.push({ id: doc.id, ...doc.data() });
@@ -2442,12 +2507,12 @@
                                 }
 
                                 // Vérifier si le client existe déjà (par email)
-                                const existing = await db.collection('clients').where('email', '==', email).get();
+                                const existing = await db.collection(getCollectionPath('clients')).where('email', '==', email).get();
                                 
                                 if (!existing.empty) {
                                     // Mettre à jour
                                     const clientId = existing.docs[0].id;
-                                    await db.collection('clients').doc(clientId).update({
+                                    await db.collection(getCollectionPath('clients')).doc(clientId).update({
                                         nom: nom,
                                         telephone: telephone,
                                         adresse: adresse,
@@ -2456,7 +2521,7 @@
                                     misAJour++;
                                 } else {
                                     // Créer
-                                    await db.collection('clients').add({
+                                    await db.collection(getCollectionPath('clients')).add({
                                         nom: nom,
                                         email: email,
                                         telephone: telephone,
