@@ -611,7 +611,6 @@
             const qty = parseInt(qtyInput.value) || 1;
             
             if (index === '') {
-                alert('Veuillez sélectionner un produit');
                 return;
             }
             
@@ -796,7 +795,6 @@
             
             const email = (document.getElementById('clientEmail').value || '').trim();
             if (!email) {
-                alert("Veuillez renseigner l'email du client avant d'envoyer.");
                 return;
             }
             
@@ -1873,7 +1871,8 @@
                 doc.setFontSize(9);
                 
                 produits.forEach(p => {
-                    const ligne = `${p.nom}${p.reference ? ' (Ref: ' + p.reference + ')' : ''} - Qté: ${p.quantite}${p.prix > 0 ? ' - Prix unitaire: ' + p.prix.toFixed(2) + '€' : ''}`;
+                    // Afficher uniquement le nom et la quantité, sans référence
+                    const ligne = `${p.nom} - Qté: ${p.quantite}${p.prix > 0 ? ' - Prix unitaire: ' + p.prix.toFixed(2) + '€' : ''}`;
                     const lignes = doc.splitTextToSize(ligne, 170);
                     doc.text(lignes, 20, yPos);
                     yPos += lignes.length * 4;
@@ -1944,47 +1943,43 @@
                     : `https://pay.elecho-system.com/BI-${numeroBon}`;
             }
             
+            // Section Paiement rapide - Positionnée en bas à gauche de la page
             if (paymentLink) {
-                yPos += 20;
-                if (yPos > 250) {
-                    doc.addPage();
-                    yPos = 20;
-                }
-                
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'bold');
-                doc.text('PAIEMENT RAPIDE', 105, yPos, { align: 'center' });
-                yPos += 8;
-                
-                // Conditions de paiement - Calculer le montant avec 5% de réduction
-                // Récupérer le total TTC et calculer le montant remisé
+                // Calculer le montant avec 5% de réduction
                 let totalTTCValue = 0;
                 try {
                     const totalTTCText = document.getElementById('totalTTC').textContent || '0.00€';
-                    // Parser le montant (gérer les formats "150.00€", "157,89€", etc.)
                     let amountStr = totalTTCText.toString().trim();
                     amountStr = amountStr.replace(',', '.').replace(/[^\d.]/g, '');
                     totalTTCValue = parseFloat(amountStr) || 0;
                 } catch (e) {
                     console.warn('Erreur parsing totalTTC:', e);
                 }
-                
-                // Calculer le montant avec 5% de réduction
                 const montantRemise = Math.round((totalTTCValue * 0.95) * 100) / 100;
                 
+                // Positionner en bas à gauche (yPos = 250 pour être en bas de page)
+                const paymentYPos = 250;
+                const paymentXPos = 20;
+                
+                // Titre "PAIEMENT RAPIDE" en rouge, aligné à gauche
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(255, 0, 0); // Rouge
+                doc.text('PAIEMENT RAPIDE', paymentXPos, paymentYPos);
+                doc.setTextColor(0, 0, 0); // Remettre en noir
+                
+                // "Paiement sous 3 jours" juste en dessous
                 doc.setFontSize(9);
                 doc.setFont(undefined, 'normal');
-                doc.text(`Paiement sous 3 jours : ${montantRemise.toFixed(2)}€`, 20, yPos);
-                yPos += 8;
+                doc.text(`Paiement sous 3 jours : ${montantRemise.toFixed(2)}€`, paymentXPos, paymentYPos + 8);
                 
-                // Lien de paiement (texte uniquement, sans QR code)
+                // Lien de paiement en dessous
                 doc.setFontSize(9);
                 doc.setTextColor(0, 0, 255);
-                doc.text('Lien de paiement :', 20, yPos);
-                yPos += 5;
+                doc.text('Lien de paiement :', paymentXPos, paymentYPos + 16);
                 doc.setFontSize(8);
-                const linkLines = doc.splitTextToSize(paymentLink, 170);
-                doc.text(linkLines, 20, yPos);
+                const linkLines = doc.splitTextToSize(paymentLink, 80); // Largeur réduite pour la colonne gauche
+                doc.text(linkLines, paymentXPos, paymentYPos + 21);
                 doc.setTextColor(0, 0, 0);
             }
             
@@ -2354,7 +2349,6 @@
 
             // Vérifier le type de fichier
             if (!file.name.match(/\.(xlsx|xls)$/i)) {
-                alert('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)');
                 return;
             }
 

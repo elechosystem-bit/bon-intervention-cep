@@ -644,7 +644,6 @@
             const qty = parseInt(qtyInput.value) || 1;
             
             if (index === '') {
-                alert('Veuillez sélectionner un produit');
                 return;
             }
             
@@ -834,7 +833,6 @@
         async function envoyerClient() {
             const email = (document.getElementById('clientEmail').value || '').trim();
             if (!email) {
-                alert("Veuillez renseigner l'email du client avant d'envoyer.");
                 return;
             }
             
@@ -1954,12 +1952,10 @@
             const adresse = (document.getElementById('clientAddress').value || '').trim();
 
             if (!nom) {
-                alert('⚠️ Veuillez renseigner au moins le nom du client pour enregistrer.');
                 return;
             }
 
             if (!adresse) {
-                alert('⚠️ Veuillez renseigner l\'adresse à enregistrer.');
                 return;
             }
 
