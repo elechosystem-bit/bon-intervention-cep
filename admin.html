@@ -134,6 +134,8 @@
     </script>
     <!-- jsPDF pour la génération de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QR Code pour générer les QR codes de paiement -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- SheetJS pour lire et écrire les fichiers Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -786,21 +788,109 @@
             c.getContext('2d').clearRect(0, 0, c.width, c.height);
         }
 
-        function envoyerClient() {
+        async function envoyerClient() {
+            if (!currentBonId) {
+                alert("Charge d'abord un bon avant de l'envoyer au client.");
+                return;
+            }
+            
             const email = (document.getElementById('clientEmail').value || '').trim();
             if (!email) {
                 alert("Veuillez renseigner l'email du client avant d'envoyer.");
                 return;
             }
-            const bon = document.getElementById('bonNumber').textContent;
-            const client = document.getElementById('clientName').value || 'Client';
-            const subject = encodeURIComponent("Bon d'intervention " + bon + " - " + client);
-            const body = encodeURIComponent(
-                "Bonjour,\n\n" +
-                "Veuillez trouver ci-joint le bon d'intervention " + bon + ".\n\n" +
-                "Cordialement,\nCompagnie d'Électricité Parisienne"
-            );
-            window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
+            
+            try {
+                console.log('=== DÉBUT ENVOI EMAIL CLIENT DEPUIS ADMIN ===');
+                const numeroBon = document.getElementById('bonNumber').textContent;
+                const client = document.getElementById('clientName').value || 'Client';
+                
+                console.log('Numéro bon:', numeroBon);
+                console.log('Client:', client);
+                console.log('Email:', email);
+                
+                // Générer le lien de paiement uniquement quand on envoie depuis l'admin
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const paymentLink = isLocal 
+                    ? `${window.location.origin}/BI-${numeroBon}`
+                    : `https://pay.elecho-system.com/BI-${numeroBon}`;
+                
+                console.log('Lien de paiement généré:', paymentLink);
+                
+                // Mettre à jour le bon avec le lien de paiement AVANT de générer le PDF
+                console.log('Mise à jour du bon dans Firebase...');
+                await db.collection('bons').doc(currentBonId).update({
+                    paymentLink: paymentLink,
+                    paymentStatus: 'pending',
+                    paymentDate: null,
+                    paymentAmount: null
+                });
+                console.log('Bon mis à jour dans Firebase');
+                
+                // Générer et envoyer le PDF avec le lien de paiement (passer le lien directement)
+                console.log('Génération du PDF...');
+                const pdfBlob = await genererPDFBon(paymentLink);
+                console.log('PDF généré, taille:', pdfBlob.size, 'bytes');
+                
+                const pdfBase64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        console.log('PDF converti en base64, longueur:', base64String.length);
+                        resolve(base64String);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(pdfBlob);
+                });
+                
+                // Récupérer les photos depuis Firebase si disponibles
+                let photosPourEmail = [];
+                try {
+                    if (currentBonId) {
+                        const bonDoc = await db.collection('bons').doc(currentBonId).get();
+                        if (bonDoc.exists) {
+                            const bonData = bonDoc.data();
+                            if (bonData.photos && Array.isArray(bonData.photos)) {
+                                // Les photos dans Firebase sont des URLs, on ne peut pas les utiliser directement
+                                // Pour l'instant, on n'envoie pas les photos dans l'email depuis admin
+                                photosPourEmail = [];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Erreur récupération photos:', e);
+                }
+                
+                const bonData = {
+                    numero: numeroBon,
+                    date: document.getElementById('interventionDate').value || '',
+                    client: client,
+                    adresse: document.getElementById('clientAddress').value || '',
+                    telephone: document.getElementById('clientPhone').value || '',
+                    technicien: document.getElementById('technicien').value || '',
+                    description: document.getElementById('description').value || '',
+                    heure_arrivee: document.getElementById('heureArrivee').value || '',
+                    heure_depart: document.getElementById('heureDepart').value || ''
+                };
+                
+                console.log('Envoi de l\'email via SMTP...');
+                await envoyerEmailAvecPDFSMTP({
+                    email: email,
+                    subject: `Bon d'intervention ${numeroBon} - ${client}`,
+                    pdfBase64: pdfBase64,
+                    pdfFileName: `bon-intervention-${numeroBon}.pdf`,
+                    bonData: bonData,
+                    photos: photosPourEmail
+                });
+                
+                console.log('✅ Email envoyé avec succès');
+                alert(`✅ Email envoyé au client avec succès !\n\nLe lien de paiement a été généré et inclus dans le PDF.`);
+                
+            } catch (error) {
+                console.error('❌ Erreur envoi client:', error);
+                console.error('Stack:', error.stack);
+                alert("⚠️ Erreur lors de l'envoi de l'email au client: " + (error.message || error) + "\n\nVérifiez la console (F12) pour plus de détails.");
+            }
         }
 
         async function envoyerCompta() {
@@ -1503,7 +1593,7 @@
         }
 
         // Fonction pour générer le PDF du bon d'intervention (pour admin.html)
-        async function genererPDFBon() {
+        async function genererPDFBon(paymentLinkParam = null) {
             if (typeof window.jspdf === 'undefined') {
                 throw new Error("jsPDF n'est pas chargé. Veuillez recharger la page.");
             }
@@ -1580,10 +1670,10 @@
             
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text('FICHE D\'INTERVENTION', 105, yPos, { align: 'center' });
+            doc.text('FACTURE PROVISOIRE', 105, yPos, { align: 'center' });
             yPos += 6;
             doc.setFontSize(12);
-            doc.text('N° ' + numeroBon, 105, yPos, { align: 'center' });
+            doc.text('Bon d\'intervention N° ' + numeroBon, 105, yPos, { align: 'center' });
             yPos += 10;
             
             doc.setFontSize(11);
@@ -1748,6 +1838,113 @@
                         console.error('Erreur ajout signature client:', e);
                     }
                 }
+            }
+            
+            // Section Paiement rapide (uniquement si le lien de paiement existe)
+            // Utiliser le lien passé en paramètre ou le récupérer depuis Firebase
+            let paymentLink = paymentLinkParam;
+            if (!paymentLink) {
+                try {
+                    if (currentBonId) {
+                        const bonDoc = await db.collection('bons').doc(currentBonId).get();
+                        if (bonDoc.exists && bonDoc.data().paymentLink) {
+                            paymentLink = bonDoc.data().paymentLink;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Erreur récupération lien paiement:', e);
+                }
+            }
+            
+            // Si toujours pas de lien de paiement, le générer
+            if (!paymentLink) {
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                paymentLink = isLocal 
+                    ? `${window.location.origin}/BI-${numeroBon}`
+                    : `https://pay.elecho-system.com/BI-${numeroBon}`;
+            }
+            
+            if (paymentLink) {
+                yPos += 20;
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('PAIEMENT RAPIDE', 105, yPos, { align: 'center' });
+                yPos += 8;
+                
+                // Conditions de paiement
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                doc.text('Conditions de paiement :', 20, yPos);
+                yPos += 5;
+                doc.setFontSize(8);
+                doc.text('• Paiement sous 3 jours : réduction de 5%', 20, yPos);
+                yPos += 4;
+                doc.text('• Paiement sous 30 jours : montant normal', 20, yPos);
+                yPos += 4;
+                doc.text('• Au-delà de 30 jours : pénalités de retard', 20, yPos);
+                yPos += 8;
+                
+                // Générer le QR code
+                try {
+                    if (typeof QRCode !== 'undefined') {
+                        const qrDiv = document.createElement('div');
+                        qrDiv.id = 'temp-qr-div-' + Date.now();
+                        qrDiv.style.position = 'absolute';
+                        qrDiv.style.left = '-9999px';
+                        qrDiv.style.top = '-9999px';
+                        document.body.appendChild(qrDiv);
+                        
+                        const qr = new QRCode(qrDiv, {
+                            text: paymentLink,
+                            width: 120,
+                            height: 120,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                        
+                        await new Promise((resolve) => {
+                            const checkQR = () => {
+                                const canvas = qrDiv.querySelector('canvas');
+                                const img = qrDiv.querySelector('img');
+                                
+                                if (canvas) {
+                                    const qrData = canvas.toDataURL('image/png');
+                                    doc.addImage(qrData, 'PNG', 105 - 25, yPos, 50, 50);
+                                    qrDiv.remove();
+                                    resolve();
+                                } else if (img && img.complete) {
+                                    const qrData = img.src;
+                                    doc.addImage(qrData, 'PNG', 105 - 25, yPos, 50, 50);
+                                    qrDiv.remove();
+                                    resolve();
+                                } else {
+                                    setTimeout(checkQR, 100);
+                                }
+                            };
+                            checkQR();
+                        });
+                    }
+                } catch (qrError) {
+                    console.error('Erreur génération QR code:', qrError);
+                }
+                
+                yPos += 45;
+                
+                // Lien cliquable (texte)
+                doc.setFontSize(9);
+                doc.setTextColor(0, 0, 255);
+                doc.text('Lien de paiement :', 20, yPos);
+                yPos += 5;
+                doc.setFontSize(8);
+                const linkLines = doc.splitTextToSize(paymentLink, 170);
+                doc.text(linkLines, 20, yPos);
+                doc.setTextColor(0, 0, 0);
             }
             
             const pdfBlob = doc.output('blob');

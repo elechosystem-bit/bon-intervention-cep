@@ -1102,7 +1102,7 @@
             // Numéro du bon et titre
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text('FICHE D\'INTERVENTION', 105, yPos, { align: 'center' });
+            doc.text('BON D\'INTERVENTION', 105, yPos, { align: 'center' });
             yPos += 6;
             doc.setFontSize(12);
             doc.text('N° ' + numeroBon, 105, yPos, { align: 'center' });
@@ -1717,32 +1717,16 @@
                     }
                 });
 
-                // Générer le lien de paiement unique
-                // Détecter si on est en local ou en production
-                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const paymentLink = isLocal 
-                    ? `${window.location.origin}/BI-${numeroDefinitif}`
-                    : `https://pay.elecho-system.com/BI-${numeroDefinitif}`;
-                bon.paymentLink = paymentLink;
-                bon.paymentStatus = 'pending'; // pending, paid, overdue
-                bon.paymentDate = null;
-                bon.paymentAmount = null;
+                // Le lien de paiement sera généré uniquement dans le PDF lors de l'envoi
+                // Pas besoin de l'enregistrer dans Firebase au moment de l'enregistrement
                 
                 await db.collection('bons').add(bon);
                 
                 // Mettre à jour le badge de notifications
                 await mettreAJourBadgeNotifications();
                 
-                // Envoyer l'email au client automatiquement après l'enregistrement
-                const clientEmail = (document.getElementById('clientEmail').value || '').trim();
-                if (clientEmail) {
-                    try {
-                        await envoyerClient();
-                    } catch (emailError) {
-                        console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
-                        // Ne pas bloquer si l'email échoue, le bon est déjà enregistré
-                    }
-                }
+                // Le lien de paiement sera généré uniquement depuis admin.html quand on envoie au client
+                // Pas depuis la page technicien
                 
                 const msg = document.getElementById('saveMessage');
                 if (msg) {
