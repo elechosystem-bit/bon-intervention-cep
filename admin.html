@@ -107,6 +107,10 @@
         .photo-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .photo-lightbox-close { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); color: #fff; border: none; border-radius: 999px; width: 32px; height: 32px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .material-search { padding: 8px 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; min-width: 180px; }
+        /* Toast notification */
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .toast.error { background: var(--danger); }
 
         .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
 
@@ -555,6 +559,30 @@
         const SMTP_API_URL = 'https://bon-intervention-cep.vercel.app/api/send-email';
         // ============================================
 
+        // Fonction pour afficher un toast notification discret
+        function showToast(message, isError = false) {
+            // Supprimer le toast existant s'il y en a un
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Créer le toast
+            const toast = document.createElement('div');
+            toast.className = 'toast' + (isError ? ' error' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Afficher le toast
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Supprimer le toast après 2 secondes
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+        
         // Utilise le même compteur que la page technicien si besoin de créer un nouveau bon vierge
         function getNextBonNumberFromStorage() {
             const today = new Date();
@@ -789,7 +817,7 @@
 
         async function envoyerClient() {
             if (!currentBonId) {
-                alert("Charge d'abord un bon avant de l'envoyer au client.");
+                showToast("Chargez d'abord un bon", true);
                 return;
             }
             
@@ -882,18 +910,19 @@
                 });
                 
                 console.log('✅ Email envoyé avec succès');
-                alert(`✅ Email envoyé au client avec succès !\n\nLe lien de paiement a été généré et inclus dans le PDF.`);
+                // Toast discret au lieu d'alerte
+                showToast('Email envoyé au client avec succès');
                 
             } catch (error) {
                 console.error('❌ Erreur envoi client:', error);
                 console.error('Stack:', error.stack);
-                alert("⚠️ Erreur lors de l'envoi de l'email au client: " + (error.message || error) + "\n\nVérifiez la console (F12) pour plus de détails.");
+                showToast("Erreur lors de l'envoi de l'email", true);
             }
         }
 
         async function envoyerCompta() {
             if (!currentBonId) {
-                alert("Charge d'abord un bon avant de l'envoyer en comptabilité.");
+                showToast("Chargez d'abord un bon", true);
                 return;
             }
 
@@ -904,7 +933,7 @@
                 // Récupérer les données du bon depuis Firestore
                 const doc = await db.collection('bons').doc(currentBonId).get();
                 if (!doc.exists) {
-                    alert("Bon introuvable.");
+                    showToast("Bon introuvable", true);
                     return;
                 }
                 const bonData = doc.data();
@@ -1142,20 +1171,21 @@
                             
                             console.log('✅ Email envoyé avec succès au client');
                             
-                            // Message de succès
+                            // Toast discret au lieu d'alerte
                             if (clientEmail && clientEmail.trim() !== '') {
-                                alert(`✅ Emails envoyés avec succès !\n\n📧 Comptabilité : a.mathieu@elechosystem.com\n📧 Client : ${clientEmail}\n\nLa facture provisoire avec les montants et le lien de paiement a été envoyée au client.`);
+                                showToast('Emails envoyés avec succès');
                             } else {
-                                alert('✅ Email envoyé avec succès à la comptabilité.\n\n⚠️ Email client non envoyé (adresse manquante).');
+                                showToast('Email envoyé à la comptabilité');
                             }
                             
                         } catch (clientError) {
                             console.error('❌ Erreur envoi email client:', clientError);
-                            alert(`✅ Email envoyé à la comptabilité.\n\n⚠️ Erreur lors de l'envoi au client: ${clientError.message || clientError}`);
+                            // Toast discret pour l'erreur client, mais la compta a réussi
+                            showToast('Email envoyé à la comptabilité', false);
                             // Ne pas bloquer si l'envoi au client échoue, la compta a déjà reçu l'email
                         }
                     } else {
-                        alert('✅ Email envoyé avec succès à la comptabilité.\n\n⚠️ Email client non envoyé (adresse manquante).');
+                        showToast('Email envoyé à la comptabilité');
                     }
                     
                 } catch (pdfError) {
@@ -1169,14 +1199,14 @@
                     errorMsg += "Erreur: " + (pdfError.message || pdfError.toString() || 'Erreur inconnue');
                     errorMsg += "\n\nVérifiez la console du navigateur (F12) pour plus de détails.";
                     
-                    alert(errorMsg);
+                    showToast("Erreur lors de la génération du PDF", true);
                     throw pdfError;
                 }
 
                 await renderHistorique();
             } catch (e) {
                 console.error(e);
-                alert("Erreur lors de la validation / envoi à la comptabilité: " + (e.message || e));
+                showToast("Erreur lors de l'envoi à la comptabilité", true);
             }
         }
 
@@ -1199,7 +1229,7 @@
 
         async function saveBon() {
             if (!currentBonId) {
-                alert("Pour l'admin : charge d'abord un bon existant depuis l'historique, puis modifie et enregistre.");
+                showToast("Chargez d'abord un bon depuis l'historique", true);
                 return;
             }
 
@@ -1250,10 +1280,11 @@
             try {
                 await db.collection('bons').doc(currentBonId).update(bon);
                 await renderHistorique();
-                alert("Modifications enregistrées pour ce bon (Firestore).");
+                // Toast discret au lieu d'alerte
+                showToast('Modifications enregistrées');
             } catch (e) {
                 console.error(e);
-                alert("Erreur lors de l'enregistrement du bon (Firestore).");
+                showToast("Erreur lors de l'enregistrement", true);
             }
         }
 
@@ -1319,7 +1350,7 @@
             try {
                 const doc = await db.collection('bons').doc(id).get();
                 if (!doc.exists) {
-                    alert("Bon introuvable.");
+                    showToast("Bon introuvable", true);
                     return;
                 }
                 const bon = doc.data();
@@ -1578,7 +1609,7 @@
             }
         } catch (e) {
             console.error(e);
-            alert("Erreur lors du chargement du bon depuis Firestore.");
+            showToast("Erreur lors du chargement du bon", true);
         }
         }
 
@@ -1630,7 +1661,8 @@
                     message: bon.corpsComplet || ''
                 });
                 console.log('Email envoyé avec succès:', result);
-                alert("✓ Email envoyé à la comptabilité avec succès !");
+                // Toast discret au lieu d'alerte
+                showToast('Email envoyé à la comptabilité');
                 return true;
             } catch (error) {
                 console.error("Erreur envoi email EmailJS:", error);
@@ -1665,7 +1697,7 @@
                     errorMessage += error.text || error.message || error;
                 }
                 
-                alert(errorMessage);
+                showToast("Erreur lors de l'envoi de l'email", true);
                 return false;
             }
         }
@@ -2049,7 +2081,8 @@
                 
                 console.log('✅ Email envoyé avec succès via SMTP OVH:', result);
                 console.log('Message ID:', result.messageId);
-                alert("✓ Email envoyé à la comptabilité avec PDF en pièce jointe !\n\nMessage ID: " + (result.messageId || 'N/A'));
+                // Toast discret au lieu d'alerte
+                showToast('Email envoyé avec succès');
                 return true;
                 
             } catch (error) {
@@ -2070,7 +2103,7 @@
                     errorMessage += "Détails: " + (error.message || error);
                 }
                 
-                alert(errorMessage);
+                showToast("Erreur lors de l'envoi de l'email", true);
                 throw error;
             }
         }
@@ -2106,11 +2139,11 @@
             try {
                 await db.collection('bons').doc(id).delete();
                 if (currentBonId === id) currentBonId = null;
-                alert("Bon supprimé.");
+                showToast('Bon supprimé');
                 await renderHistorique();
             } catch (e) {
                 console.error(e);
-                alert("Erreur lors de la suppression du bon.");
+                showToast("Erreur lors de la suppression", true);
             }
         }
 
@@ -2154,7 +2187,7 @@
         async function supprimerBonsSelectionnes() {
             const checkboxes = document.querySelectorAll('.bon-checkbox:checked');
             if (checkboxes.length === 0) {
-                alert("Aucun bon sélectionné.");
+                showToast("Aucun bon sélectionné", true);
                 return;
             }
             
@@ -2202,9 +2235,13 @@
             
             // Afficher le résultat
             if (erreurs === 0) {
-                alert(`${succes} bon(s) supprimé(s) avec succès.`);
+                showToast(`${succes} bon(s) supprimé(s) avec succès`);
             } else {
-                alert(`${succes} bon(s) supprimé(s), ${erreurs} erreur(s).`);
+                if (erreurs > 0) {
+                    showToast(`${succes} bon(s) supprimé(s), ${erreurs} erreur(s)`, true);
+                } else {
+                    showToast(`${succes} bon(s) supprimé(s) avec succès`);
+                }
             }
             
             // Recharger l'historique
@@ -2226,7 +2263,7 @@
             img.src = url;
             img.onerror = function() {
                 console.error('Erreur chargement image dans lightbox:', url);
-                alert('Impossible de charger la photo.');
+                showToast('Impossible de charger la photo', true);
             };
             overlay.classList.add('show');
         }
@@ -2276,7 +2313,7 @@
                 }
             } catch (e) {
                 console.error('Erreur suppression photo', e);
-                alert("Erreur lors de la suppression de la photo.");
+                showToast("Erreur lors de la suppression de la photo", true);
             }
         }
 
@@ -2297,7 +2334,7 @@
                 });
                 
                 if (clients.length === 0) {
-                    alert('Aucun client à exporter.');
+                    showToast('Aucun client à exporter', true);
                     return;
                 }
 
@@ -2335,10 +2372,10 @@
                 // Télécharger le fichier
                 XLSX.writeFile(wb, fileName);
                 
-                alert(`✅ ${clients.length} client(s) exporté(s) avec succès !\n\nFichier : ${fileName}`);
+                showToast(`${clients.length} client(s) exporté(s) avec succès`);
             } catch (error) {
                 console.error('Erreur export Excel:', error);
-                alert('Erreur lors de l\'export : ' + error.message);
+                showToast('Erreur lors de l\'export', true);
             }
         }
 
@@ -2368,7 +2405,7 @@
                         const jsonData = XLSX.utils.sheet_to_json(worksheet);
                         
                         if (jsonData.length === 0) {
-                            alert('Le fichier Excel est vide ou ne contient pas de données');
+                            showToast('Le fichier Excel est vide ou ne contient pas de données', true);
                             return;
                         }
 
@@ -2444,20 +2481,20 @@
                         if (erreurs > 0) {
                             message += `\n⚠️ ${erreurs} erreur(s)`;
                         }
-                        alert(message);
+                        showToast(message, true);
 
                         // Réinitialiser l'input
                         event.target.value = '';
                     } catch (error) {
                         console.error('Erreur lecture Excel:', error);
-                        alert('Erreur lors de la lecture du fichier Excel: ' + error.message);
+                        showToast('Erreur lors de la lecture du fichier Excel', true);
                         event.target.value = '';
                     }
                 };
                 reader.readAsArrayBuffer(file);
             } catch (error) {
                 console.error('Erreur import Excel:', error);
-                alert('Erreur lors de l\'import: ' + error.message);
+                showToast('Erreur lors de l\'import', true);
                 event.target.value = '';
             }
         }
