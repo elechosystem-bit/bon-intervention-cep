@@ -668,6 +668,12 @@
             
             // Réinitialiser les totaux
             updateTotal();
+            
+            // Réinitialiser les signatures avec la nouvelle couleur
+            setTimeout(() => {
+                initSignature('signatureTech');
+                initSignature('signatureClient');
+            }, 100);
         }
         
         // Initialiser la société au chargement
@@ -861,8 +867,12 @@
             document.getElementById('interventionDate').valueAsDate = today;
             // Le numéro sera généré automatiquement lors de l'enregistrement
             document.getElementById('bonNumber').textContent = 'En attente...';
-            initSignature('signatureTech');
-            initSignature('signatureClient');
+            
+            // Initialiser les signatures après un court délai pour s'assurer que tout est chargé
+            setTimeout(() => {
+                initSignature('signatureTech');
+                initSignature('signatureClient');
+            }, 200);
         });
 
 
@@ -1026,11 +1036,17 @@
 
         function initSignature(id) {
             const canvas = document.getElementById(id);
+            if (!canvas) {
+                console.warn('Canvas de signature non trouvé:', id);
+                return;
+            }
             const ctx = canvas.getContext('2d');
             let drawing = false;
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
-            ctx.strokeStyle = '#1a365d';
+            // Utiliser la couleur de la société active ou la couleur par défaut
+            const couleurSignature = societeActive ? societeActive.couleurPrimaire : '#1a365d';
+            ctx.strokeStyle = couleurSignature;
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
 
