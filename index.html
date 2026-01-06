@@ -667,7 +667,7 @@
             }
             
             // Réinitialiser les totaux
-            updateTotal();
+            calculateTotals();
         }
         
         // Initialiser la société au chargement
@@ -1030,82 +1030,72 @@
 
         function initSignature(id) {
             const canvas = document.getElementById(id);
-            if (!canvas) return;
-            if (canvas.dataset.initialized === 'true') return;
-            canvas.dataset.initialized = 'true';
+            if (!canvas) {
+                console.error('Canvas non trouvé:', id);
+                return;
+            }
             
-            // Réinitialiser complètement le canvas
-            const ctx = canvas.getContext('2d');
-            
-            // Supprimer tous les anciens événements
-            canvas.onmousedown = null;
-            canvas.onmousemove = null;
-            canvas.onmouseup = null;
-            canvas.onmouseout = null;
-            canvas.ontouchstart = null;
-            canvas.ontouchmove = null;
-            canvas.ontouchend = null;
-            
-            // Réinitialiser les dimensions
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            canvas.width = rect.width || 300;
+            canvas.height = rect.height || 120;
             
-            // Réinitialiser le contexte
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Utiliser la couleur de la société active ou la couleur par défaut
-            const couleurSignature = (societeActive && societeActive.couleurPrimaire) ? societeActive.couleurPrimaire : '#1a365d';
-            ctx.strokeStyle = couleurSignature;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#1a365d';
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-
+            
             let drawing = false;
-
-            function pos(e) {
+            
+            function getPos(e) {
                 const r = canvas.getBoundingClientRect();
-                const x = (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - r.left;
-                const y = (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)) - r.top;
-                return {x, y};
+                let clientX, clientY;
+                if (e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+                return {
+                    x: clientX - r.left,
+                    y: clientY - r.top
+                };
             }
             
-            canvas.onmousedown = function(e) { 
-                drawing = true; 
-                ctx.beginPath(); 
-                const p = pos(e);
-                ctx.moveTo(p.x, p.y); 
-            };
+            function startDrawing(e) {
+                e.preventDefault();
+                drawing = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
             
-            canvas.onmousemove = function(e) { 
-                if (drawing) { 
-                    const p = pos(e);
-                    ctx.lineTo(p.x, p.y); 
-                    ctx.stroke(); 
-                } 
-            };
+            function draw(e) {
+                e.preventDefault();
+                if (!drawing) return;
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
             
-            canvas.onmouseup = function() { drawing = false; };
-            canvas.onmouseout = function() { drawing = false; };
+            function stopDrawing() {
+                drawing = false;
+            }
             
-            canvas.ontouchstart = function(e) { 
-                e.preventDefault(); 
-                drawing = true; 
-                ctx.beginPath(); 
-                const p = pos(e);
-                ctx.moveTo(p.x, p.y); 
-            };
+            // Événements souris
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
             
-            canvas.ontouchmove = function(e) { 
-                e.preventDefault(); 
-                if (drawing) { 
-                    const p = pos(e);
-                    ctx.lineTo(p.x, p.y); 
-                    ctx.stroke(); 
-                } 
-            };
-            
-            canvas.ontouchend = function() { drawing = false; };
+            // Événements tactiles
+            canvas.addEventListener('touchstart', startDrawing, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+            canvas.addEventListener('touchcancel', stopDrawing);
         }
 
         function clearSignature(id) {
