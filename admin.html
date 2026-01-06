@@ -1956,17 +1956,25 @@
                 doc.text('PAIEMENT RAPIDE', 105, yPos, { align: 'center' });
                 yPos += 8;
                 
-                // Conditions de paiement
+                // Conditions de paiement - Calculer le montant avec 5% de réduction
+                // Récupérer le total TTC et calculer le montant remisé
+                let totalTTCValue = 0;
+                try {
+                    const totalTTCText = document.getElementById('totalTTC').textContent || '0.00€';
+                    // Parser le montant (gérer les formats "150.00€", "157,89€", etc.)
+                    let amountStr = totalTTCText.toString().trim();
+                    amountStr = amountStr.replace(',', '.').replace(/[^\d.]/g, '');
+                    totalTTCValue = parseFloat(amountStr) || 0;
+                } catch (e) {
+                    console.warn('Erreur parsing totalTTC:', e);
+                }
+                
+                // Calculer le montant avec 5% de réduction
+                const montantRemise = Math.round((totalTTCValue * 0.95) * 100) / 100;
+                
                 doc.setFontSize(9);
                 doc.setFont(undefined, 'normal');
-                doc.text('Conditions de paiement :', 20, yPos);
-                yPos += 5;
-                doc.setFontSize(8);
-                doc.text('• Paiement sous 3 jours : réduction de 5%', 20, yPos);
-                yPos += 4;
-                doc.text('• Paiement sous 30 jours : montant normal', 20, yPos);
-                yPos += 4;
-                doc.text('• Au-delà de 30 jours : pénalités de retard', 20, yPos);
+                doc.text(`Paiement sous 3 jours : ${montantRemise.toFixed(2)}€`, 20, yPos);
                 yPos += 8;
                 
                 // Générer le QR code

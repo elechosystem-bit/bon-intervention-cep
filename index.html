@@ -1640,8 +1640,16 @@
                 // Mettre à jour le badge de notifications
                 await mettreAJourBadgeNotifications();
                 
-                // Le lien de paiement sera généré uniquement depuis admin.html quand on envoie au client
-                // Pas depuis la page technicien
+                // Envoyer l'email au client automatiquement après l'enregistrement
+                const clientEmail = (document.getElementById('clientEmail').value || '').trim();
+                if (clientEmail) {
+                    try {
+                        await envoyerClient();
+                    } catch (emailError) {
+                        console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
+                        // Ne pas bloquer si l'email échoue, le bon est déjà enregistré
+                    }
+                }
                 
                 const msg = document.getElementById('saveMessage');
                 if (msg) {
