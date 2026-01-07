@@ -1241,7 +1241,16 @@
                     technicien: technicien,
                     description: description,
                     heure_arrivee: heureArrivee,
-                    heure_depart: heureDepart
+                    heure_depart: heureDepart,
+                    // Informations de la société
+                    societe: {
+                        nom: societeActive ? societeActive.nom : 'Compagnie d\'Électricité Parisienne',
+                        adresse: societeActive ? societeActive.adresse : '',
+                        telephone: societeActive ? societeActive.telephone : '',
+                        email: societeActive ? societeActive.email : '',
+                        siteWeb: societeActive ? societeActive.siteWeb : '',
+                        couleur: societeActive ? societeActive.couleurPrimaire : '#1a365d'
+                    }
                 };
                 
                 // Préparer les photos pour l'email
