@@ -1,20 +1,20 @@
-// Fonction serverless Vercel pour envoyer l'email avec PDF en pièce jointe via Nodemailer (SMTP OVH)
-// Déployez cette fonction sur Vercel pour sécuriser vos identifiants SMTP
+// Fonction serverless Vercel pour envoyer l'email avec PDF en piece jointe via Nodemailer (SMTP OVH)
+// Deployer cette fonction sur Vercel pour securiser vos identifiants SMTP
 
 import nodemailer from 'nodemailer';
 
 export default async function handler(req, res) {
-    // Activer CORS pour les requêtes depuis le navigateur
+    // Activer CORS pour les requetes depuis le navigateur
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
-    // Gérer les requêtes OPTIONS (preflight)
+    // Gerer les requetes OPTIONS (preflight)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
     
-    // Vérifier que c'est une requête POST
+    // Verifier que c'est une requete POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -22,10 +22,19 @@ export default async function handler(req, res) {
     try {
         const { email, subject, pdfBase64, pdfFileName, bonData, photos } = req.body;
 
-        // Vérifier les paramètres requis
+        // Verifier les parametres requis
         if (!email || !subject || !pdfBase64) {
             return res.status(400).json({ error: 'Missing required parameters: email, subject, pdfBase64' });
         }
+
+        // Recuperer les infos de la societe depuis bonData (avec valeurs par defaut CEP)
+        const societe = bonData?.societe || {};
+        const societeNom = societe.nom || 'Compagnie d\'Electricite Parisienne';
+        const societeAdresse = societe.adresse || '6, rue de Metz, 94240 L\'Hay-les-Roses';
+        const societeTelephone = societe.telephone || '01 56 04 19 96';
+        const societeEmail = societe.email || 'contact@cep75.fr';
+        const societeSiteWeb = societe.siteWeb || 'www.cep75.fr';
+        const societeCouleur = societe.couleur || '#1a365d';
 
         // Configuration SMTP OVH depuis les variables d'environnement
         const SMTP_USER = process.env.OVH_SMTP_USER || 'intervention@cep75.fr';
@@ -38,7 +47,7 @@ export default async function handler(req, res) {
         // Convertir le PDF base64 en buffer
         const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
-        // Créer le transporteur Nodemailer avec SMTP OVH
+        // Creer le transporteur Nodemailer avec SMTP OVH
         const transporter = nodemailer.createTransport({
             host: 'ssl0.ovh.net',
             port: 465,
@@ -49,7 +58,7 @@ export default async function handler(req, res) {
             }
         });
 
-        // Préparer les pièces jointes (PDF + photos)
+        // Preparer les pieces jointes (PDF + photos)
         const attachments = [
             {
                 filename: pdfFileName || 'bon-intervention.pdf',
@@ -58,16 +67,16 @@ export default async function handler(req, res) {
             }
         ];
 
-        // Ajouter les photos comme pièces jointes
+        // Ajouter les photos comme pieces jointes
         if (photos && Array.isArray(photos) && photos.length > 0) {
             photos.forEach((photo, index) => {
                 if (photo.base64) {
-                    // Extraire le type MIME et les données base64
+                    // Extraire le type MIME et les donnees base64
                     const base64Data = photo.base64.includes(',') 
                         ? photo.base64.split(',')[1] 
                         : photo.base64;
                     
-                    // Déterminer le type MIME
+                    // Determiner le type MIME
                     let mimeType = 'image/jpeg';
                     if (photo.base64.includes('data:image/png')) {
                         mimeType = 'image/png';
@@ -85,10 +94,10 @@ export default async function handler(req, res) {
             });
         }
 
-        // Construire le contenu HTML de l'email avec les photos intégrées
+        // Construire le contenu HTML de l'email avec les photos integrees
         let photosHtml = '';
         if (photos && photos.length > 0) {
-            photosHtml = '<div style="margin-top: 20px;"><h4 style="color: #1a365d;">📷 Photos de l\'intervention :</h4>';
+            photosHtml = `<div style="margin-top: 20px;"><h4 style="color: ${societeCouleur};">Photos de l'intervention :</h4>`;
             photos.forEach((photo, index) => {
                 if (photo.base64) {
                     photosHtml += `<div style="margin: 10px 0;">
@@ -102,11 +111,11 @@ export default async function handler(req, res) {
 
         const htmlContent = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-                    <h2 style="margin: 0; font-size: 20px;">⚡ Compagnie d'Électricité Parisienne</h2>
+                <div style="background: linear-gradient(135deg, ${societeCouleur} 0%, ${societeCouleur}dd 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                    <h2 style="margin: 0; font-size: 20px;">${societeNom}</h2>
                 </div>
                 <div style="background: #f7fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-                    <h3 style="color: #1a365d; margin-top: 0;">Bon d'Intervention ${bonData?.numero || ''}</h3>
+                    <h3 style="color: ${societeCouleur}; margin-top: 0;">Bon d'Intervention ${bonData?.numero || ''}</h3>
                     <p>Bonjour,</p>
                     <p>Veuillez trouver ci-joint le PDF de votre bon d'intervention${photos && photos.length > 0 ? ' ainsi que les photos de l\'intervention' : ''}.</p>
                     ${bonData ? `
@@ -115,15 +124,15 @@ export default async function handler(req, res) {
                             <p style="margin: 5px 0;"><strong>Client :</strong> ${bonData.client || ''}</p>
                             ${bonData.adresse ? `<p style="margin: 5px 0;"><strong>Adresse :</strong> ${bonData.adresse}</p>` : ''}
                             <p style="margin: 5px 0;"><strong>Technicien :</strong> ${bonData.technicien || ''}</p>
-                            ${bonData.heure_arrivee ? `<p style="margin: 5px 0;"><strong>Heure d'arrivée :</strong> ${bonData.heure_arrivee}</p>` : ''}
-                            ${bonData.heure_depart ? `<p style="margin: 5px 0;"><strong>Heure de départ :</strong> ${bonData.heure_depart}</p>` : ''}
+                            ${bonData.heure_arrivee ? `<p style="margin: 5px 0;"><strong>Heure d'arrivee :</strong> ${bonData.heure_arrivee}</p>` : ''}
+                            ${bonData.heure_depart ? `<p style="margin: 5px 0;"><strong>Heure de depart :</strong> ${bonData.heure_depart}</p>` : ''}
                         </div>
                     ` : ''}
                     ${photosHtml}
-                    <p style="margin-top: 20px;">Cordialement,<br><strong>Compagnie d'Électricité Parisienne</strong></p>
+                    <p style="margin-top: 20px;">Cordialement,<br><strong>${societeNom}</strong></p>
                     <p style="font-size: 12px; color: #718096; margin-top: 20px;">
-                        6, rue de Metz, 94240 L'Haÿ-les-Roses<br>
-                        Tél. 01 56 04 19 96 | contact@cep75.fr | www.cep75.fr
+                        ${societeAdresse}<br>
+                        Tel. ${societeTelephone} | ${societeEmail} | ${societeSiteWeb}
                     </p>
                 </div>
             </div>
@@ -131,14 +140,14 @@ export default async function handler(req, res) {
 
         // Envoyer l'email via Nodemailer
         const info = await transporter.sendMail({
-            from: `Compagnie d'Électricité Parisienne <${SMTP_USER}>`,
+            from: `${societeNom} <${SMTP_USER}>`,
             to: email,
             subject: subject,
             html: htmlContent,
             attachments: attachments
         });
 
-        console.log('Email envoyé avec succès:', info.messageId);
+        console.log('Email envoye avec succes:', info.messageId);
 
         return res.status(200).json({ 
             success: true, 
@@ -154,4 +163,3 @@ export default async function handler(req, res) {
         });
     }
 }
-
