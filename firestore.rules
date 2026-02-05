@@ -26,6 +26,26 @@ service cloud.firestore {
       allow delete: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
     }
     
+    // Paramètres par société (techniciens, codes d'accès, etc.)
+    match /societes/{societeId}/parametres/{docId} {
+      allow read, write: if true; // ⚠️ TEMPORAIRE - nécessaire pour gestion des accès techniciens
+    }
+    
+    // Clients par société (recherche et formulaire technicien / admin)
+    match /societes/{societeId}/clients/{clientId} {
+      allow read, write: if true; // ⚠️ TEMPORAIRE - nécessaire pour la base clients
+    }
+    
+    // Bons d'intervention par société
+    match /societes/{societeId}/bons/{bonId} {
+      allow read, write: if true; // ⚠️ TEMPORAIRE
+    }
+    
+    // Compteurs par société (numérotation des bons)
+    match /societes/{societeId}/compteurs/{docId} {
+      allow read, write: if true; // ⚠️ TEMPORAIRE
+    }
+    
     // Bloquer l'accès à toutes les autres collections
     match /{document=**} {
       allow read, write: if false;

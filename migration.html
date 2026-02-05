@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migration des données Firebase</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #1a365d; }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #17a2b8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #1a365d;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #2c5282; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        .log-error { color: #ff6b6b; }
+        .log-success { color: #51cf66; }
+        .log-info { color: #74c0fc; }
+    </style>
+    <!-- Firebase v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Migration des données Firebase</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Attention :</strong> Ce script va copier vos données existantes vers la nouvelle structure multi-sociétés.
+            <br>Les données originales ne seront PAS supprimées.
+        </div>
+
+        <div class="info">
+            <strong>📋 Ce qui va être migré :</strong>
+            <ul>
+                <li><code>/clients/</code> → <code>/societes/cep/clients/</code></li>
+                <li><code>/bons/</code> → <code>/societes/cep/bons/</code></li>
+                <li><code>/compteurs/</code> → <code>/societes/cep/compteurs/</code></li>
+            </ul>
+        </div>
+
+        <button id="btnVerifier" onclick="verifierDonnees()">1. Vérifier les données existantes</button>
+        <button id="btnMigrer" onclick="migrerDonnees()" disabled>2. Lancer la migration</button>
+        
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuX2gsGiRGqVbsk93y0wmwJOsT-RuEkE4",
+            authDomain: "bon-d-intervention-cep.firebaseapp.com",
+            projectId: "bon-d-intervention-cep",
+            storageBucket: "bon-d-intervention-cep.firebasestorage.app",
+            messagingSenderId: "323636987494",
+            appId: "1:323636987494:web:0b07cffbb086c767320fa7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const logDiv = document.getElementById('log');
+        
+        function log(message, type = 'normal') {
+            const span = document.createElement('span');
+            span.className = type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : type === 'info' ? 'log-info' : '';
+            span.textContent = message + '\n';
+            logDiv.appendChild(span);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function verifierDonnees() {
+            logDiv.innerHTML = '';
+            log('🔍 Vérification des données existantes...', 'info');
+            
+            try {
+                // Vérifier les clients
+                const clientsSnapshot = await db.collection('clients').get();
+                log(`📁 Clients trouvés dans /clients/ : ${clientsSnapshot.size}`, clientsSnapshot.size > 0 ? 'success' : 'info');
+                
+                // Vérifier les bons
+                const bonsSnapshot = await db.collection('bons').get();
+                log(`📁 Bons trouvés dans /bons/ : ${bonsSnapshot.size}`, bonsSnapshot.size > 0 ? 'success' : 'info');
+                
+                // Vérifier les compteurs
+                const compteursSnapshot = await db.collection('compteurs').get();
+                log(`📁 Compteurs trouvés dans /compteurs/ : ${compteursSnapshot.size}`, compteursSnapshot.size > 0 ? 'success' : 'info');
+                
+                // Vérifier si des données existent déjà dans la nouvelle structure
+                log('\n🔍 Vérification de la nouvelle structure...', 'info');
+                
+                const newClientsSnapshot = await db.collection('societes/cep/clients').get();
+                log(`📁 Clients dans /societes/cep/clients/ : ${newClientsSnapshot.size}`, 'info');
+                
+                const newBonsSnapshot = await db.collection('societes/cep/bons').get();
+                log(`📁 Bons dans /societes/cep/bons/ : ${newBonsSnapshot.size}`, 'info');
+                
+                if (clientsSnapshot.size > 0 || bonsSnapshot.size > 0) {
+                    log('\n✅ Des données à migrer ont été trouvées !', 'success');
+                    log('Cliquez sur "Lancer la migration" pour continuer.', 'info');
+                    document.getElementById('btnMigrer').disabled = false;
+                } else {
+                    log('\n⚠️ Aucune donnée à migrer trouvée dans l\'ancienne structure.', 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Erreur lors de la vérification : ' + error.message, 'error');
+            }
+        }
+
+        async function migrerDonnees() {
+            if (!confirm('Êtes-vous sûr de vouloir lancer la migration ?')) return;
+            
+            document.getElementById('btnMigrer').disabled = true;
+            document.getElementById('btnVerifier').disabled = true;
+            
+            log('\n🚀 Début de la migration...', 'info');
+            
+            try {
+                // Migration des clients
+                log('\n📋 Migration des clients...', 'info');
+                const clientsSnapshot = await db.collection('clients').get();
+                let clientsMigres = 0;
+                
+                for (const doc of clientsSnapshot.docs) {
+                    const data = doc.data();
+                    await db.collection('societes/cep/clients').doc(doc.id).set(data);
+                    clientsMigres++;
+                    log(`  ✓ Client migré : ${data.nom || doc.id}`, 'success');
+                }
+                log(`✅ ${clientsMigres} clients migrés vers /societes/cep/clients/`, 'success');
+                
+                // Migration des bons
+                log('\n📋 Migration des bons...', 'info');
+                const bonsSnapshot = await db.collection('bons').get();
+                let bonsMigres = 0;
+                
+                for (const doc of bonsSnapshot.docs) {
+                    const data = doc.data();
+                    // Ajouter le champ societe si absent
+                    if (!data.societe) {
+                        data.societe = 'cep';
+                    }
+                    await db.collection('societes/cep/bons').doc(doc.id).set(data);
+                    bonsMigres++;
+                    log(`  ✓ Bon migré : ${data.numero || doc.id}`, 'success');
+                }
+                log(`✅ ${bonsMigres} bons migrés vers /societes/cep/bons/`, 'success');
+                
+                // Migration des compteurs
+                log('\n📋 Migration des compteurs...', 'info');
+                const compteursSnapshot = await db.collection('compteurs').get();
+                let compteursMigres = 0;
+                
+                for (const doc of compteursSnapshot.docs) {
+                    const data = doc.data();
+                    await db.collection('societes/cep/compteurs').doc(doc.id).set(data);
+                    compteursMigres++;
+                    log(`  ✓ Compteur migré : ${doc.id}`, 'success');
+                }
+                log(`✅ ${compteursMigres} compteurs migrés vers /societes/cep/compteurs/`, 'success');
+                
+                log('\n🎉 MIGRATION TERMINÉE AVEC SUCCÈS !', 'success');
+                log('\nVous pouvez maintenant utiliser l\'application.', 'info');
+                log('Les anciennes données n\'ont pas été supprimées.', 'info');
+                
+            } catch (error) {
+                log('\n❌ Erreur lors de la migration : ' + error.message, 'error');
+                console.error(error);
+            }
+            
+            document.getElementById('btnVerifier').disabled = false;
+        }
+    </script>
+</body>
+</html>

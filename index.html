@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bon d'Intervention - CEP</title>
+    <title>Bon d'intervention</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Bon CEP">
+    <meta name="apple-mobile-web-app-title" content="Bon d'intervention">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -27,7 +27,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; }
-        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; position: relative; }
+        .header-admin-link { position: absolute; top: 10px; left: 14px; font-size: 0.7rem; opacity: 0.85; }
         .logo-section h1 { font-size: 1.5rem; font-weight: 700; }
         .logo-section p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
         .bon-number { background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 10px; text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
@@ -35,8 +36,8 @@
         .bon-number p { font-size: 0.8rem; opacity: 0.8; }
         .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; }
         .section { margin-bottom: 30px; }
-        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
-        .section-title::before { content: ''; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ''; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
         .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         .input-group { display: flex; flex-direction: column; gap: 6px; position: relative; }
         .input-group label { font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
@@ -74,6 +75,12 @@
         .product-price { font-weight: 600; color: var(--primary); text-align: center; font-size: 0.85rem; display: none !important; }
         .product-qty input { width: 55px; padding: 5px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
         .product-total { font-weight: 700; color: var(--accent-dark); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; display: none !important; }
+        .custom-products-list { display: flex; flex-direction: column; gap: 6px; }
+        .custom-product-row { display: grid; grid-template-columns: 1fr 80px 40px; align-items: center; padding: 8px 12px; background: #f0f7ff; border: 2px solid var(--primary); border-radius: 8px; gap: 10px; }
+        .custom-product-row input.custom-product-name { padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: white; }
+        .custom-product-row input.custom-product-qty { width: 55px; padding: 6px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
+        .custom-product-row .btn-remove-line { padding: 4px 8px; font-size: 0.85rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .custom-product-row .btn-remove-line:hover { opacity: 0.9; }
         .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #fffaf0; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
         /* Version technicien : ajuster la grille pour ne montrer que la durée (pas de demi-heures ni total) */
         .service-row:has(#moDemiHeures[style*="display: none"]) {
@@ -93,6 +100,24 @@
         .total-row.grand-total { font-size: 1.4rem; font-weight: 700; border-top: 2px solid rgba(255,255,255,0.3); padding-top: 15px; margin-top: 10px; }
         .total-row span:last-child { font-family: 'Space Mono', monospace; }
 
+        /* Les techniciens ne voient jamais les montants en euros (ni dans l'envoi client). Uniquement l'admin. */
+        /* Page de garde et technicien : pas de cloche ni de numéro de bon (uniquement en mode admin sur admin.html) */
+        #headerNotificationBell { display: none !important; }
+        .bon-number > #bonNumber,
+        .bon-number > p#currentDate { display: none !important; }
+        /* Côté technicien CEP : tous les boutons en bleu */
+        body.technicien-connecte .btn-primary,
+        body.technicien-connecte .btn-primary:hover { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%) !important; box-shadow: 0 4px 15px rgba(26, 54, 93, 0.35) !important; }
+        body.technicien-connecte .btn-primary:hover { box-shadow: 0 6px 20px rgba(26, 54, 93, 0.45) !important; }
+        body.technicien-connecte .btn-secondary { background: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+        body.technicien-connecte .btn-secondary:hover { background: var(--primary-light) !important; color: white !important; }
+        body.technicien-connecte .material-selector .btn-add { background: var(--primary) !important; }
+        body.technicien-connecte .material-selector .btn-add:hover { background: var(--primary-light) !important; }
+        body.technicien-connecte .btn-clear { background: var(--primary) !important; }
+        body.technicien-connecte .btn-email { background: var(--primary) !important; color: white !important; }
+        body.technicien-connecte .btn-email:hover { background: var(--primary-light) !important; color: white !important; }
+        body.technicien-connecte .btn-photo { background: #ebf8ff; border-color: var(--primary); color: var(--primary); }
+        body.technicien-connecte .btn-photo:hover { background: var(--primary) !important; color: white !important; }
         /* Mode admin : réafficher les prix, totaux et listes produits */
         body.admin-mode .category-section { display: block !important; }
         body.admin-mode .product-row { grid-template-columns: 40px 1fr 90px 80px 90px; }
@@ -114,8 +139,8 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(246, 173, 85, 0.5); }
         .btn-secondary { background: var(--card); color: var(--primary); border: 2px solid var(--primary); }
         .btn-secondary:hover { background: var(--primary); color: white; }
-        .btn-admin-toggle { padding: 4px 10px; font-size: 0.7rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.7); background: rgba(0,0,0,0.15); color: #fff; cursor: pointer; }
-        .btn-admin-toggle:hover { background: rgba(0,0,0,0.3); }
+        .btn-admin-toggle { padding: 3px 8px; font-size: 0.65rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.6); background: rgba(0,0,0,0.2); color: #fff; cursor: pointer; text-decoration: none; }
+        .btn-admin-toggle:hover { background: rgba(255,255,255,0.25); color: #fff; }
         .notification-badge { position: absolute; top: -8px; right: -8px; background: transparent; color: #ef4444; font-size: 1rem; font-weight: bold; text-shadow: 0 0 3px rgba(255,255,255,0.8), 0 0 6px rgba(255,255,255,0.6); }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
         .btn-email:hover { background: var(--primary); color: #fff; }
@@ -135,6 +160,88 @@
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
         .toast.show { opacity: 1; }
         .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
+        /* Connexion technicien (société imposée par l'admin) */
+        .connexion-technicien { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 16px 16px; }
+        .connexion-inner { max-width: 400px; margin: 0 auto; }
+        .connexion-inner h3 { color: var(--primary); margin-bottom: 8px; }
+        .connexion-intro { color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px; }
+        .connexion-inner .input-group { margin-bottom: 16px; }
+        .connexion-inner .btn { margin-top: 8px; }
+        .connexion-technicien .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 4px 15px rgba(26, 54, 93, 0.35); }
+        .connexion-technicien .btn-primary:hover { background: var(--primary-light); color: white; }
+        .message-connexion { display: block; margin-top: 12px; font-size: 0.9rem; font-weight: 500; }
+        .btn-deconnexion { font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); cursor: pointer; margin-left: 8px; }
+        .btn-deconnexion:hover { background: rgba(255,255,255,0.3); }
+        /* Onglets Bon / Mon planning (technicien) */
+        .tabs-nav { display: flex; gap: 4px; background: #e2e8f0; padding: 6px; border-radius: 12px; margin: 16px 0 0 0; border: 2px solid var(--primary); }
+        .tabs-nav button { flex: 1; padding: 14px 24px; border: none; background: transparent; color: var(--text); font-weight: 600; font-size: 1.05rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .tabs-nav button:hover { background: rgba(26, 54, 93, 0.12); color: var(--primary); }
+        .tabs-nav button.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .vue-content { display: none; }
+        .vue-content.active { display: block; }
+        .vue-planning { padding: 20px 0; }
+        .planning-actions { margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .planning-list { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .planning-day { border-bottom: 1px solid var(--border); }
+        .planning-day:last-child { border-bottom: none; }
+        .planning-day-header { background: var(--primary); color: white; padding: 10px 16px; font-weight: 600; font-size: 0.95rem; }
+        .planning-row { display: grid; grid-template-columns: 1fr 1fr 100px; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .planning-row:last-child { border-bottom: none; }
+        .planning-row .numero { font-family: 'Space Mono', monospace; font-weight: 600; color: var(--primary); }
+        .planning-row .client { font-weight: 500; }
+        .planning-row .date { color: var(--text-light); font-size: 0.9rem; }
+        .planning-empty { padding: 40px 20px; text-align: center; color: var(--text-light); }
+        /* Calendrier mensuel technicien */
+        .planning-calendar { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; padding: 16px; }
+        .planning-calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .planning-calendar-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .planning-calendar-nav { display: flex; gap: 8px; }
+        .planning-calendar-nav button { padding: 8px 14px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .planning-calendar-nav button:hover { background: var(--primary); color: white; }
+        .planning-calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 6px; text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--text-light); }
+        .planning-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .planning-calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; background: #f8fafc; border: 1px solid transparent; min-height: 36px; }
+        .planning-calendar-day.other-month { color: #cbd5e0; }
+        .planning-calendar-day.today { border-color: var(--primary); background: #ebf8ff; color: var(--primary); }
+        .planning-calendar-day.has-intervention { background: var(--primary); color: white; }
+        .planning-calendar-day.has-intervention:hover { filter: brightness(1.1); }
+        .planning-calendar-day:not(.other-month):hover { background: #e2e8f0; }
+        .planning-calendar-day .dot { position: absolute; bottom: 4px; width: 4px; height: 4px; background: currentColor; border-radius: 50%; opacity: 0.8; }
+        /* Vue semaine Lun–Sam avec contenu */
+        .planning-week-view { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-height: 320px; }
+        .planning-week-view .planning-empty { grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: var(--text-light); }
+        .planning-week-day { border-right: 1px solid var(--border); background: #fafafa; display: flex; flex-direction: column; min-width: 0; }
+        .planning-week-day:last-child { border-right: none; }
+        .planning-week-day.today { background: #ebf8ff; }
+        .planning-week-day-header { background: var(--primary); color: white; padding: 10px 8px; font-weight: 700; font-size: 0.85rem; text-align: center; cursor: pointer; }
+        .planning-week-day-header:hover { filter: brightness(1.1); }
+        .planning-week-day-header .day-name { display: block; }
+        .planning-week-day-header .day-date { font-size: 0.75rem; opacity: 0.95; }
+        .planning-week-day-content { flex: 1; padding: 8px; overflow-y: auto; font-size: 0.8rem; }
+        .planning-week-intervention { padding: 8px 6px; margin-bottom: 6px; background: white; border-radius: 8px; border-left: 3px solid var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer; }
+        .planning-week-intervention:hover { background: #f0f7ff; }
+        .planning-week-intervention .wi-client { font-weight: 600; color: var(--primary); }
+        .planning-week-intervention .wi-time { font-size: 0.75rem; color: var(--text-light); }
+        .planning-week-intervention .wi-addr { font-size: 0.7rem; color: var(--text-light); margin-top: 2px; }
+        .planning-week-day-empty { color: var(--text-light); font-size: 0.8rem; font-style: italic; padding: 8px; text-align: center; }
+        @media (max-width: 900px) {
+            .planning-week-view { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 500px) {
+            .planning-week-view { grid-template-columns: 1fr; }
+        }
+        /* Modal jour heure par heure */
+        .planning-day-modal .modal { max-width: 480px; width: 95%; text-align: left; padding: 24px; }
+        .planning-day-modal h3 { text-align: center; margin-bottom: 16px; color: var(--primary); }
+        .planning-day-hours { max-height: 60vh; overflow-y: auto; }
+        .planning-hour-slot { border-bottom: 1px solid var(--border); padding: 10px 12px; }
+        .planning-hour-slot:last-child { border-bottom: none; }
+        .planning-hour-label { font-weight: 700; color: var(--primary); font-size: 0.95rem; margin-bottom: 6px; }
+        .planning-hour-interventions { padding-left: 12px; }
+        .planning-hour-intervention { padding: 6px 0; font-size: 0.9rem; }
+        .planning-hour-intervention .client-name { font-weight: 600; }
+        .planning-hour-intervention .client-addr { color: var(--text-light); font-size: 0.85rem; }
+        .planning-hour-empty { color: var(--text-light); font-size: 0.85rem; font-style: italic; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.show { display: flex; }
         .modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; animation: modalIn 0.3s ease; }
@@ -175,12 +282,15 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="header-admin-link">
+                <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()" title="Accès administrateur">Admin</button>
+            </div>
             <div class="logo-section">
-                <h1 id="societeNom">⚡ Compagnie d'Électricité Parisienne</h1>
-                <p>Bon d'Intervention</p>
+                <h1 id="societeNom">BONJOUR ☀️</h1>
+                <p id="societeSousTitre">Bon d'intervention/planning</p>
             </div>
             <div class="bon-number">
-                <div style="margin-bottom: 10px;">
+                <div id="societeSelectWrapper" style="display: none;"><!-- Société imposée par l'admin, le technicien ne choisit pas -->
                     <label for="societeSelect" style="font-size: 0.8rem; opacity: 0.9; margin-right: 8px;">Société :</label>
                     <select id="societeSelect" onchange="changerSociete(this.value)" style="padding: 6px 12px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: white; font-size: 0.9rem; cursor: pointer; font-weight: 600;">
                         <option value="cep">CEP</option>
@@ -190,15 +300,34 @@
                 <span id="bonNumber">CEP-2024-0001</span>
                 <p id="currentDate"></p>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <div style="position: relative; cursor: pointer;" onclick="toggleAdmin()" title="Notifications">
+                    <div id="headerNotificationBell" style="position: relative; cursor: pointer;" onclick="toggleAdmin()" title="Notifications">
                         <span style="font-size: 1.5rem;">🔔</span>
                         <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
                     </div>
-                    <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()">Mode admin</button>
+                    <button type="button" class="btn-deconnexion" id="btnDeconnexion" onclick="deconnecterTechnicien()" style="display: none;">Se déconnecter</button>
                 </div>
             </div>
         </div>
 
+        <!-- Connexion technicien : société imposée par l'admin (nom + code) -->
+        <div id="connexionTechnicien" class="connexion-technicien" style="display: none;">
+            <div class="connexion-inner">
+                <h3>BONJOUR ☀️</h3>
+                <p class="connexion-intro">Votre accès est limité à une société définie par l'administrateur. Indiquez votre nom et votre code.</p>
+                <div class="input-group"><label>Votre nom</label><select id="technicienConnexion"><option value="">-- Sélectionner --</option></select></div>
+                <div class="input-group"><label>Code d'accès</label><input type="password" id="codeAccesConnexion" placeholder="Votre code" maxlength="20" autocomplete="off"></div>
+                <button type="button" class="btn btn-primary" onclick="validerConnexionTechnicien()">Valider</button>
+                <span id="messageConnexionTechnicien" class="message-connexion"></span>
+            </div>
+        </div>
+
+        <div id="appContentTechnicien" style="display: none;">
+        <div class="tabs-nav">
+            <button type="button" id="tabBon" class="active" onclick="showVueTechnicien('bon')">📋 Bon</button>
+            <button type="button" id="tabPlanning" onclick="showVueTechnicien('planning')">📅 Mon planning</button>
+        </div>
+
+        <div id="vueBon" class="vue-content active">
         <div class="form-body">
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
@@ -233,12 +362,20 @@
                     <div class="input-group"><label>Date</label><input type="date" id="interventionDate"></div>
                     <div class="input-group">
                         <label>Technicien</label>
-                        <select id="technicien">
+                        <select id="technicien" onchange="onChangeTechnicienSelect()">
                             <option value="">-- Sélectionner un technicien --</option>
                             <option value="Christophe Tavares">Christophe Tavares</option>
                             <option value="Ricardo Dassilva">Ricardo Dassilva</option>
                             <option value="Mathieu Rodriguez">Mathieu Rodriguez</option>
                         </select>
+                    </div>
+                    <div class="input-group" id="blocCodeAcces" style="display: flex; flex-direction: row; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 140px;">
+                            <label>Code d'accès</label>
+                            <input type="password" id="codeAccesTechnicien" placeholder="Votre code" style="padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; width: 100%;" maxlength="20" autocomplete="off">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="validerCodeTechnicien()" style="min-width: auto; padding: 10px 20px;">Valider</button>
+                        <span id="messageCodeAcces" style="font-size: 0.9rem; color: var(--success); font-weight: 500;"></span>
                     </div>
                     <div class="input-group" style="display: flex; flex-direction: column; gap: 0;">
                         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -348,6 +485,13 @@
                         <input type="number" id="materialQty" value="1" min="1" placeholder="Qté">
                         <button class="btn-add" onclick="addMaterial()">+ Ajouter</button>
                     </div>
+                    <div class="material-selector-row" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);">
+                        <label style="flex: 0 0 auto; margin-right: 8px; font-weight: 600; color: var(--primary);">✏️ Ligne personnalisée</label>
+                        <input type="text" id="customProductName" placeholder="Nom du produit (libre)" style="flex: 1; min-width: 180px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        <input type="number" id="customProductQty" value="1" min="1" placeholder="Qté" style="width: 70px; padding: 10px; border: 2px solid var(--border); border-radius: 8px; text-align: center;">
+                        <button class="btn-add" onclick="addCustomProductLine()">+ Ajouter une ligne perso</button>
+                    </div>
+                    <div id="customProductsList" class="custom-products-list" style="margin-top: 10px;"></div>
                 </div>
                 
                 <div class="category-section">
@@ -503,12 +647,43 @@
 
             <div class="actions">
                 <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimer</button>
-                <button class="btn btn-primary" onclick="saveBonTech()">💾 Enregistrer le bon et envoyer au client</button>
+                <button class="btn btn-primary" id="btnSaveBonTech" type="button" onclick="if(this.disabled)return;this.disabled=true;saveBonTech();">💾 Enregistrer le bon et envoyer au client</button>
             </div>
             <div id="saveMessage" class="save-message">Bon enregistré.</div>
         </div>
+        </div>
 
-        <div class="footer" id="footerSociete">Compagnie d'Électricité Parisienne — Bon d'intervention</div>
+        <div id="vuePlanning" class="vue-content vue-planning">
+            <div class="section">
+                <h3 class="section-title" id="planningTitle">Mon planning</h3>
+                <p style="color: var(--text-light); margin-bottom: 16px;" id="planningIntro">Sélectionnez votre nom (Technicien) en haut pour voir vos interventions.</p>
+                <div class="planning-actions">
+                    <button type="button" class="btn btn-primary" onclick="showVueTechnicien('bon')">➕ Créer un bon</button>
+                </div>
+                <div id="planningListTech" class="planning-list"></div>
+                <div id="planningCalendarWrap" class="planning-calendar" style="display: none;">
+                    <div class="planning-calendar-header">
+                        <span class="planning-calendar-title" id="planningWeekTitle">Semaine du 13 janvier 2025</span>
+                        <div class="planning-calendar-nav">
+                            <button type="button" onclick="planningPrevWeek()">← Semaine préc.</button>
+                            <button type="button" onclick="planningNextWeek()">Semaine suiv. →</button>
+                        </div>
+                    </div>
+                    <div id="planningWeekView" class="planning-week-view"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal détail jour (heure par heure) -->
+        <div id="planningDayModal" class="modal-overlay planning-day-modal" onclick="if(event.target===this) closePlanningDayModal()">
+            <div class="modal" onclick="event.stopPropagation()">
+                <h3 id="planningDayModalTitle">Lundi 15 janvier 2025</h3>
+                <div id="planningDayModalHours" class="planning-day-hours"></div>
+                <button type="button" class="btn btn-secondary" style="margin-top: 16px; width: 100%;" onclick="closePlanningDayModal()">Fermer</button>
+            </div>
+        </div>
+
+        <div class="footer" id="footerSociete">Bon d'intervention</div>
+        </div><!-- fin appContentTechnicien -->
     </div>
 
     <!-- Lightbox d'aperçu des photos -->
@@ -610,7 +785,7 @@
         }
         
         // Fonction principale pour changer de société
-        function changerSociete(societeId) {
+        async function changerSociete(societeId) {
             const societe = SOCIETES[societeId];
             if (!societe) return;
             
@@ -619,8 +794,8 @@
             // Sauvegarder le choix
             localStorage.setItem('societeSelectionnee', societeId);
             
-            // Mettre à jour le sélecteur
-            document.getElementById('societeSelect').value = societeId;
+            const sel = document.getElementById('societeSelect');
+            if (sel) sel.value = societeId;
             
             // Changer le nom
             document.getElementById('societeNom').innerHTML = '⚡ ' + societe.nom;
@@ -631,16 +806,47 @@
                 footer.textContent = societe.nom + ' — Bon d\'intervention';
             }
             
+            // Titre de l'onglet (après connexion)
+            document.title = societe.nom + ' — Bon d\'intervention';
+            
             // Changer les couleurs
             document.documentElement.style.setProperty('--primary', societe.couleurPrimaire);
             document.documentElement.style.setProperty('--primary-light', societe.couleurSecondaire);
             
-            // Changer les techniciens
+            // Charger les techniciens (Firebase ou config) : tableau de { nom, code, droits }
+            let techniciens = (societe.techniciens || []).map(n => ({ nom: n, code: '', droits: DROITS_DEFAUT_TECH }));
+            try {
+                const ref = db.collection('societes').doc(societeActive.id).collection('parametres').doc('techniciens');
+                const doc = await ref.get();
+                if (doc.exists && doc.data().techniciens && Array.isArray(doc.data().techniciens) && doc.data().techniciens.length > 0) {
+                    techniciens = doc.data().techniciens.map(t => {
+                        if (typeof t === 'string') return { nom: t, code: '', droits: DROITS_DEFAUT_TECH };
+                        const d = t.droits && typeof t.droits === 'object' ? { ...DROITS_DEFAUT_TECH, ...t.droits } : DROITS_DEFAUT_TECH;
+                        return { nom: t.nom || t, code: (t.code || '').trim(), droits: d };
+                    });
+                }
+            } catch (e) {
+                console.warn('Paramètres techniciens non chargés, utilisation config:', e);
+            }
+            listeTechniciensAvecCodes = techniciens;
             const select = document.getElementById('technicien');
-            select.innerHTML = '<option value="">-- Sélectionner un technicien --</option>';
-            societe.techniciens.forEach(tech => {
-                select.innerHTML += '<option value="' + tech + '">' + tech + '</option>';
-            });
+            if (select) {
+                select.innerHTML = '<option value="">-- Sélectionner un technicien --</option>';
+                techniciens.forEach(tech => {
+                    const nom = tech.nom || tech;
+                    select.innerHTML += '<option value="' + (nom + '').replace(/"/g, '&quot;') + '">' + (nom + '').replace(/</g, '&lt;') + '</option>';
+                });
+            }
+            // Restaurer la validation en session si le technicien était déjà connecté pour cette société
+            const stored = sessionStorage.getItem('technicienValide_' + societeActive.id);
+            if (stored && listeTechniciensAvecCodes.some(t => (t.nom || t) === stored)) {
+                const sel = document.getElementById('technicien');
+                if (sel) sel.value = stored;
+                afficherMessageCodeAcces('Connecté : ' + stored, true);
+                document.getElementById('codeAccesTechnicien').value = '';
+            } else {
+                afficherMessageCodeAcces('', false);
+            }
             
             // Régénérer le matériel
             const materialSelect = document.getElementById('materialSelect');
@@ -668,12 +874,434 @@
             
             // Réinitialiser les totaux
             calculateTotals();
+            // Verrouiller le sélecteur de société si le technicien est déjà validé pour cette société
+            updateVerrouillageSociete();
         }
         
-        // Initialiser la société au chargement
-        function initialiserSociete() {
-            const societeId = localStorage.getItem('societeSelectionnee') || 'cep';
-            changerSociete(societeId);
+        /** Verrouille le sélecteur de société quand un technicien a validé son accès (une seule société). */
+        function updateVerrouillageSociete() {
+            const sel = document.getElementById('societeSelect');
+            if (!sel || !societeActive) return;
+            const valide = sessionStorage.getItem('technicienValide_' + societeActive.id);
+            const verrouille = !!valide;
+            sel.disabled = verrouille;
+            sel.title = verrouille ? 'Accès restreint à cette société (droits technicien)' : '';
+        }
+        
+        // Droits par défaut (alignés sur l'admin)
+        const DROITS_DEFAUT_TECH = { creerBons: true, voirPlanning: true, voirPrix: false, envoyerEmail: true };
+
+        // Liste globale : techniciens de toutes les sociétés (société imposée par l'admin)
+        let listeTechniciensToutesSocietes = [];
+        
+        /** Charge les techniciens de toutes les sociétés (Firebase + config). */
+        async function loadTechniciensToutesSocietes() {
+            const list = [];
+            for (const societeId of Object.keys(SOCIETES || {})) {
+                const societe = SOCIETES[societeId];
+                if (!societe) continue;
+                let techniciens = (societe.techniciens || []).map(n => ({ nom: n, code: '' }));
+                try {
+                    const ref = db.collection('societes').doc(societe.id).collection('parametres').doc('techniciens');
+                    const doc = await ref.get();
+                    if (doc.exists && doc.data().techniciens && Array.isArray(doc.data().techniciens) && doc.data().techniciens.length > 0) {
+                        techniciens = doc.data().techniciens.map(t => {
+                            if (typeof t === 'string') return { nom: t, code: '', droits: DROITS_DEFAUT_TECH };
+                            const d = t.droits && typeof t.droits === 'object' ? { ...DROITS_DEFAUT_TECH, ...t.droits } : DROITS_DEFAUT_TECH;
+                            return { nom: t.nom || t, code: (t.code || '').trim(), droits: d };
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Paramètres techniciens non chargés pour ' + societeId, e);
+                }
+                techniciens.forEach(t => {
+                    list.push({ societeId: societe.id, societe: societe, nom: (t.nom || t) + '', code: (t.code || '').trim(), droits: t.droits || DROITS_DEFAUT_TECH });
+                });
+            }
+            listeTechniciensToutesSocietes = list;
+            return list;
+        }
+        
+        /** Remplit le select de connexion (nom + société si doublon). */
+        function remplirSelectConnexion() {
+            const sel = document.getElementById('technicienConnexion');
+            if (!sel) return;
+            const noms = listeTechniciensToutesSocietes.map(e => e.nom);
+            const doublons = noms.filter((n, i) => noms.indexOf(n) !== i);
+            sel.innerHTML = '<option value="">-- Sélectionner votre nom --</option>';
+            listeTechniciensToutesSocietes.forEach((entry, index) => {
+                const libelle = doublons.includes(entry.nom) ? entry.nom + ' (' + entry.societe.nom + ')' : entry.nom;
+                sel.innerHTML += '<option value="' + index + '">' + libelle.replace(/</g, '&lt;').replace(/"/g, '&quot;') + '</option>';
+            });
+        }
+        
+        /** Affiche le bloc connexion ou le contenu app selon l'état. */
+        function afficherConnexion(afficherBlocConnexion) {
+            const bloc = document.getElementById('connexionTechnicien');
+            const app = document.getElementById('appContentTechnicien');
+            const btnDeco = document.getElementById('btnDeconnexion');
+            const societeNomEl = document.getElementById('societeNom');
+            const footerEl = document.getElementById('footerSociete');
+            if (bloc) bloc.style.display = afficherBlocConnexion ? 'block' : 'none';
+            if (app) app.style.display = afficherBlocConnexion ? 'none' : 'block';
+            if (btnDeco) btnDeco.style.display = afficherBlocConnexion ? 'none' : 'inline-block';
+            if (afficherBlocConnexion) {
+                document.body.classList.remove('technicien-connecte');
+                if (societeNomEl) societeNomEl.textContent = 'BONJOUR ☀️';
+                if (footerEl) footerEl.textContent = 'Bon d\'intervention/planning';
+                const sousTitreEl = document.getElementById('societeSousTitre');
+                if (sousTitreEl) sousTitreEl.textContent = 'Bon d\'intervention/planning';
+                document.title = 'Bon d\'intervention';
+            } else {
+                document.body.classList.add('technicien-connecte');
+            }
+        }
+        
+        /** Validation connexion : nom + code → société déterminée par l'admin. */
+        async function validerConnexionTechnicien() {
+            const sel = document.getElementById('technicienConnexion');
+            const codeSaisi = (document.getElementById('codeAccesConnexion').value || '').trim();
+            const msgEl = document.getElementById('messageConnexionTechnicien');
+            const index = sel && sel.value !== '' ? parseInt(sel.value, 10) : -1;
+            if (index < 0 || index >= listeTechniciensToutesSocietes.length) {
+                if (msgEl) { msgEl.textContent = 'Sélectionnez votre nom.'; msgEl.style.color = '#e53e3e'; }
+                return;
+            }
+            const entry = listeTechniciensToutesSocietes[index];
+            const codeAttendu = entry.code || '';
+            if (codeAttendu.length > 0 && codeSaisi !== codeAttendu) {
+                if (msgEl) { msgEl.textContent = 'Code incorrect.'; msgEl.style.color = '#e53e3e'; }
+                return;
+            }
+            sessionStorage.setItem('technicienSocieteId', entry.societeId);
+            sessionStorage.setItem('technicienValide_' + entry.societeId, entry.nom);
+            sessionStorage.setItem('technicienDroits', JSON.stringify(entry.droits || DROITS_DEFAUT_TECH));
+            await changerSociete(entry.societeId);
+            const techSelect = document.getElementById('technicien');
+            if (techSelect) techSelect.value = entry.nom;
+            if (msgEl) { msgEl.textContent = ''; }
+            document.getElementById('codeAccesConnexion').value = '';
+            afficherConnexion(false);
+            appliquerDroitsTechnicien(entry.droits || DROITS_DEFAUT_TECH);
+        }
+        
+        function getDroitsTechnicien() {
+            try {
+                const j = sessionStorage.getItem('technicienDroits');
+                return j ? JSON.parse(j) : null;
+            } catch (e) { return null; }
+        }
+
+        /** Applique les droits du salarié (onglets, prix, bouton envoyer). */
+        function appliquerDroitsTechnicien(droits) {
+            if (!droits) droits = DROITS_DEFAUT_TECH;
+            sessionStorage.setItem('technicienDroits', JSON.stringify(droits));
+            const tabBon = document.getElementById('tabBon');
+            const tabPlanning = document.getElementById('tabPlanning');
+            const vueBon = document.getElementById('vueBon');
+            const vuePlanning = document.getElementById('vuePlanning');
+            if (tabBon) tabBon.style.display = droits.creerBons ? '' : 'none';
+            if (tabPlanning) tabPlanning.style.display = droits.voirPlanning ? '' : 'none';
+            /* Les techniciens ne voient jamais les prix (euros) : pas de classe technicien-droits-prix */
+            const btnSave = document.getElementById('btnSaveBonTech');
+            if (btnSave) btnSave.textContent = droits.envoyerEmail ? '💾 Enregistrer le bon et envoyer au client' : '💾 Enregistrer le bon';
+            if (!droits.creerBons && droits.voirPlanning) showVueTechnicien('planning');
+            else if (droits.creerBons) showVueTechnicien('bon');
+        }
+
+        /** Déconnexion : revoir l'écran de connexion. */
+        async function deconnecterTechnicien() {
+            const societeId = sessionStorage.getItem('technicienSocieteId');
+            if (societeId) sessionStorage.removeItem('technicienValide_' + societeId);
+            sessionStorage.removeItem('technicienSocieteId');
+            sessionStorage.removeItem('technicienDroits');
+            await loadTechniciensToutesSocietes();
+            remplirSelectConnexion();
+            afficherConnexion(true);
+            document.getElementById('messageConnexionTechnicien').textContent = '';
+            document.getElementById('codeAccesConnexion').value = '';
+        }
+        
+        // Initialiser la société au chargement (utilisé uniquement si déjà connecté)
+        async function initialiserSociete(societeId) {
+            if (!societeId) societeId = localStorage.getItem('societeSelectionnee') || 'cep';
+            await changerSociete(societeId);
+        }
+
+        // Liste des techniciens avec codes (pour validation) : tableau de { nom, code }
+        let listeTechniciensAvecCodes = [];
+
+        function afficherMessageCodeAcces(msg, success) {
+            const el = document.getElementById('messageCodeAcces');
+            if (!el) return;
+            el.textContent = msg;
+            el.style.color = success ? 'var(--success)' : '#e53e3e';
+        }
+
+        function onChangeTechnicienSelect() {
+            sessionStorage.removeItem('technicienValide_' + (societeActive ? societeActive.id : 'cep'));
+            afficherMessageCodeAcces('', false);
+            document.getElementById('codeAccesTechnicien').value = '';
+            updateVerrouillageSociete();
+        }
+
+        function validerCodeTechnicien() {
+            const nom = (document.getElementById('technicien').value || '').trim();
+            const codeSaisi = (document.getElementById('codeAccesTechnicien').value || '').trim();
+            if (!nom) {
+                afficherMessageCodeAcces('Sélectionnez votre nom.', false);
+                return;
+            }
+            const tech = listeTechniciensAvecCodes.find(t => (t.nom || t) === nom);
+            if (!tech) {
+                afficherMessageCodeAcces('Technicien introuvable.', false);
+                return;
+            }
+            const codeAttendu = (tech.code || '').trim();
+            if (codeAttendu.length === 0) {
+                sessionStorage.setItem('technicienValide_' + (societeActive ? societeActive.id : 'cep'), nom);
+                afficherMessageCodeAcces('Connecté : ' + nom, true);
+                document.getElementById('codeAccesTechnicien').value = '';
+                updateVerrouillageSociete();
+                return;
+            }
+            if (codeSaisi !== codeAttendu) {
+                afficherMessageCodeAcces('Code incorrect.', false);
+                return;
+            }
+            sessionStorage.setItem('technicienValide_' + (societeActive ? societeActive.id : 'cep'), nom);
+            afficherMessageCodeAcces('Connecté : ' + nom, true);
+            document.getElementById('codeAccesTechnicien').value = '';
+            updateVerrouillageSociete();
+        }
+
+        function showVueTechnicien(vue) {
+            document.getElementById('vueBon').classList.toggle('active', vue === 'bon');
+            document.getElementById('vuePlanning').classList.toggle('active', vue === 'planning');
+            document.getElementById('tabBon').classList.toggle('active', vue === 'bon');
+            document.getElementById('tabPlanning').classList.toggle('active', vue === 'planning');
+            if (vue === 'planning') renderPlanningTechnicien();
+        }
+
+        let planningBons = [];
+        let planningWeekStart = null;
+        const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+        function getMonday(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = (day === 0 ? -6 : 1) - day;
+            date.setDate(date.getDate() + diff);
+            return date;
+        }
+
+        function planningPrevWeek() {
+            if (!planningWeekStart) return;
+            planningWeekStart.setDate(planningWeekStart.getDate() - 7);
+            renderPlanningWeekGrid();
+        }
+        function planningNextWeek() {
+            if (!planningWeekStart) return;
+            planningWeekStart.setDate(planningWeekStart.getDate() + 7);
+            renderPlanningWeekGrid();
+        }
+
+        function dateToStr(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function renderPlanningWeekGrid() {
+            const container = document.getElementById('planningWeekView');
+            const titleEl = document.getElementById('planningWeekTitle');
+            if (!container) return;
+            if (!planningWeekStart) planningWeekStart = getMonday(new Date());
+            const mon = new Date(planningWeekStart);
+            const dayNames = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+            titleEl.textContent = 'Semaine du ' + mon.getDate() + ' ' + MOIS[mon.getMonth()] + ' ' + mon.getFullYear();
+            const todayStr = dateToStr(new Date());
+            let html = '';
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(mon);
+                d.setDate(mon.getDate() + i);
+                const dateStr = dateToStr(d);
+                const isToday = dateStr === todayStr;
+                const bonsOfDay = planningBons.filter(bon => (bon.date || '').toString() === dateStr);
+                bonsOfDay.sort((a, b) => ((a.heureArrivee || '').toString()).localeCompare((b.heureArrivee || '').toString()));
+                const dayLabel = dayNames[i] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
+                html += '<div class="planning-week-day' + (isToday ? ' today' : '') + '">';
+                html += '<div class="planning-week-day-header" onclick="openPlanningDayDetail(\'' + dateStr + '\')" title="Voir heure par heure">';
+                html += '<span class="day-name">' + dayNames[i] + '</span>';
+                html += '<span class="day-date">' + d.getDate() + ' ' + MOIS[d.getMonth()].substring(0, 3) + '.</span>';
+                html += '</div>';
+                html += '<div class="planning-week-day-content">';
+                if (bonsOfDay.length === 0) {
+                    html += '<div class="planning-week-day-empty">Aucune intervention</div>';
+                } else {
+                    bonsOfDay.forEach(bon => {
+                        const client = (bon.client || '-').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        const addr = (bon.address || bon.adresse || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        html += '<div class="planning-week-intervention" onclick="openPlanningDayDetail(\'' + dateStr + '\')" title="Voir détail heure par heure">';
+                        html += '<div class="wi-client">' + client + '</div>';
+                        html += '<div class="wi-time">' + (bon.heureArrivee || '') + (bon.heureDepart ? ' – ' + bon.heureDepart : '') + '</div>';
+                        if (addr) html += '<div class="wi-addr">' + (addr.length > 40 ? addr.substring(0, 40) + '…' : addr) + '</div>';
+                        html += '</div>';
+                    });
+                }
+                html += '</div></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function openPlanningDayDetail(dateStr) {
+            const bonsOfDay = planningBons.filter(bon => (bon.date || '').toString() === dateStr);
+            const byHour = {};
+            for (let h = 7; h <= 20; h++) byHour[h] = [];
+            bonsOfDay.forEach(bon => {
+                const h = parseInt((bon.heureArrivee || '9').split(':')[0], 10);
+                const hour = Math.min(20, Math.max(7, isNaN(h) ? 9 : h));
+                if (!byHour[hour]) byHour[hour] = [];
+                byHour[hour].push(bon);
+            });
+            Object.keys(byHour).forEach(h => byHour[h].sort((a, b) => (a.heureArrivee || '').localeCompare(b.heureArrivee || '')));
+            const d = new Date(dateStr + 'T12:00:00');
+            const dayLabel = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('planningDayModalTitle').textContent = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
+            let hoursHtml = '';
+            for (let h = 7; h <= 20; h++) {
+                const interventions = byHour[h] || [];
+                hoursHtml += '<div class="planning-hour-slot">';
+                hoursHtml += '<div class="planning-hour-label">' + String(h).padStart(2, '0') + ' h</div>';
+                if (interventions.length === 0) {
+                    hoursHtml += '<div class="planning-hour-empty">Aucune intervention</div>';
+                } else {
+                    interventions.forEach(bon => {
+                        hoursHtml += '<div class="planning-hour-intervention">';
+                        hoursHtml += '<span class="client-name">' + (bon.client || '-') + '</span>';
+                        if (bon.heureArrivee) hoursHtml += ' — ' + bon.heureArrivee;
+                        if (bon.address || bon.adresse) hoursHtml += '<div class="client-addr">' + (bon.address || bon.adresse) + '</div>';
+                        if (bon.description) hoursHtml += '<div class="client-addr">' + (bon.description.length > 60 ? bon.description.substring(0, 60) + '…' : bon.description) + '</div>';
+                        hoursHtml += '</div>';
+                    });
+                }
+                hoursHtml += '</div>';
+            }
+            document.getElementById('planningDayModalHours').innerHTML = hoursHtml;
+            document.getElementById('planningDayModal').classList.add('show');
+        }
+
+        function closePlanningDayModal() {
+            document.getElementById('planningDayModal').classList.remove('show');
+        }
+
+        async function renderPlanningTechnicien() {
+            const listContainer = document.getElementById('planningListTech');
+            const calendarWrap = document.getElementById('planningCalendarWrap');
+            const titleEl = document.getElementById('planningTitle');
+            const introEl = document.getElementById('planningIntro');
+            if (!listContainer) return;
+            const technicien = (document.getElementById('technicien').value || '').trim();
+            if (!technicien) {
+                titleEl.textContent = 'Mon planning';
+                introEl.textContent = 'Sélectionnez votre nom (Technicien) en haut pour voir vos interventions.';
+                listContainer.innerHTML = '<div class="planning-empty">Sélectionnez votre nom dans la liste « Technicien » pour afficher votre planning.</div>';
+                if (calendarWrap) calendarWrap.style.display = 'none';
+                return;
+            }
+            titleEl.textContent = 'Mon planning — ' + technicien;
+            introEl.textContent = 'Cliquez sur un jour pour voir les interventions heure par heure.';
+            listContainer.innerHTML = '';
+            if (calendarWrap) calendarWrap.style.display = 'block';
+            const weekViewEl = document.getElementById('planningWeekView');
+            if (weekViewEl) weekViewEl.innerHTML = '<div class="planning-empty">Chargement...</div>';
+            try {
+                if (!societeActive) {
+                    if (weekViewEl) weekViewEl.innerHTML = '<div class="planning-empty">Sélectionnez une société.</div>';
+                    return;
+                }
+                const snap = await db.collection(getCollectionPath('bons')).get();
+                planningBons = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if ((data.technicien || '').trim() === technicien)
+                        planningBons.push({ id: doc.id, ...data });
+                });
+                planningBons.sort((a, b) => {
+                    const dateA = (a.date || '').toString();
+                    const dateB = (b.date || '').toString();
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    return ((a.heureArrivee || '').toString()).localeCompare((b.heureArrivee || '').toString());
+                });
+                planningWeekStart = getMonday(new Date());
+                if (planningBons.length === 0) {
+                    if (calendarWrap) calendarWrap.style.display = 'none';
+                    listContainer.innerHTML = '<div class="planning-empty">Aucune intervention pour l\'instant. Cliquez sur « Créer un bon » pour commencer.</div>';
+                    return;
+                }
+                renderPlanningWeekGrid();
+            } catch (e) {
+                console.error(e);
+                if (weekViewEl) weekViewEl.innerHTML = '<div class="planning-empty">Erreur de chargement.</div>';
+            }
+        }
+
+        async function _oldRenderPlanningTechnicien() {
+            const container = document.getElementById('planningListTech');
+            const titleEl = document.getElementById('planningTitle');
+            const introEl = document.getElementById('planningIntro');
+            if (!container) return;
+            const technicien = (document.getElementById('technicien').value || '').trim();
+            if (!technicien) {
+                titleEl.textContent = 'Mon planning';
+                introEl.textContent = 'Sélectionnez votre nom (Technicien) en haut pour voir vos interventions.';
+                container.innerHTML = '<div class="planning-empty">Sélectionnez votre nom dans la liste « Technicien » pour afficher votre planning.</div>';
+                return;
+            }
+            titleEl.textContent = 'Mon planning — ' + technicien;
+            introEl.textContent = 'Vos interventions par date. Cliquez sur « Créer un bon » pour ajouter une intervention.';
+            container.innerHTML = '<div class="planning-empty">Chargement...</div>';
+            try {
+                if (!societeActive) { container.innerHTML = '<div class="planning-empty">Sélectionnez une société.</div>'; return; }
+                const snap = await db.collection(getCollectionPath('bons')).get();
+                const bons = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if ((data.technicien || '').trim() === technicien)
+                        bons.push({ id: doc.id, ...data });
+                });
+                bons.sort((a, b) => {
+                    const dateA = (a.date || '').toString();
+                    const dateB = (b.date || '').toString();
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                });
+                const byDate = {};
+                bons.forEach(bon => {
+                    const d = bon.date || 'Sans date';
+                    if (!byDate[d]) byDate[d] = [];
+                    byDate[d].push(bon);
+                });
+                let html = '';
+                const dates = Object.keys(byDate).sort();
+                if (dates.length === 0) {
+                    container.innerHTML = '<div class="planning-empty">Aucune intervention pour l’instant. Cliquez sur « Créer un bon » pour commencer.</div>';
+                    return;
+                }
+                dates.forEach(date => {
+                    html += '<div class="planning-day"><div class="planning-day-header">' + date + '</div>';
+                    byDate[date].forEach(bon => {
+                        html += '<div class="planning-row">';
+                        html += '<span class="numero">' + (bon.numero || bon.id) + '</span>';
+                        html += '<span class="client">' + (bon.client || '-') + '</span>';
+                        html += '<span class="date">' + (bon.description ? (bon.description.substring(0, 40) + (bon.description.length > 40 ? '…' : '')) : '-') + '</span>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="planning-empty">Erreur de chargement.</div>';
+            }
         }
 
         const db = firebase.firestore();
@@ -811,9 +1439,18 @@
             // Réinitialiser tous les champs du formulaire
             document.getElementById('interventionDate').valueAsDate = new Date();
             document.getElementById('clientName').value = '';
-            document.getElementById('clientPhone').value = '';
+            const clientPhoneEl = document.getElementById('clientPhone');
+            if (clientPhoneEl) clientPhoneEl.value = '';
             document.getElementById('clientEmail').value = '';
             document.getElementById('clientAddress').value = '';
+            // Réinitialiser la recherche client existant
+            const clientSearchEl = document.getElementById('clientSearch');
+            if (clientSearchEl) clientSearchEl.value = '';
+            const clientSearchResultsEl = document.getElementById('clientSearchResults');
+            if (clientSearchResultsEl) {
+                clientSearchResultsEl.innerHTML = '';
+                clientSearchResultsEl.style.display = 'none';
+            }
             document.getElementById('technicien').value = '';
             document.getElementById('description').value = '';
             document.getElementById('heureArrivee').value = '';
@@ -825,6 +1462,8 @@
             // Réinitialiser les produits
             document.querySelectorAll('.product-row input[type="checkbox"]').forEach(cb => cb.checked = false);
             document.querySelectorAll('.product-qty input').forEach(input => input.value = 0);
+            const customList = document.getElementById('customProductsList');
+            if (customList) customList.innerHTML = '';
             
             // Réinitialiser les signatures
             clearSignature('signatureTech');
@@ -839,7 +1478,7 @@
             }
             
             // Réinitialiser les totaux
-            updateTotal();
+            calculateTotals();
             
             // Réinitialiser le numéro de bon
             document.getElementById('bonNumber').textContent = 'En attente...';
@@ -848,23 +1487,32 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedSociete = localStorage.getItem('societeSelectionnee') || 'cep';
-            const societeSelect = document.getElementById('societeSelect');
-            if (societeSelect) {
-                societeSelect.value = savedSociete;
+        document.addEventListener('DOMContentLoaded', async function() {
+            const societeId = sessionStorage.getItem('technicienSocieteId');
+            const nomValide = societeId ? sessionStorage.getItem('technicienValide_' + societeId) : null;
+            
+            if (societeId && nomValide) {
+                await changerSociete(societeId);
+                const tech = listeTechniciensAvecCodes.find(t => (t.nom || t) === nomValide);
+                appliquerDroitsTechnicien(tech && tech.droits ? tech.droits : getDroitsTechnicien() || DROITS_DEFAUT_TECH);
+                afficherConnexion(false);
+            } else {
+                await loadTechniciensToutesSocietes();
+                remplirSelectConnexion();
+                afficherConnexion(true);
             }
             
-            // IMPORTANT : Changer de société AVANT d'initialiser les signatures
-            changerSociete(savedSociete);
+            const societeSelect = document.getElementById('societeSelect');
+            if (societeSelect) societeSelect.value = societeActive ? societeActive.id : (localStorage.getItem('societeSelectionnee') || 'cep');
             
             const today = new Date();
-            document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
-            document.getElementById('interventionDate').valueAsDate = today;
-            // Le numéro sera généré automatiquement lors de l'enregistrement
-            document.getElementById('bonNumber').textContent = 'En attente...';
+            const currentDateEl = document.getElementById('currentDate');
+            const interventionDateEl = document.getElementById('interventionDate');
+            const bonNumberEl = document.getElementById('bonNumber');
+            if (currentDateEl) currentDateEl.textContent = today.toLocaleDateString('fr-FR');
+            if (interventionDateEl) interventionDateEl.valueAsDate = today;
+            if (bonNumberEl) bonNumberEl.textContent = 'En attente...';
             
-            // Initialiser les signatures UNE SEULE FOIS après le changement de société
             initSignature('signatureTech');
             initSignature('signatureClient');
         });
@@ -904,6 +1552,48 @@
             // Reset
             select.value = '';
             qtyInput.value = 1;
+        }
+
+        function addCustomProductLine() {
+            const nameInput = document.getElementById('customProductName');
+            const qtyInput = document.getElementById('customProductQty');
+            const name = (nameInput && nameInput.value || '').trim();
+            const qty = parseInt(qtyInput && qtyInput.value, 10) || 1;
+            if (!name) return;
+            const container = document.getElementById('customProductsList');
+            if (!container) return;
+            const row = document.createElement('div');
+            row.className = 'custom-product-row';
+            const nameField = document.createElement('input');
+            nameField.type = 'text';
+            nameField.className = 'custom-product-name';
+            nameField.value = name;
+            nameField.placeholder = 'Nom';
+            nameField.oninput = function() { calculateTotals(); };
+            const qtyField = document.createElement('input');
+            qtyField.type = 'number';
+            qtyField.className = 'custom-product-qty';
+            qtyField.value = qty;
+            qtyField.min = 1;
+            qtyField.onchange = function() { calculateTotals(); };
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-remove-line';
+            removeBtn.textContent = '✕';
+            removeBtn.onclick = function() { removeCustomProductLine(this); };
+            row.appendChild(nameField);
+            row.appendChild(qtyField);
+            row.appendChild(removeBtn);
+            container.appendChild(row);
+            if (nameInput) nameInput.value = '';
+            if (qtyInput) qtyInput.value = 1;
+            calculateTotals();
+        }
+
+        function removeCustomProductLine(btn) {
+            const row = btn && btn.closest('.custom-product-row');
+            if (row) row.remove();
+            calculateTotals();
         }
 
         function updateRowTotal(input) {
@@ -1001,7 +1691,7 @@
             document.getElementById('totalTVA').textContent = tva.toFixed(2) + '€';
             document.getElementById('totalTTC').textContent = (ht + tva).toFixed(2) + '€';
 
-            // Mettre à jour le récap des produits sélectionnés (vue technicien)
+            // Mettre à jour le récap des produits sélectionnés (vue technicien) : catalogue + lignes personnalisées
             const container = document.getElementById('selectedProductsList');
             if (container) {
                 const lignes = [];
@@ -1014,13 +1704,20 @@
                         lignes.push({ name, qty });
                     }
                 });
+                document.querySelectorAll('.custom-product-row').forEach(row => {
+                    const nameInput = row.querySelector('input.custom-product-name');
+                    const qtyInput = row.querySelector('input.custom-product-qty');
+                    const name = (nameInput && nameInput.value || '').trim();
+                    const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                    if (name && qty > 0) lignes.push({ name, qty });
+                });
 
                 if (lignes.length === 0) {
                     container.innerHTML = "<p style=\"color:var(--text-light);\">Aucun produit sélectionné pour le moment.</p>";
                 } else {
                     container.innerHTML = lignes.map(l => 
                         `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--border);">
-                            <span>${l.name}</span>
+                            <span>${(l.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
                             <span style="font-family:'Space Mono', monospace;">Qté : ${l.qty}</span>
                         </div>`
                     ).join("");
@@ -1138,7 +1835,7 @@
             // Déplacement (sans prix pour le client)
             const deplNombre = document.getElementById('deplNombre').value || '0';
             
-            // Récupérer les produits utilisés (sans prix)
+            // Récupérer les produits utilisés (sans prix) + lignes personnalisées
             let produitsHtml = '';
             const produitsUtilises = [];
             document.querySelectorAll('.product-row').forEach(row => {
@@ -1150,6 +1847,13 @@
                     const ref = row.querySelector('.product-ref')?.textContent || '';
                     produitsUtilises.push({ nom: name, reference: ref, quantite: qty });
                 }
+            });
+            document.querySelectorAll('.custom-product-row').forEach(row => {
+                const nameInput = row.querySelector('input.custom-product-name');
+                const qtyInput = row.querySelector('input.custom-product-qty');
+                const name = (nameInput && nameInput.value || '').trim();
+                const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                if (name && qty > 0) produitsUtilises.push({ nom: name, reference: '', quantite: qty });
             });
             
             if (produitsUtilises.length > 0) {
@@ -1358,7 +2062,7 @@
             const description = document.getElementById('description').value || '';
             // totalTTC non utilisé pour le client (PDF sans montants)
             
-            // Récupérer les produits (sans prix pour le client)
+            // Récupérer les produits (sans prix pour le client) + lignes personnalisées
             const produits = [];
             document.querySelectorAll('.product-row').forEach(row => {
                 const checkbox = row.querySelector('input[type="checkbox"]');
@@ -1367,9 +2071,15 @@
                 if (checkbox && checkbox.checked && qty > 0) {
                     const name = row.querySelector('.product-name')?.textContent || '';
                     const ref = row.querySelector('.product-ref')?.textContent || '';
-                    // Prix non utilisé pour le client (PDF sans montants)
                     produits.push({ nom: name, reference: ref, quantite: qty });
                 }
+            });
+            document.querySelectorAll('.custom-product-row').forEach(row => {
+                const nameInput = row.querySelector('input.custom-product-name');
+                const qtyInput = row.querySelector('input.custom-product-qty');
+                const name = (nameInput && nameInput.value || '').trim();
+                const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                if (name && qty > 0) produits.push({ nom: name, reference: '', quantite: qty });
             });
             
             // Récupérer les signatures
@@ -1859,13 +2569,42 @@
         }
 
         // --- Enregistrement du bon côté technicien (Firestore) ---
+        let saveBonTechInProgress = false;
         async function saveBonTech() {
+            if (saveBonTechInProgress) return;
+            saveBonTechInProgress = true;
+            const btnSave = document.getElementById('btnSaveBonTech');
+            if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Enregistrement...'; }
             try {
-                // 1. Récupérer et incrémenter le compteur
                 if (!societeActive) {
                     alert('Erreur: Aucune société sélectionnée');
                     return;
                 }
+                // Ne pas enregistrer ni envoyer un bon vierge
+                const clientName = (document.getElementById('clientName').value || '').trim();
+                const description = (document.getElementById('description').value || '').trim();
+                let hasProduct = false;
+                document.querySelectorAll('.product-row').forEach(row => {
+                    if (row.querySelector('input[type="checkbox"]')?.checked) {
+                        const qty = parseFloat(row.querySelector('.product-qty input')?.value) || 0;
+                        if (qty > 0) hasProduct = true;
+                    }
+                });
+                document.querySelectorAll('.custom-product-row').forEach(row => {
+                    const name = (row.querySelector('input.custom-product-name')?.value || '').trim();
+                    const qty = parseFloat(row.querySelector('input.custom-product-qty')?.value) || 0;
+                    if (name && qty > 0) hasProduct = true;
+                });
+                const hasPhoto = photosBon && photosBon.length > 0;
+                if (!clientName) {
+                    alert('Veuillez renseigner le nom du client.');
+                    return;
+                }
+                if (!description && !hasProduct && !hasPhoto) {
+                    alert('Le bon est vide. Ajoutez au moins une description, un produit ou une photo avant d\'enregistrer.');
+                    return;
+                }
+                // 1. Récupérer et incrémenter le compteur
                 const compteurRef = getCompteurRef();
                 const annee = new Date().getFullYear();
                 let numero;
@@ -1928,7 +2667,7 @@
                     }
                 };
 
-                // Enregistrer les produits (index + nom + quantité)
+                // Enregistrer les produits (index + nom + quantité) + lignes personnalisées
                 document.querySelectorAll('.product-row').forEach(row => {
                     const index = row.dataset.index;
                     const qtyInput = row.querySelector('.product-qty input');
@@ -1946,42 +2685,59 @@
                         });
                     }
                 });
+                document.querySelectorAll('.custom-product-row').forEach(row => {
+                    const nameInput = row.querySelector('input.custom-product-name');
+                    const qtyInput = row.querySelector('input.custom-product-qty');
+                    const name = (nameInput && nameInput.value || '').trim();
+                    const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                    if (name && qty > 0) {
+                        bon.produits.push({
+                            index: 'custom',
+                            nom: name,
+                            reference: '',
+                            prixUnitaire: 0,
+                            quantite: qty
+                        });
+                    }
+                });
 
                 // Le lien de paiement sera généré uniquement dans le PDF lors de l'envoi
                 // Pas besoin de l'enregistrer dans Firebase au moment de l'enregistrement
-                
-                await db.collection(getCollectionPath('bons')).add(bon);
+                // Utiliser le numéro comme ID document pour éviter les doublons (set écrase si même ID)
+                const bonsRef = db.collection(getCollectionPath('bons'));
+                await bonsRef.doc(numeroDefinitif).set(bon);
                 
                 // Mettre à jour le badge de notifications
                 await mettreAJourBadgeNotifications();
                 
-                // Envoyer l'email au client automatiquement après l'enregistrement
+                // Envoyer l'email au client si droit accordé par l'admin
+                const droits = getDroitsTechnicien();
                 const clientEmail = (document.getElementById('clientEmail').value || '').trim();
-                if (clientEmail) {
+                let emailEnvoye = false;
+                if (clientEmail && droits && droits.envoyerEmail) {
                     try {
                         await envoyerClient();
+                        emailEnvoye = true;
                     } catch (emailError) {
                         console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
-                        // Ne pas bloquer si l'email échoue, le bon est déjà enregistré
                     }
                 }
-                
-                // Si l'email a été envoyé, afficher un toast et réinitialiser le formulaire
-                if (clientEmail) {
+                if (emailEnvoye) {
                     showToast('Email envoyé avec succès');
-                    // Réinitialiser le formulaire après un court délai
-                    setTimeout(() => {
-                        resetForm();
-                    }, 1500);
                 } else {
-                    // Pas d'email, juste réinitialiser silencieusement
-                    setTimeout(() => {
-                        resetForm();
-                    }, 500);
+                    showToast('Bon enregistré.');
                 }
+                resetForm();
             } catch (e) {
                 console.error('Erreur Firestore saveBonTech', e);
                 alert("Erreur lors de l'enregistrement du bon (Firestore) : " + (e.message || e));
+            } finally {
+                saveBonTechInProgress = false;
+                if (btnSave) {
+                    btnSave.disabled = false;
+                    const droits = getDroitsTechnicien();
+                    btnSave.textContent = (droits && droits.envoyerEmail) ? '💾 Enregistrer le bon et envoyer au client' : '💾 Enregistrer le bon';
+                }
             }
         }
 
@@ -2160,6 +2916,7 @@
         // ============================================
 
         let tousLesClients = []; // Cache des clients
+        let clientsCollectionPath = null; // 'clients' (racine) ou 'societes/xxx/clients' selon ce qui a fonctionné
 
         // Rechercher un client dans la liste déroulante
         async function rechercherClient(searchTerm) {
@@ -2203,27 +2960,42 @@
             }
         }
 
-        // Charger tous les clients depuis Firestore
+        // Charger tous les clients depuis Firestore (sous-collection par société, ou racine "clients" en secours)
         async function chargerTousLesClients() {
-            try {
-                // Charger tous les clients (sans orderBy pour éviter les problèmes d'index)
-                if (!societeActive) return;
-                const snapshot = await db.collection(getCollectionPath('clients')).get();
-                tousLesClients = [];
-                snapshot.forEach(doc => {
-                    tousLesClients.push({ id: doc.id, ...doc.data() });
-                });
-                // Trier localement par nom
-                tousLesClients.sort((a, b) => {
-                    const nomA = (a.nom || '').toLowerCase();
-                    const nomB = (b.nom || '').toLowerCase();
-                    return nomA.localeCompare(nomB);
-                });
-                return tousLesClients;
-            } catch (error) {
-                console.error('Erreur chargement clients:', error);
-                return [];
+            tousLesClients = [];
+            clientsCollectionPath = null;
+            // 1) Essayer d'abord la sous-collection par société (societes/xxx/clients)
+            if (societeActive) {
+                try {
+                    const path = getCollectionPath('clients');
+                    const snapshot = await db.collection(path).get();
+                    snapshot.forEach(doc => {
+                        tousLesClients.push({ id: doc.id, ...doc.data() });
+                    });
+                    clientsCollectionPath = path;
+                } catch (e) {
+                    console.warn('Chargement clients (sous-collection) échoué, tentative racine:', e.message);
+                }
             }
+            // 2) Si rien ou erreur, essayer la collection racine "clients" (comme avant)
+            if (tousLesClients.length === 0) {
+                try {
+                    const snapshot = await db.collection('clients').get();
+                    snapshot.forEach(doc => {
+                        tousLesClients.push({ id: doc.id, ...doc.data() });
+                    });
+                    clientsCollectionPath = 'clients';
+                } catch (e) {
+                    console.error('Erreur chargement clients (racine):', e);
+                }
+            }
+            // Trier localement par nom
+            tousLesClients.sort((a, b) => {
+                const nomA = (a.nom || '').toLowerCase();
+                const nomB = (b.nom || '').toLowerCase();
+                return nomA.localeCompare(nomB);
+            });
+            return tousLesClients;
         }
 
         // Sélectionner un client et remplir le formulaire
@@ -2231,7 +3003,8 @@
             try {
                 let client = tousLesClients.find(c => c.id === clientId);
                 if (!client) {
-                    const doc = await db.collection(getCollectionPath('clients')).doc(clientId).get();
+                    const path = clientsCollectionPath || getCollectionPath('clients') || 'clients';
+                    const doc = await db.collection(path).doc(clientId).get();
                     if (!doc.exists) {
                         alert('Client introuvable');
                         return;
@@ -2313,9 +3086,10 @@
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
+                const pathClients = clientsCollectionPath || getCollectionPath('clients') || 'clients';
                 if (clientExistant && clientId) {
                     // Mettre à jour le client existant
-                    await db.collection(getCollectionPath('clients')).doc(clientId).update(donneesClient);
+                    await db.collection(pathClients).doc(clientId).update(donneesClient);
                     console.log('✅ Client mis à jour:', nom);
                     alert(`✅ Adresse enregistrée pour ${nom} !\n\nLe client a été mis à jour dans la base de données.`);
                 } else {
@@ -2339,7 +3113,7 @@
                     
                     donneesClient.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                     
-                    await db.collection(getCollectionPath('clients')).doc(nouveauClientId).set(donneesClient);
+                    await db.collection(pathClients).doc(nouveauClientId).set(donneesClient);
                     console.log('✅ Nouveau client créé:', nom);
                     alert(`✅ Nouveau client créé : ${nom} !\n\nL'adresse a été enregistrée dans la base de données.`);
                 }

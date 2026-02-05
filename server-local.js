@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const PORT = process.env.PORT || 8000; // Utiliser le port 8000 par défaut, ou celui spécifié
+const PORT = process.env.PORT || 3000; // Utiliser le port 3000 par défaut, ou celui spécifié
 const HOST = '0.0.0.0'; // Écouter sur toutes les interfaces (IPv4 et IPv6)
 
 // Types MIME

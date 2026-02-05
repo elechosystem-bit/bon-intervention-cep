@@ -30,8 +30,8 @@
         .bon-number p { font-size: 0.8rem; opacity: 0.8; }
         .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; }
         .section { margin-bottom: 30px; }
-        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); display: flex; align-items: center; gap: 10px; }
-        .section-title::before { content: ''; width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+        .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ''; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
         .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         .input-group { display: flex; flex-direction: column; gap: 6px; }
         .input-group label { font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
@@ -64,9 +64,9 @@
         .product-ref { font-size: 0.7rem; color: var(--text-light); font-family: 'Space Mono', monospace; }
         .product-price { font-weight: 600; color: var(--primary); text-align: center; font-size: 0.85rem; }
         .product-qty input { width: 55px; padding: 5px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
-        .product-total { font-weight: 700; color: var(--accent-dark); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
+        .product-total { font-weight: 700; color: var(--primary); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
 
-        .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #fffaf0; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
+        .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #ebf8ff; border: 2px solid var(--primary); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
         /* Ajuster la grille pour Main d'œuvre (sans demi-heures ni tarif unitaire) */
         .service-row:has(#moDemiHeures[style*="display: none"]) {
             grid-template-columns: 1fr 150px 120px;
@@ -92,8 +92,8 @@
 
         .actions { display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
         .btn { flex: 1; min-width: 200px; padding: 16px 30px; font-size: 1rem; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%); color: white; box-shadow: 0 4px 15px rgba(246, 173, 85, 0.4); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(246, 173, 85, 0.5); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 4px 15px rgba(26, 54, 93, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26, 54, 93, 0.4); }
         .btn-secondary { background: var(--card); color: var(--primary); border: 2px solid var(--primary); }
         .btn-secondary:hover { background: var(--primary); color: white; }
         .btn-email { padding: 8px 12px; font-size: 0.8rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); cursor: pointer; align-self: flex-start; }
@@ -113,6 +113,71 @@
         .toast.error { background: var(--danger); }
 
         .footer { background: var(--primary); color: white; padding: 20px 30px; border-radius: 0 0 16px 16px; text-align: center; font-size: 0.85rem; }
+        .btn-deconnexion-admin { padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.2); color: #fff; cursor: pointer; font-weight: 500; }
+        .btn-deconnexion-admin:hover { background: rgba(255,255,255,0.35); color: #fff; }
+
+        /* Onglets Bons / Agenda */
+        .tabs-nav { display: flex; gap: 4px; background: #e2e8f0; padding: 6px; border-radius: 12px; margin: 16px 0 0 0; border: 2px solid var(--primary); }
+        .tabs-nav button { flex: 1; padding: 14px 24px; border: none; background: transparent; color: var(--text); font-weight: 600; font-size: 1.05rem; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+        .tabs-nav button:hover { background: rgba(26, 54, 93, 0.12); color: var(--primary); }
+        .tabs-nav button.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .vue-content { display: none; }
+        .vue-content.active { display: block; }
+        /* Agenda calendrier */
+        .agenda-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .agenda-month { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .agenda-nav { display: flex; gap: 8px; }
+        .agenda-nav button { padding: 8px 16px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .agenda-nav button:hover { background: var(--primary); color: white; }
+        .agenda-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .agenda-weekday { background: var(--primary); color: white; padding: 8px; text-align: center; font-size: 0.75rem; font-weight: 600; }
+        .agenda-day { background: var(--card); padding: 8px; min-height: 70px; cursor: pointer; transition: background 0.2s; border: none; text-align: left; font-family: inherit; }
+        .agenda-day:hover { background: #ebf8ff; }
+        .agenda-day.other-month { color: var(--text-light); opacity: 0.7; }
+        .agenda-day .num { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+        .agenda-day .count { font-size: 0.75rem; color: var(--primary); font-weight: 600; }
+        .agenda-day-detail { margin-top: 20px; padding: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+        .agenda-day-detail h4 { margin-bottom: 12px; color: var(--primary); }
+        .agenda-day-list { display: flex; flex-direction: column; gap: 8px; }
+        .agenda-day-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; }
+        .agenda-day-item span { font-size: 0.9rem; }
+        .agenda-day-item .heure { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--primary); min-width: 52px; margin-right: 8px; }
+        .agenda-day-item .numero { font-family: 'Space Mono', monospace; font-weight: 600; color: var(--primary); }
+        .agenda-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 3000; }
+        .agenda-modal.show { display: flex; }
+        .agenda-modal-inner { background: white; padding: 24px; border-radius: 16px; max-width: 420px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .agenda-modal-inner h3 { margin-bottom: 16px; color: var(--primary); }
+        .agenda-modal-inner .input-group { margin-bottom: 14px; }
+        .agenda-modal-inner .actions { display: flex; gap: 10px; margin-top: 20px; }
+
+        .btn-info-droits { width: 28px; height: 28px; padding: 0; border: 2px solid var(--primary); background: #ebf8ff; color: var(--primary); border-radius: 50%; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .btn-info-droits:hover { background: var(--primary); color: white; }
+        .label-with-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .label-with-info label { margin-bottom: 0; }
+        .modal-droits-techniciens { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 3100; }
+        .modal-droits-techniciens.show { display: flex; }
+        .modal-droits-inner { background: white; padding: 24px; border-radius: 16px; max-width: 480px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-droits-inner h3 { margin-bottom: 16px; color: var(--primary); }
+        .modal-droits-inner ul { margin: 0 0 16px 0; padding-left: 20px; }
+        .modal-droits-inner li { margin-bottom: 6px; }
+        .modal-droits-inner .droits-ok { color: var(--success); }
+        .modal-droits-inner .droits-non { color: var(--danger); }
+
+        .modal-droits-salarie { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 3200; }
+        .modal-droits-salarie.show { display: flex; }
+        .modal-droits-salarie-inner { background: white; padding: 24px; border-radius: 16px; max-width: 420px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-droits-salarie-inner h3 { margin-bottom: 16px; color: var(--primary); }
+        .droits-check { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .droits-check input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; }
+        .droits-check label { cursor: pointer; font-size: 0.95rem; }
+
+        .modal-detail-intervention { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 3050; }
+        .modal-detail-intervention.show { display: flex; }
+        .modal-detail-intervention-inner { background: white; padding: 24px; border-radius: 16px; max-width: 520px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-detail-intervention-inner h3 { margin-bottom: 16px; color: var(--primary); }
+        .detail-intervention-row { margin-bottom: 14px; }
+        .detail-intervention-row label { font-size: 0.8rem; color: var(--text-light); font-weight: 600; display: block; margin-bottom: 4px; }
+        .detail-intervention-row .value { font-size: 1rem; color: var(--text); white-space: pre-wrap; word-break: break-word; }
 
         @media (max-width: 768px) {
             .product-row { grid-template-columns: 30px 1fr 60px 70px; }
@@ -128,6 +193,7 @@
             .btn, .actions, .btn-clear, .material-selector { display: none !important; }
             .header, .footer, .totals-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
+
     </style>
     <!-- EmailJS pour l'envoi automatique d'emails -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -151,18 +217,25 @@
                 <p>Bon d'Intervention (Admin)</p>
             </div>
             <div class="bon-number">
-                <div style="margin-bottom: 10px;">
-                    <label for="societeSelect" style="font-size: 0.8rem; opacity: 0.9; margin-right: 8px;">Société :</label>
+                <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <label for="societeSelect" style="font-size: 0.8rem; opacity: 0.9; margin-right: 4px;">Société :</label>
                     <select id="societeSelect" onchange="changerSociete(this.value)" style="padding: 6px 12px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: white; font-size: 0.9rem; cursor: pointer; font-weight: 600;">
                         <option value="cep">CEP</option>
                         <option value="elechosystem">Elecho System</option>
                     </select>
+                    <button type="button" class="btn-deconnexion-admin" onclick="deconnecterAdmin()" title="Quitter l'administration">Déconnecter</button>
                 </div>
                 <span id="bonNumber">CEP-2024-0001</span>
                 <p id="currentDate"></p>
             </div>
         </div>
 
+        <div class="tabs-nav">
+            <button type="button" id="tabBons" class="active" onclick="showVueAdmin('bons')">📋 Bons</button>
+            <button type="button" id="tabAgenda" onclick="showVueAdmin('agenda')">📅 Agenda</button>
+        </div>
+
+        <div id="vueBons" class="vue-content active">
         <div class="form-body">
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
@@ -183,7 +256,10 @@
                 <div class="input-grid">
                     <div class="input-group"><label>Date</label><input type="date" id="interventionDate"></div>
                     <div class="input-group">
-                        <label>Technicien</label>
+                        <div class="label-with-info">
+                            <label>Technicien</label>
+                            <button type="button" class="btn-info-droits" onclick="ouvrirModalDroitsTechniciens()" title="Droits et restrictions des techniciens">ℹ️</button>
+                        </div>
                         <select id="technicien">
                             <option value="">-- Sélectionner un technicien --</option>
                             <option value="Christophe Tavares">Christophe Tavares</option>
@@ -511,6 +587,159 @@
                 </p>
             </div>
 
+            <!-- Gestion des accès techniciens -->
+            <div class="section">
+                <h3 class="section-title" style="display: flex; align-items: center; gap: 10px;">
+                    Gestion des accès techniciens
+                    <button type="button" class="btn-info-droits" onclick="ouvrirModalDroitsTechniciens()" title="Droits et restrictions des techniciens">ℹ️</button>
+                </h3>
+                <div id="blocSocieteTechniciens" style="background: #ebf8ff; border: 2px solid var(--primary); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
+                    <strong style="color: var(--primary);">Société pour ces techniciens :</strong>
+                    <span id="nomSocieteTechniciens" style="font-weight: 700; margin-left: 8px;">—</span>
+                    <p style="margin: 10px 0 0 0; font-size: 0.9rem; color: var(--text-light);">Pour attribuer un technicien à une <strong>autre</strong> société, changez le menu « Société » en haut de page (bandeau bleu), puis revenez ici et ajoutez le technicien.</p>
+                </div>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">
+                    Les techniciens listés ci-dessous apparaissent dans la liste « Technicien » sur la page d’accueil et peuvent voir leur planning. Pour attribuer une société à un salarié : sélectionnez d'abord la société en haut, puis ajoutez le technicien ici. Il aura accès uniquement à cette société.
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px;">
+                    <input type="text" id="nouveauTechnicienNom" placeholder="Nom du technicien" style="padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; min-width: 200px;">
+                    <input type="text" id="nouveauTechnicienCode" placeholder="Code d'accès (optionnel)" style="padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; min-width: 160px;" maxlength="20" autocomplete="off">
+                    <button type="button" class="btn btn-primary" onclick="ajouterTechnicien()" style="min-width: auto; padding: 10px 20px;">➕ Ajouter</button>
+                </div>
+                <p style="color: var(--text-light); font-size: 0.85rem; margin-top: -8px; margin-bottom: 12px;">Le code d'accès permet au technicien de valider son identité sur la page d'accueil. Laissez vide pour aucun code.</p>
+                <div id="listeTechniciens" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Rempli en JS -->
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div id="vueAgenda" class="vue-content">
+            <div class="section">
+                <h3 class="section-title">Agenda des interventions</h3>
+                <p style="color: var(--text-light); margin-bottom: 16px;">Les interventions affichées et créées concernent <strong>uniquement la société sélectionnée</strong> en haut de page. Cliquez sur un jour pour voir les interventions et en ajouter.</p>
+                <div class="agenda-toolbar">
+                    <span class="agenda-month" id="agendaMonthLabel">Janvier 2025</span>
+                    <div class="agenda-nav">
+                        <button type="button" onclick="agendaPrevMonth()">← Mois précédent</button>
+                        <button type="button" onclick="agendaNextMonth()">Mois suivant →</button>
+                    </div>
+                </div>
+                <div class="agenda-grid" id="agendaGrid">
+                    <div class="agenda-weekday">Lun</div>
+                    <div class="agenda-weekday">Mar</div>
+                    <div class="agenda-weekday">Mer</div>
+                    <div class="agenda-weekday">Jeu</div>
+                    <div class="agenda-weekday">Ven</div>
+                    <div class="agenda-weekday">Sam</div>
+                    <div class="agenda-weekday">Dim</div>
+                    <div id="agendaDays" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;"></div>
+                </div>
+                <div class="agenda-day-detail" id="agendaDayDetail" style="display: none;">
+                    <h4 id="agendaDayDetailTitle">Interventions du …</h4>
+                    <div class="agenda-day-list" id="agendaDayList"></div>
+                    <button type="button" class="btn btn-primary" style="margin-top: 12px;" onclick="openAgendaModal()">➕ Ajouter une intervention</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-droits-salarie" id="modalDroitsSalarie" onclick="fermerModalDroitsSalarie()">
+            <div class="modal-droits-salarie-inner" onclick="event.stopPropagation()">
+                <h3 id="modalDroitsSalarieTitre">Droits du salarié</h3>
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 16px;">Cochez les droits à accorder à ce salarié.</p>
+                <div class="droits-check"><input type="checkbox" id="droitCreerBons" checked><label for="droitCreerBons">Créer et modifier des bons d'intervention</label></div>
+                <div class="droits-check"><input type="checkbox" id="droitVoirPlanning" checked><label for="droitVoirPlanning">Voir l'onglet « Mon planning »</label></div>
+                <div class="droits-check"><input type="checkbox" id="droitVoirPrix"><label for="droitVoirPrix">Voir les prix unitaires et totaux (HT/TTC)</label></div>
+                <div class="droits-check"><input type="checkbox" id="droitEnvoyerEmail" checked><label for="droitEnvoyerEmail">Envoyer le bon par email</label></div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="enregistrerDroitsSalarie()">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" onclick="fermerModalDroitsSalarie()">Annuler</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-droits-techniciens" id="modalDroitsTechniciens" onclick="fermerModalDroitsTechniciens()">
+            <div class="modal-droits-inner" onclick="event.stopPropagation()">
+                <h3>Droits des techniciens</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-light);">Ce que les techniciens <strong>ont le droit</strong> de faire :</p>
+                <ul class="droits-ok">
+                    <li>Accéder uniquement à la société que vous leur assignez</li>
+                    <li>Se connecter avec leur nom et code d'accès (défini par vous)</li>
+                    <li>Créer et remplir des bons d'intervention</li>
+                    <li>Voir leur planning (interventions qui leur sont assignées)</li>
+                    <li>Saisir client, date, matériel (quantités), heures, signature, photos</li>
+                    <li>Envoyer le bon par email</li>
+                </ul>
+                <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-light);">Ce qu'ils <strong>n'ont pas le droit</strong> de faire :</p>
+                <ul class="droits-non">
+                    <li>Choisir ou changer de société (imposé par l'administrateur)</li>
+                    <li>Voir les prix unitaires, totaux HT/TTC et la section paiement</li>
+                    <li>Accéder à l'interface admin (liste de tous les bons, paramètres, agenda)</li>
+                </ul>
+                <button type="button" class="btn btn-primary" onclick="fermerModalDroitsTechniciens()">Fermer</button>
+            </div>
+        </div>
+
+        <div class="modal-detail-intervention" id="modalDetailIntervention" onclick="fermerDetailIntervention()">
+            <div class="modal-detail-intervention-inner" onclick="event.stopPropagation()">
+                <h3>Détail de l'intervention</h3>
+                <div class="detail-intervention-row">
+                    <label>Client</label>
+                    <div class="value" id="detailInterventionClient">—</div>
+                </div>
+                <div class="detail-intervention-row">
+                    <label>Date — Technicien</label>
+                    <div class="value" id="detailInterventionDateTech">—</div>
+                </div>
+                <div class="detail-intervention-row">
+                    <label>Horaires</label>
+                    <div class="value" id="detailInterventionHoraires">—</div>
+                </div>
+                <div class="detail-intervention-row">
+                    <label>Adresse</label>
+                    <div class="value" id="detailInterventionAdresse">—</div>
+                </div>
+                <div class="detail-intervention-row">
+                    <label>Explications / Description de l'intervention</label>
+                    <div class="value" id="detailInterventionDescription">—</div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" id="btnDetailOuvrirBonComplet" onclick="ouvrirBonCompletDepuisDetail()">Ouvrir le bon complet</button>
+                    <button type="button" class="btn btn-secondary" onclick="fermerDetailIntervention()">Fermer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="agenda-modal" id="agendaModal" onclick="closeAgendaModal()">
+            <div class="agenda-modal-inner" onclick="event.stopPropagation()">
+                <h3>Ajouter une intervention</h3>
+                <div class="input-group">
+                    <label>Date</label>
+                    <input type="date" id="agendaModalDate">
+                </div>
+                <div class="input-group">
+                    <label>Heure d'arrivée (optionnel)</label>
+                    <input type="time" id="agendaModalHeure">
+                </div>
+                <div class="input-group">
+                    <label>Technicien</label>
+                    <select id="agendaModalTechnicien"></select>
+                </div>
+                <div class="input-group">
+                    <label>Client</label>
+                    <input type="text" id="agendaModalClient" placeholder="Nom du client">
+                </div>
+                <div class="input-group">
+                    <label>Adresse (optionnel)</label>
+                    <input type="text" id="agendaModalAddress" placeholder="Adresse">
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAgendaModal()">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAgendaIntervention()">Créer l'intervention</button>
+                </div>
+            </div>
+        </div>
+
         <div class="footer" id="footerSociete">Compagnie d'Électricité Parisienne — Bon d'intervention (Admin)</div>
     </div>
 
@@ -554,9 +783,457 @@
             }
             return `societes/${societeActive.id}/${collectionName}`;
         }
+
+        // Référence du document paramètres (techniciens) pour la société active
+        function getParametresRef() {
+            if (!societeActive) return null;
+            return db.collection('societes').doc(societeActive.id).collection('parametres').doc('techniciens');
+        }
+
+        function getCompteurRef() {
+            if (!societeActive) return db.collection('compteurs').doc('bons');
+            return db.collection('societes').doc(societeActive.id).collection('compteurs').doc('bons');
+        }
+
+        // Droits par défaut pour un nouveau technicien
+        const DROITS_DEFAUT = { creerBons: true, voirPlanning: true, voirPrix: false, envoyerEmail: true };
+
+        // Liste des techniciens pour la société courante : tableau de { nom, code, droits }
+        let listeTechniciensActuelle = [];
+        let indexTechnicienDroitsEnCours = -1;
+
+        function normaliserTechniciens(arr) {
+            if (!Array.isArray(arr)) return [];
+            return arr.map(t => {
+                if (typeof t === 'string') return { nom: t, code: '', droits: { ...DROITS_DEFAUT } };
+                const droits = t.droits && typeof t.droits === 'object' ? { ...DROITS_DEFAUT, ...t.droits } : { ...DROITS_DEFAUT };
+                return { nom: t.nom || t, code: (t.code || '').trim(), droits: droits };
+            });
+        }
+
+        async function loadParametresTechniciens() {
+            if (!societeActive) return;
+            const ref = getParametresRef();
+            if (!ref) return;
+            try {
+                const doc = await ref.get();
+                if (doc.exists && doc.data().techniciens && Array.isArray(doc.data().techniciens) && doc.data().techniciens.length > 0) {
+                    listeTechniciensActuelle = normaliserTechniciens(doc.data().techniciens);
+                } else {
+                    const def = (societeActive.techniciens || []).map(n => ({ nom: n, code: '' }));
+                    listeTechniciensActuelle = normaliserTechniciens(def);
+                    await ref.set({ techniciens: listeTechniciensActuelle });
+                }
+                listeTechniciensActuelle.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+                remplirSelectTechnicien();
+                renderListeTechniciens();
+            } catch (e) {
+                console.error('Erreur chargement paramètres techniciens:', e);
+                listeTechniciensActuelle = normaliserTechniciens(societeActive.techniciens || []);
+                remplirSelectTechnicien();
+                renderListeTechniciens();
+            }
+        }
+
+        function remplirSelectTechnicien() {
+            const selectTech = document.getElementById('technicien');
+            if (!selectTech) return;
+            selectTech.innerHTML = '<option value="">-- Sélectionner un technicien --</option>';
+            listeTechniciensActuelle.forEach(tech => {
+                const nom = tech.nom || tech;
+                selectTech.innerHTML += '<option value="' + (nom + '').replace(/"/g, '&quot;') + '">' + (nom + '').replace(/</g, '&lt;') + '</option>';
+            });
+        }
+
+        function renderListeTechniciens() {
+            const container = document.getElementById('listeTechniciens');
+            if (!container) return;
+            if (listeTechniciensActuelle.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); font-size: 0.9rem;">Aucun technicien. Ajoutez un nom ci-dessus.</p>';
+                return;
+            }
+            container.innerHTML = listeTechniciensActuelle.map((tech, index) => {
+                const nom = tech.nom || tech;
+                const codeLabel = (tech.code || '').length > 0 ? 'Code: ****' : 'Code: non défini';
+                return '<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;" data-tech-index="' + index + '">' +
+                    '<span style="font-weight: 500;">' + (nom + '').replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>' +
+                    '<span style="font-size: 0.85rem; color: var(--text-light);">' + codeLabel + '</span>' +
+                    '<div style="display: flex; gap: 8px;">' +
+                    '<button type="button" onclick="ouvrirModalDroitsSalarie(parseInt(this.closest(\'[data-tech-index]\').getAttribute(\'data-tech-index\'), 10))" style="padding: 6px 12px; font-size: 0.85rem; background: #38a169; color: white; border: none; border-radius: 6px; cursor: pointer;">Droits</button>' +
+                    '<button type="button" onclick="changerCodeTechnicien(parseInt(this.closest(\'[data-tech-index]\').getAttribute(\'data-tech-index\'), 10))" style="padding: 6px 12px; font-size: 0.85rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">Changer le code</button>' +
+                    '<button type="button" onclick="retirerTechnicien(parseInt(this.closest(\'[data-tech-index]\').getAttribute(\'data-tech-index\'), 10))" style="padding: 6px 12px; font-size: 0.85rem; background: #e53e3e; color: white; border: none; border-radius: 6px; cursor: pointer;">Retirer</button>' +
+                    '</div></div>';
+            }).join('');
+        }
+
+        function ouvrirModalDroitsSalarie(index) {
+            const tech = listeTechniciensActuelle[index];
+            if (!tech) return;
+            indexTechnicienDroitsEnCours = index;
+            const d = tech.droits || DROITS_DEFAUT;
+            document.getElementById('modalDroitsSalarieTitre').textContent = 'Droits de « ' + (tech.nom || tech) + ' »';
+            document.getElementById('droitCreerBons').checked = !!d.creerBons;
+            document.getElementById('droitVoirPlanning').checked = !!d.voirPlanning;
+            document.getElementById('droitVoirPrix').checked = !!d.voirPrix;
+            document.getElementById('droitEnvoyerEmail').checked = !!d.envoyerEmail;
+            document.getElementById('modalDroitsSalarie').classList.add('show');
+        }
+        function fermerModalDroitsSalarie() {
+            indexTechnicienDroitsEnCours = -1;
+            document.getElementById('modalDroitsSalarie').classList.remove('show');
+        }
+        async function enregistrerDroitsSalarie() {
+            if (indexTechnicienDroitsEnCours < 0) return;
+            const tech = listeTechniciensActuelle[indexTechnicienDroitsEnCours];
+            if (!tech) return;
+            tech.droits = {
+                creerBons: document.getElementById('droitCreerBons').checked,
+                voirPlanning: document.getElementById('droitVoirPlanning').checked,
+                voirPrix: document.getElementById('droitVoirPrix').checked,
+                envoyerEmail: document.getElementById('droitEnvoyerEmail').checked
+            };
+            const ref = getParametresRef();
+            if (!ref) return;
+            try {
+                var toSave = listeTechniciensActuelle.map(function(t) {
+                    return { nom: t.nom || '', code: t.code || '', droits: t.droits || DROITS_DEFAUT };
+                });
+                await ref.set({ techniciens: toSave });
+                fermerModalDroitsSalarie();
+                renderListeTechniciens();
+                showToast('Droits enregistrés');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || ''), true);
+            }
+        }
+
+        async function ajouterTechnicien() {
+            const inputNom = document.getElementById('nouveauTechnicienNom');
+            const inputCode = document.getElementById('nouveauTechnicienCode');
+            const nom = (inputNom && inputNom.value || '').trim();
+            const code = (inputCode && inputCode.value || '').trim();
+            if (!nom) {
+                showToast('Indiquez un nom', true);
+                return;
+            }
+            if (!societeActive) return;
+            const ref = getParametresRef();
+            if (!ref) return;
+            if (listeTechniciensActuelle.some(t => (t.nom || t) === nom)) {
+                showToast('Ce technicien est déjà dans la liste', true);
+                return;
+            }
+            try {
+                listeTechniciensActuelle = listeTechniciensActuelle.concat([{ nom, code }]).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+                var toSave = listeTechniciensActuelle.map(function(t) { return { nom: t.nom || '', code: t.code || '' }; });
+                await ref.set({ techniciens: toSave });
+                remplirSelectTechnicien();
+                renderListeTechniciens();
+                if (inputNom) inputNom.value = '';
+                if (inputCode) inputCode.value = '';
+                showToast('Technicien ajouté');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur lors de l\'ajout : ' + (e.message || ''), true);
+            }
+        }
+
+        async function changerCodeTechnicien(index) {
+            const tech = listeTechniciensActuelle[index];
+            if (!tech) return;
+            const nom = tech.nom || tech;
+            const nouveauCode = prompt('Nouveau code d\'accès pour « ' + nom + ' » (laissez vide pour supprimer) :');
+            if (nouveauCode === null) return;
+            const ref = getParametresRef();
+            if (!ref) return;
+            try {
+                tech.code = (nouveauCode || '').trim();
+                var toSave = listeTechniciensActuelle.map(function(t) { return { nom: t.nom || '', code: t.code || '', droits: t.droits || DROITS_DEFAUT }; });
+                await ref.set({ techniciens: toSave });
+                renderListeTechniciens();
+                showToast('Code mis à jour');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || 'voir console'), true);
+            }
+        }
+
+        async function retirerTechnicien(index) {
+            const tech = listeTechniciensActuelle[index];
+            if (!tech || !societeActive) return;
+            const nom = tech.nom || tech;
+            if (!confirm('Retirer l\'accès pour « ' + nom + ' » ?')) return;
+            const ref = getParametresRef();
+            if (!ref) return;
+            try {
+                listeTechniciensActuelle = listeTechniciensActuelle.filter(function(_, i) { return i !== index; });
+                var toSave = listeTechniciensActuelle.map(function(t) { return { nom: t.nom || '', code: t.code || '', droits: t.droits || DROITS_DEFAUT }; });
+                await ref.set({ techniciens: toSave });
+                remplirSelectTechnicien();
+                renderListeTechniciens();
+                showToast('Technicien retiré');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || 'voir console'), true);
+            }
+        }
+
+        // --- Agenda type calendrier ---
+        let agendaYear = new Date().getFullYear();
+        let agendaMonth = new Date().getMonth() + 1;
+        let agendaSelectedDay = null;
+        let agendaBonsByDate = {};
+
+        function showVueAdmin(vue) {
+            document.getElementById('vueBons').classList.toggle('active', vue === 'bons');
+            document.getElementById('vueAgenda').classList.toggle('active', vue === 'agenda');
+            document.getElementById('tabBons').classList.toggle('active', vue === 'bons');
+            document.getElementById('tabAgenda').classList.toggle('active', vue === 'agenda');
+            if (vue === 'agenda') renderAgenda();
+        }
+
+        async function renderAgenda() {
+            var moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+            document.getElementById('agendaMonthLabel').textContent = moisNoms[agendaMonth - 1] + ' ' + agendaYear;
+            document.getElementById('agendaDayDetail').style.display = 'none';
+            agendaSelectedDay = null;
+
+            if (!societeActive) return;
+            try {
+                var debut = agendaYear + '-' + String(agendaMonth).padStart(2, '0') + '-01';
+                var fin = new Date(agendaYear, agendaMonth, 0);
+                var finStr = fin.getFullYear() + '-' + String(fin.getMonth() + 1).padStart(2, '0') + '-' + String(fin.getDate()).padStart(2, '0');
+                var snap = await db.collection(getCollectionPath('bons')).get();
+                agendaBonsByDate = {};
+                snap.forEach(function(doc) {
+                    var dateKey = doc.data().date;
+                    if (dateKey && dateKey >= debut && dateKey <= finStr) {
+                        if (!agendaBonsByDate[dateKey]) agendaBonsByDate[dateKey] = [];
+                        agendaBonsByDate[dateKey].push({ id: doc.id, ...doc.data() });
+                    }
+                });
+            } catch (e) {
+                console.error(e);
+                agendaBonsByDate = {};
+            }
+
+            var firstDay = new Date(agendaYear, agendaMonth - 1, 1);
+            var lastDay = new Date(agendaYear, agendaMonth, 0);
+            var startWeekday = firstDay.getDay();
+            startWeekday = startWeekday === 0 ? 7 : startWeekday;
+            var daysInMonth = lastDay.getDate();
+            var prevMonth = agendaMonth === 1 ? 12 : agendaMonth - 1;
+            var prevYear = agendaMonth === 1 ? agendaYear - 1 : agendaYear;
+            var prevLast = new Date(prevYear, prevMonth, 0).getDate();
+            var html = '';
+            var i, d, dateStr, count;
+            for (i = 1; i < startWeekday; i++) {
+                d = prevLast - startWeekday + i + 1;
+                html += '<button type="button" class="agenda-day other-month" data-date="' + prevYear + '-' + String(prevMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0') + '"><span class="num">' + d + '</span></button>';
+            }
+            for (d = 1; d <= daysInMonth; d++) {
+                dateStr = agendaYear + '-' + String(agendaMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                count = (agendaBonsByDate[dateStr] || []).length;
+                html += '<button type="button" class="agenda-day" data-date="' + dateStr + '" onclick="openDayAgenda(\'' + dateStr + '\')"><span class="num">' + d + '</span>' + (count > 0 ? '<span class="count">' + count + ' intervention(s)</span>' : '') + '</button>';
+            }
+            var remaining = 42 - (startWeekday - 1 + daysInMonth);
+            var nextD = 1;
+            var nextMonth = agendaMonth === 12 ? 1 : agendaMonth + 1;
+            var nextYear = agendaMonth === 12 ? agendaYear + 1 : agendaYear;
+            while (remaining > 0) {
+                dateStr = nextYear + '-' + String(nextMonth).padStart(2, '0') + '-' + String(nextD).padStart(2, '0');
+                html += '<button type="button" class="agenda-day other-month" data-date="' + dateStr + '"><span class="num">' + nextD + '</span></button>';
+                nextD++;
+                remaining--;
+            }
+            document.getElementById('agendaDays').innerHTML = html;
+        }
+
+        function agendaPrevMonth() {
+            if (agendaMonth === 1) { agendaMonth = 12; agendaYear--; } else agendaMonth--;
+            renderAgenda();
+        }
+
+        function agendaNextMonth() {
+            if (agendaMonth === 12) { agendaMonth = 1; agendaYear++; } else agendaMonth++;
+            renderAgenda();
+        }
+
+        function openDayAgenda(dateStr) {
+            agendaSelectedDay = dateStr;
+            var list = (agendaBonsByDate[dateStr] || []).slice();
+            // Trier par heure d'arrivée (sans horaire en dernier)
+            list.sort(function(a, b) {
+                var ha = (a.heureArrivee || '').trim();
+                var hb = (b.heureArrivee || '').trim();
+                if (!ha && !hb) return 0;
+                if (!ha) return 1;
+                if (!hb) return -1;
+                return ha.localeCompare(hb);
+            });
+            var title = document.getElementById('agendaDayDetailTitle');
+            var d = new Date(dateStr + 'T12:00:00');
+            title.textContent = 'Interventions du ' + d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            var listEl = document.getElementById('agendaDayList');
+            if (list.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-light);">Aucune intervention. Cliquez sur « Ajouter une intervention ».</p>';
+            } else {
+                listEl.innerHTML = list.map(function(b) {
+                    var heure = (b.heureArrivee || '').trim() || '—';
+                    return '<div class="agenda-day-item"><span><span class="heure">' + heure + '</span>' + (b.client || '-') + ' — ' + (b.technicien || '-') + '</span><button type="button" class="btn btn-secondary" style="padding:6px 12px; font-size:0.85rem;" onclick="afficherDetailIntervention(\'' + b.id + '\')">Ouvrir</button></div>';
+                }).join('');
+            }
+            document.getElementById('agendaDayDetail').style.display = 'block';
+        }
+
+        function openAgendaModal() {
+            if (!agendaSelectedDay) return;
+            document.getElementById('agendaModalDate').value = agendaSelectedDay;
+            var heureInput = document.getElementById('agendaModalHeure');
+            if (heureInput) heureInput.value = '';
+            var sel = document.getElementById('agendaModalTechnicien');
+            sel.innerHTML = listeTechniciensActuelle.map(function(t) {
+                var nom = t.nom || t;
+                return '<option value="' + nom.replace(/"/g, '&quot;') + '">' + nom.replace(/</g, '&lt;') + '</option>';
+            }).join('');
+            document.getElementById('agendaModalClient').value = '';
+            document.getElementById('agendaModalAddress').value = '';
+            document.getElementById('agendaModal').classList.add('show');
+        }
+
+        function closeAgendaModal() {
+            document.getElementById('agendaModal').classList.remove('show');
+        }
+
+        function ouvrirModalDroitsTechniciens() {
+            document.getElementById('modalDroitsTechniciens').classList.add('show');
+        }
+        function fermerModalDroitsTechniciens() {
+            document.getElementById('modalDroitsTechniciens').classList.remove('show');
+        }
+
+        async function submitAgendaIntervention() {
+            var dateStr = document.getElementById('agendaModalDate').value;
+            var heureArrivee = (document.getElementById('agendaModalHeure') && document.getElementById('agendaModalHeure').value) || '';
+            var technicien = document.getElementById('agendaModalTechnicien').value;
+            var client = (document.getElementById('agendaModalClient').value || '').trim();
+            var address = (document.getElementById('agendaModalAddress').value || '').trim();
+            if (!client) {
+                showToast('Indiquez le nom du client', true);
+                return;
+            }
+            try {
+                await createBonMinimal({ date: dateStr, heureArrivee: heureArrivee, technicien: technicien, client: client, address: address });
+                closeAgendaModal();
+                renderAgenda();
+                if (agendaSelectedDay === dateStr) openDayAgenda(dateStr);
+                showToast('Intervention créée');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || ''), true);
+            }
+        }
+
+        async function createBonMinimal(opts) {
+            if (!societeActive) throw new Error('Société non sélectionnée');
+            var compteurRef = getCompteurRef();
+            var annee = new Date().getFullYear();
+            var numero;
+            await db.runTransaction(async function(transaction) {
+                var compteurDoc = await transaction.get(compteurRef);
+                if (compteurDoc.exists && compteurDoc.data().annee === annee) {
+                    numero = compteurDoc.data().dernierNumero + 1;
+                } else {
+                    numero = 1;
+                }
+                transaction.set(compteurRef, { annee: annee, dernierNumero: numero });
+            });
+            var numeroDefinitif = annee.toString() + String(numero).padStart(4, '0');
+            var bon = {
+                numero: numeroDefinitif,
+                date: opts.date || new Date().toISOString().slice(0, 10),
+                client: opts.client || '',
+                phone: '',
+                email: '',
+                address: opts.address || '',
+                technicien: opts.technicien || '',
+                description: '',
+                heureArrivee: (opts.heureArrivee || '').trim(),
+                heureDepart: '',
+                moDuree: '0h00',
+                moDemiHeures: '0 demi-heures',
+                moTarif: '35',
+                deplNombre: '0',
+                deplTarif: '70',
+                subtotalProduits: '0.00€',
+                subtotalMO: '0.00€',
+                subtotalDepl: '0.00€',
+                totalHT: '0.00€',
+                totalTVA: '0.00€',
+                totalTTC: '0.00€',
+                statut: 'en_attente',
+                societe: societeActive.id,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                produits: [],
+                photos: []
+            };
+            var ref = await db.collection(getCollectionPath('bons')).add(bon);
+            await renderHistorique();
+            return ref.id;
+        }
         
         // Fonction pour changer de société
-        function changerSociete(societeId) {
+        function genererMateriel(societe) {
+            let html = '';
+            let indexGlobal = 0;
+            
+            societe.materiel.forEach(categorie => {
+                html += `<div class="category-section">
+                    <div class="category-header collapsed" onclick="toggleCategory(this)"><span>${categorie.categorie}</span><span class="toggle-icon">▼</span></div>
+                    <div class="category-content hidden">`;
+                
+                categorie.produits.forEach(produit => {
+                    const prixAffichage = produit.prix + (produit.unite === 'm' ? '€/m' : '€');
+                    const refHtml = produit.reference ? `<div class="product-ref">${produit.reference}</div>` : '';
+                    html += `<div class="product-row" data-index="${indexGlobal}">
+                        <input type="checkbox" onchange="updateTotal(this)">
+                        <div>
+                            <div class="product-name">${produit.nom}</div>
+                            ${refHtml}
+                        </div>
+                        <div class="product-price">${prixAffichage}</div>
+                        <div class="product-qty">
+                            <input type="number" value="0" min="0" data-price="${produit.prix}" onchange="updateRowTotal(this)">
+                        </div>
+                        <div class="product-total">0.00€</div>
+                    </div>`;
+                    indexGlobal++;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            return html;
+        }
+        
+        function genererSelectMateriel(societe) {
+            let html = '<option value="">-- Choisir un produit --</option>';
+            let indexGlobal = 0;
+            
+            societe.materiel.forEach(categorie => {
+                html += `<optgroup label="${categorie.categorie}">`;
+                categorie.produits.forEach(produit => {
+                    html += `<option value="${indexGlobal}" data-price="${produit.prix}">${produit.nom}</option>`;
+                    indexGlobal++;
+                });
+                html += `</optgroup>`;
+            });
+            
+            return html;
+        }
+
+        async function changerSociete(societeId) {
             const societe = SOCIETES[societeId];
             if (!societe) return;
             
@@ -570,6 +1247,8 @@
             
             // Changer le nom
             document.getElementById('societeNom').innerHTML = '⚡ ' + societe.nom;
+            const nomSocieteTechniciens = document.getElementById('nomSocieteTechniciens');
+            if (nomSocieteTechniciens) nomSocieteTechniciens.textContent = societe.nom;
             
             // Changer le footer
             const footer = document.getElementById('footerSociete');
@@ -581,14 +1260,46 @@
             document.documentElement.style.setProperty('--primary', societe.couleurPrimaire);
             document.documentElement.style.setProperty('--primary-light', societe.couleurSecondaire);
             
+            // Charger et afficher les techniciens (Firebase ou config)
+            await loadParametresTechniciens();
+            
+            // Régénérer le select de matériel
+            const materialSelect = document.getElementById('materialSelect');
+            if (materialSelect) {
+                materialSelect.innerHTML = genererSelectMateriel(societe);
+            }
+            
+            // Remplacer toutes les catégories de matériel
+            const materielSection = document.querySelector('.section:has(.material-selector)');
+            if (materielSection) {
+                const categories = materielSection.querySelectorAll('.category-section');
+                categories.forEach(cat => cat.remove());
+                
+                const materialSelector = materielSection.querySelector('.material-selector');
+                if (materialSelector) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = genererMateriel(societe);
+                    while (tempDiv.firstChild) {
+                        materialSelector.parentNode.insertBefore(tempDiv.firstChild, materialSelector.nextSibling);
+                    }
+                }
+            }
+            
+            // Réinitialiser les totaux
+            calculateTotals();
+            
             // Recharger les bons de la société sélectionnée
             renderHistorique();
+            // Rafraîchir l'agenda si on est sur l'onglet Agenda (interventions de la société en cours uniquement)
+            if (document.getElementById('vueAgenda') && document.getElementById('vueAgenda').classList.contains('active')) {
+                renderAgenda();
+            }
         }
         
         // Initialiser la société au chargement
-        function initialiserSociete() {
+        async function initialiserSociete() {
             const societeId = localStorage.getItem('societeSelectionnee') || 'cep';
-            changerSociete(societeId);
+            await changerSociete(societeId);
         }
 
         // ============================================
@@ -685,6 +1396,11 @@
             initSignature('signatureClient');
             renderHistorique();
         });
+
+        function deconnecterAdmin() {
+            sessionStorage.removeItem('adminAuthenticated');
+            window.location.href = 'index.html';
+        }
 
         function toggleCategory(header) {
             header.classList.toggle('collapsed');
@@ -1338,7 +2054,7 @@
             });
 
             try {
-                await db.collection('bons').doc(currentBonId).update(bon);
+                await db.collection(getCollectionPath('bons')).doc(currentBonId).update(bon);
                 await renderHistorique();
                 // Toast discret au lieu d'alerte
                 showToast('Modifications enregistrées');
@@ -1348,9 +2064,12 @@
             }
         }
 
+        var renderHistoriqueEnCours = false;
         async function renderHistorique() {
+            if (renderHistoriqueEnCours) return;
+            renderHistoriqueEnCours = true;
             const tbody = document.getElementById('bonsTableBody');
-            if (!tbody) return;
+            if (!tbody) { renderHistoriqueEnCours = false; return; }
             tbody.innerHTML = '';
 
             try {
@@ -1365,7 +2084,16 @@
 
                 bons.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
+                // Un seul affichage par bon : une seule entrée par numéro (clé normalisée en string)
+                const parNumero = new Map();
                 bons.forEach(bon => {
+                    var numero = bon.numero != null ? String(bon.numero).trim() : (bon.id || '').trim();
+                    if (!numero) return;
+                    if (!parNumero.has(numero)) parNumero.set(numero, bon);
+                });
+                const bonsUniques = Array.from(parNumero.values());
+
+                bonsUniques.forEach(bon => {
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-bon-id', bon.id);
                 const statut = bon.statut || 'en_attente';
@@ -1404,6 +2132,57 @@
             } catch (e) {
                 console.error(e);
                 tbody.innerHTML = '<tr><td colspan="7" style="padding:8px; text-align:center; color:var(--text-light);">Erreur de chargement des bons.</td></tr>';
+            } finally {
+                renderHistoriqueEnCours = false;
+            }
+        }
+
+        /** Depuis l'agenda : charge le bon puis affiche l'onglet Bons (formulaire déjà rempli). */
+        async function ouvrirBonDepuisAgenda(id) {
+            await chargerBon(id);
+            showVueAdmin('bons');
+        }
+
+        var detailInterventionBonId = null;
+
+        /** Affiche la fenêtre Adresse + explications de l'intervention (depuis l'agenda). */
+        async function afficherDetailIntervention(bonId) {
+            detailInterventionBonId = bonId;
+            var bon = null;
+            var list = agendaBonsByDate[agendaSelectedDay] || [];
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].id === bonId) { bon = list[i]; break; }
+            }
+            if (!bon) {
+                try {
+                    var doc = await db.collection(getCollectionPath('bons')).doc(bonId).get();
+                    if (doc.exists) bon = { id: doc.id, ...doc.data() };
+                } catch (e) { console.warn(e); }
+            }
+            if (!bon) {
+                showToast('Intervention introuvable', true);
+                return;
+            }
+            document.getElementById('detailInterventionClient').textContent = bon.client || '—';
+            document.getElementById('detailInterventionDateTech').textContent = (bon.date || '—') + ' — ' + (bon.technicien || '—');
+            var horaires = [];
+            if (bon.heureArrivee) horaires.push('Arrivée : ' + bon.heureArrivee);
+            if (bon.heureDepart) horaires.push('Départ : ' + bon.heureDepart);
+            document.getElementById('detailInterventionHoraires').textContent = horaires.length ? horaires.join('  |  ') : '—';
+            document.getElementById('detailInterventionAdresse').textContent = bon.address || bon.adresse || '—';
+            document.getElementById('detailInterventionDescription').textContent = bon.description || '—';
+            document.getElementById('modalDetailIntervention').classList.add('show');
+        }
+
+        function fermerDetailIntervention() {
+            detailInterventionBonId = null;
+            document.getElementById('modalDetailIntervention').classList.remove('show');
+        }
+
+        function ouvrirBonCompletDepuisDetail() {
+            if (detailInterventionBonId) {
+                fermerDetailIntervention();
+                ouvrirBonDepuisAgenda(detailInterventionBonId);
             }
         }
 
