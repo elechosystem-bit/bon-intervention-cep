@@ -178,6 +178,9 @@
         .detail-intervention-row { margin-bottom: 14px; }
         .detail-intervention-row label { font-size: 0.8rem; color: var(--text-light); font-weight: 600; display: block; margin-bottom: 4px; }
         .detail-intervention-row .value { font-size: 1rem; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+        .detail-intervention-edit .input-group { margin-bottom: 12px; }
+        .detail-intervention-edit input, .detail-intervention-edit textarea { width: 100%; padding: 8px 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+        .detail-intervention-edit textarea { min-height: 80px; resize: vertical; }
 
         @media (max-width: 768px) {
             .product-row { grid-template-columns: 30px 1fr 60px 70px; }
@@ -683,29 +686,44 @@
         <div class="modal-detail-intervention" id="modalDetailIntervention" onclick="fermerDetailIntervention()">
             <div class="modal-detail-intervention-inner" onclick="event.stopPropagation()">
                 <h3>Détail de l'intervention</h3>
-                <div class="detail-intervention-row">
-                    <label>Client</label>
-                    <div class="value" id="detailInterventionClient">—</div>
+                <div id="detailInterventionView">
+                    <div class="detail-intervention-row">
+                        <label>Client</label>
+                        <div class="value" id="detailInterventionClient">—</div>
+                    </div>
+                    <div class="detail-intervention-row">
+                        <label>Date — Technicien</label>
+                        <div class="value" id="detailInterventionDateTech">—</div>
+                    </div>
+                    <div class="detail-intervention-row">
+                        <label>Horaires</label>
+                        <div class="value" id="detailInterventionHoraires">—</div>
+                    </div>
+                    <div class="detail-intervention-row">
+                        <label>Adresse</label>
+                        <div class="value" id="detailInterventionAdresse">—</div>
+                    </div>
+                    <div class="detail-intervention-row">
+                        <label>Explications / Description de l'intervention</label>
+                        <div class="value" id="detailInterventionDescription">—</div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-primary" onclick="passerEnModeCorrectionIntervention()">✏️ Corriger l'intervention</button>
+                        <button type="button" class="btn btn-secondary" onclick="fermerDetailIntervention()">Fermer</button>
+                    </div>
                 </div>
-                <div class="detail-intervention-row">
-                    <label>Date — Technicien</label>
-                    <div class="value" id="detailInterventionDateTech">—</div>
-                </div>
-                <div class="detail-intervention-row">
-                    <label>Horaires</label>
-                    <div class="value" id="detailInterventionHoraires">—</div>
-                </div>
-                <div class="detail-intervention-row">
-                    <label>Adresse</label>
-                    <div class="value" id="detailInterventionAdresse">—</div>
-                </div>
-                <div class="detail-intervention-row">
-                    <label>Explications / Description de l'intervention</label>
-                    <div class="value" id="detailInterventionDescription">—</div>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="button" class="btn btn-primary" id="btnDetailOuvrirBonComplet" onclick="ouvrirBonCompletDepuisDetail()">Ouvrir le bon complet</button>
-                    <button type="button" class="btn btn-secondary" onclick="fermerDetailIntervention()">Fermer</button>
+                <div id="detailInterventionEdit" class="detail-intervention-edit" style="display: none;">
+                    <div class="input-group"><label>Client</label><input type="text" id="editDetailClient" placeholder="Nom du client"></div>
+                    <div class="input-group"><label>Date</label><input type="date" id="editDetailDate"></div>
+                    <div class="input-group"><label>Technicien</label><input type="text" id="editDetailTechnicien" placeholder="Nom du technicien"></div>
+                    <div class="input-group"><label>Heure d'arrivée</label><input type="time" id="editDetailHeureArrivee"></div>
+                    <div class="input-group"><label>Heure de départ</label><input type="time" id="editDetailHeureDepart"></div>
+                    <div class="input-group"><label>Adresse</label><input type="text" id="editDetailAdresse" placeholder="Adresse complète"></div>
+                    <div class="input-group"><label>Explications / Description</label><textarea id="editDetailDescription" placeholder="Description de l'intervention"></textarea></div>
+                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                        <button type="button" class="btn btn-primary" onclick="enregistrerCorrectionIntervention()">Enregistrer les modifications</button>
+                        <button type="button" class="btn btn-secondary" onclick="annulerCorrectionIntervention()">Annuler</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2144,6 +2162,7 @@
         }
 
         var detailInterventionBonId = null;
+        var detailInterventionBonData = null;
 
         /** Affiche la fenêtre Adresse + explications de l'intervention (depuis l'agenda). */
         async function afficherDetailIntervention(bonId) {
@@ -2163,6 +2182,7 @@
                 showToast('Intervention introuvable', true);
                 return;
             }
+            detailInterventionBonData = bon;
             document.getElementById('detailInterventionClient').textContent = bon.client || '—';
             document.getElementById('detailInterventionDateTech').textContent = (bon.date || '—') + ' — ' + (bon.technicien || '—');
             var horaires = [];
@@ -2171,11 +2191,14 @@
             document.getElementById('detailInterventionHoraires').textContent = horaires.length ? horaires.join('  |  ') : '—';
             document.getElementById('detailInterventionAdresse').textContent = bon.address || bon.adresse || '—';
             document.getElementById('detailInterventionDescription').textContent = bon.description || '—';
+            document.getElementById('detailInterventionView').style.display = 'block';
+            document.getElementById('detailInterventionEdit').style.display = 'none';
             document.getElementById('modalDetailIntervention').classList.add('show');
         }
 
         function fermerDetailIntervention() {
             detailInterventionBonId = null;
+            detailInterventionBonData = null;
             document.getElementById('modalDetailIntervention').classList.remove('show');
         }
 
@@ -2183,6 +2206,64 @@
             if (detailInterventionBonId) {
                 fermerDetailIntervention();
                 ouvrirBonDepuisAgenda(detailInterventionBonId);
+            }
+        }
+
+        function passerEnModeCorrectionIntervention() {
+            if (!detailInterventionBonData || !detailInterventionBonId) return;
+            var b = detailInterventionBonData;
+            document.getElementById('editDetailClient').value = b.client || '';
+            document.getElementById('editDetailDate').value = b.date || '';
+            document.getElementById('editDetailTechnicien').value = b.technicien || '';
+            document.getElementById('editDetailHeureArrivee').value = b.heureArrivee || '';
+            document.getElementById('editDetailHeureDepart').value = b.heureDepart || '';
+            document.getElementById('editDetailAdresse').value = b.address || b.adresse || '';
+            document.getElementById('editDetailDescription').value = b.description || '';
+            document.getElementById('detailInterventionView').style.display = 'none';
+            document.getElementById('detailInterventionEdit').style.display = 'block';
+        }
+
+        function annulerCorrectionIntervention() {
+            document.getElementById('detailInterventionEdit').style.display = 'none';
+            document.getElementById('detailInterventionView').style.display = 'block';
+        }
+
+        async function enregistrerCorrectionIntervention() {
+            if (!detailInterventionBonId) return;
+            var client = (document.getElementById('editDetailClient').value || '').trim();
+            var date = (document.getElementById('editDetailDate').value || '').trim();
+            var technicien = (document.getElementById('editDetailTechnicien').value || '').trim();
+            var heureArrivee = (document.getElementById('editDetailHeureArrivee').value || '').trim();
+            var heureDepart = (document.getElementById('editDetailHeureDepart').value || '').trim();
+            var adresse = (document.getElementById('editDetailAdresse').value || '').trim();
+            var description = (document.getElementById('editDetailDescription').value || '').trim();
+            try {
+                var ref = db.collection(getCollectionPath('bons')).doc(detailInterventionBonId);
+                await ref.update({
+                    client: client || (detailInterventionBonData && detailInterventionBonData.client),
+                    date: date || (detailInterventionBonData && detailInterventionBonData.date),
+                    technicien: technicien || (detailInterventionBonData && detailInterventionBonData.technicien),
+                    heureArrivee: heureArrivee || null,
+                    heureDepart: heureDepart || null,
+                    address: adresse || (detailInterventionBonData && (detailInterventionBonData.address || detailInterventionBonData.adresse)),
+                    adresse: adresse || (detailInterventionBonData && (detailInterventionBonData.adresse || detailInterventionBonData.address)),
+                    description: description || (detailInterventionBonData && detailInterventionBonData.description)
+                });
+                detailInterventionBonData = { id: detailInterventionBonId, client: client || detailInterventionBonData.client, date: date || detailInterventionBonData.date, technicien: technicien || detailInterventionBonData.technicien, heureArrivee: heureArrivee || detailInterventionBonData.heureArrivee, heureDepart: heureDepart || detailInterventionBonData.heureDepart, address: adresse || detailInterventionBonData.address || detailInterventionBonData.adresse, adresse: adresse || detailInterventionBonData.adresse || detailInterventionBonData.address, description: description || detailInterventionBonData.description };
+                document.getElementById('detailInterventionClient').textContent = detailInterventionBonData.client || '—';
+                document.getElementById('detailInterventionDateTech').textContent = (detailInterventionBonData.date || '—') + ' — ' + (detailInterventionBonData.technicien || '—');
+                var horaires = [];
+                if (detailInterventionBonData.heureArrivee) horaires.push('Arrivée : ' + detailInterventionBonData.heureArrivee);
+                if (detailInterventionBonData.heureDepart) horaires.push('Départ : ' + detailInterventionBonData.heureDepart);
+                document.getElementById('detailInterventionHoraires').textContent = horaires.length ? horaires.join('  |  ') : '—';
+                document.getElementById('detailInterventionAdresse').textContent = detailInterventionBonData.address || detailInterventionBonData.adresse || '—';
+                document.getElementById('detailInterventionDescription').textContent = detailInterventionBonData.description || '—';
+                annulerCorrectionIntervention();
+                showToast('Modifications enregistrées');
+                renderAgenda();
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur lors de l\'enregistrement', true);
             }
         }
 
