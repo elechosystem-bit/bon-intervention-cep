@@ -65,6 +65,9 @@
         .product-price { font-weight: 600; color: var(--primary); text-align: center; font-size: 0.85rem; }
         .product-qty input { width: 55px; padding: 5px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
         .product-total { font-weight: 700; color: var(--primary); text-align: right; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
+        .price-input-admin { width: 100%; padding: 4px 6px; border: 2px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: right; font-family: 'Space Mono', monospace; }
+        .btn-remove-prod-admin { margin-left: 6px; padding: 2px 6px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #e53e3e; background: #fff5f5; color: #c53030; cursor: pointer; }
+        .btn-remove-prod-admin:hover { background: #fed7d7; }
 
         .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #ebf8ff; border: 2px solid var(--primary); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
         /* Ajuster la grille pour Main d'œuvre (sans demi-heures ni tarif unitaire) */
@@ -518,6 +521,9 @@
                 <div class="total-row"><span>Total HT</span><span id="totalHT">0.00€</span></div>
                 <div class="total-row"><span>TVA (20%)</span><span id="totalTVA">0.00€</span></div>
                 <div class="total-row grand-total"><span>TOTAL TTC</span><span id="totalTTC">0.00€</span></div>
+                <div style="margin-top: 10px; text-align: right;">
+                    <button type="button" class="btn btn-secondary" style="min-width:auto; padding:6px 10px; font-size:0.8rem;" onclick="corrigerPrixBonAdmin()">Corriger les prix (admin)</button>
+                </div>
             </div>
 
             <div class="signature-section">
@@ -1305,6 +1311,9 @@
             
             // Réinitialiser les totaux
             calculateTotals();
+
+            // Activer l'édition des tarifs et la suppression de lignes produits en mode admin
+            initialiserEditionPrixProduitsAdmin();
             
             // Recharger les bons de la société sélectionnée
             renderHistorique();
@@ -1558,11 +1567,12 @@
                     const qtyInput = row.querySelector('.product-qty input');
                     const qty = parseFloat(qtyInput.value) || 0;
                     if (checkbox && checkbox.checked && qty > 0) {
+                        const index = row.dataset.index || '';
                         const name = row.querySelector('.product-name')?.textContent || '';
                         const ref = row.querySelector('.product-ref')?.textContent || '';
                         const prixUnitaire = parseFloat(qtyInput.dataset.price || 0).toFixed(2);
                         const totalLigne = row.querySelector('.product-total')?.textContent || '';
-                        lignes.push({ name, ref, qty, prixUnitaire, total: totalLigne });
+                        lignes.push({ index, name, ref, qty, prixUnitaire, total: totalLigne });
                     }
                 });
 
@@ -1570,12 +1580,162 @@
                     container.innerHTML = "<p style=\"color:var(--text-light);\">Aucun produit sélectionné pour le moment.</p>";
                 } else {
                     container.innerHTML = lignes.map(l => 
-                        `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--border);">
+                        `<div class="recap-line-admin" data-index="${l.index}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0; border-bottom:1px dashed var(--border);">
                             <span>${l.name}${l.ref ? ' <span style="color:var(--text-light); font-size:0.8em;">(' + l.ref + ')</span>' : ''}</span>
-                            <span style="font-family:'Space Mono', monospace;">Qté : ${l.qty} × ${l.prixUnitaire}€ = ${l.total}</span>
+                            <span style="font-family:'Space Mono', monospace; display:flex; align-items:center; gap:6px;">
+                                Qté : ${l.qty} × 
+                                <input type="number" class="price-input-admin" min="0" step="0.01" value="${l.prixUnitaire}" data-index="${l.index}" onchange="corrigerPrixDepuisRecap(this)">€
+                                = <span class="recap-total">${l.total}</span>
+                                <button type="button" class="btn-remove-prod-admin" onclick="supprimerLigneDepuisRecap('${l.index}')" title="Supprimer cette ligne">✕</button>
+                            </span>
                         </div>`
                     ).join("");
                 }
+            }
+        }
+
+        /** Permet à l'admin de corriger manuellement le TOTAL TTC d'un bon (et recalcule HT / TVA). */
+        function corrigerPrixBonAdmin() {
+            try {
+                const totalSpan = document.getElementById('totalTTC');
+                const htSpan = document.getElementById('totalHT');
+                const tvaSpan = document.getElementById('totalTVA');
+                if (!totalSpan || !htSpan || !tvaSpan) return;
+
+                let currentText = totalSpan.textContent || '0.00€';
+                // Extraire la partie numérique
+                let amountStr = currentText.toString().trim();
+                amountStr = amountStr.replace(/[^\d,.\-]/g, '').replace(',', '.');
+                let currentValue = parseFloat(amountStr) || 0;
+
+                const input = prompt("Nouveau TOTAL TTC en euros :", currentValue.toFixed(2));
+                if (input === null) return;
+
+                let newStr = input.toString().trim().replace(',', '.');
+                const newValue = parseFloat(newStr);
+                if (isNaN(newValue) || newValue < 0) {
+                    alert("Valeur invalide. Indiquez un nombre, par exemple 123.45");
+                    return;
+                }
+
+                // Recalculer HT et TVA à partir du nouveau TTC (TVA 20%)
+                const ht = newValue / 1.2;
+                const tva = newValue - ht;
+
+                htSpan.textContent = ht.toFixed(2) + '€';
+                tvaSpan.textContent = tva.toFixed(2) + '€';
+                totalSpan.textContent = newValue.toFixed(2) + '€';
+
+                showToast('Prix corrigés pour ce bon');
+            } catch (e) {
+                console.error('Erreur corrigerPrixBonAdmin', e);
+                showToast("Erreur lors de la correction des prix", true);
+            }
+        }
+
+        /** Active l'édition des tarifs et la suppression de lignes produits pour l'admin (sur ce bon uniquement). */
+        function initialiserEditionPrixProduitsAdmin() {
+            try {
+                document.querySelectorAll('.product-row').forEach(row => {
+                    const priceCell = row.querySelector('.product-price');
+                    const qtyInput = row.querySelector('.product-qty input');
+                    if (!qtyInput || !priceCell) return;
+
+                    // Créer le champ de tarif unitaire si pas déjà présent
+                    if (!priceCell.querySelector('input')) {
+                        const currentPrice = parseFloat(qtyInput.dataset.price || '0') || 0;
+                        priceCell.textContent = '';
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.min = '0';
+                        input.step = '0.01';
+                        input.value = currentPrice.toFixed(2);
+                        input.className = 'price-input-admin';
+                        input.title = 'Tarif unitaire pour ce bon';
+                        input.addEventListener('change', function () {
+                            let val = this.value.replace(',', '.');
+                            let num = parseFloat(val);
+                            if (isNaN(num) || num < 0) {
+                                alert('Tarif invalide. Indiquez un nombre positif.');
+                                this.value = currentPrice.toFixed(2);
+                                return;
+                            }
+                            qtyInput.dataset.price = String(num);
+                            updateRowTotal(qtyInput);
+                        });
+                        priceCell.appendChild(input);
+                    }
+
+                    // Ajouter un petit bouton pour supprimer la ligne du bon (mettre quantité à 0)
+                    const qtyCell = row.querySelector('.product-qty');
+                    if (qtyCell && !qtyCell.querySelector('.btn-remove-prod-admin')) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn-remove-prod-admin';
+                        btn.textContent = '✕';
+                        btn.title = 'Supprimer cette ligne du bon';
+                        btn.addEventListener('click', function () {
+                            const checkbox = row.querySelector('input[type="checkbox"]');
+                            if (checkbox) checkbox.checked = false;
+                            if (qtyInput) {
+                                qtyInput.value = 0;
+                                updateRowTotal(qtyInput);
+                            } else {
+                                calculateTotals();
+                            }
+                        });
+                        qtyCell.appendChild(btn);
+                    }
+                });
+            } catch (e) {
+                console.error('Erreur initialiserEditionPrixProduitsAdmin', e);
+            }
+        }
+
+        /** Quand on modifie le prix unitaire depuis le récapitulatif, répercute sur la ligne produit et recalcule les totaux. */
+        function corrigerPrixDepuisRecap(input) {
+            try {
+                const index = input.dataset.index;
+                if (!index) return;
+                const row = document.querySelector('.product-row[data-index="' + index + '"]');
+                if (!row) return;
+                const qtyInput = row.querySelector('.product-qty input');
+                if (!qtyInput) return;
+
+                let val = input.value.toString().trim().replace(',', '.');
+                const num = parseFloat(val);
+                if (isNaN(num) || num < 0) {
+                    alert('Tarif invalide. Indiquez un nombre positif.');
+                    return;
+                }
+
+                qtyInput.dataset.price = String(num);
+                updateRowTotal(qtyInput);
+                calculateTotals();
+            } catch (e) {
+                console.error('Erreur corrigerPrixDepuisRecap', e);
+                showToast("Erreur lors de la mise à jour du prix", true);
+            }
+        }
+
+        /** Supprime une ligne produit (quantité à 0) depuis le récapitulatif. */
+        function supprimerLigneDepuisRecap(index) {
+            try {
+                if (!index && index !== 0) return;
+                const row = document.querySelector('.product-row[data-index="' + index + '"]');
+                if (!row) return;
+                const qtyInput = row.querySelector('.product-qty input');
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = false;
+                if (qtyInput) {
+                    qtyInput.value = 0;
+                    updateRowTotal(qtyInput);
+                } else {
+                    calculateTotals();
+                }
+            } catch (e) {
+                console.error('Erreur supprimerLigneDepuisRecap', e);
+                showToast("Erreur lors de la suppression de la ligne", true);
             }
         }
 
@@ -2060,14 +2220,16 @@
                 produits: []
             };
 
-            // Sauvegarder les quantités de produits sélectionnés
+            // Sauvegarder les quantités de produits sélectionnés + tarif unitaire (si modifié par l'admin pour ce bon)
             document.querySelectorAll('.product-row').forEach(row => {
                 const index = row.dataset.index;
                 const qtyInput = row.querySelector('.product-qty input');
+                if (!qtyInput) return;
                 const qty = parseFloat(qtyInput.value) || 0;
                 if (qty > 0) {
                     const name = row.querySelector('.product-name')?.textContent || '';
-                    bon.produits.push({ index, name, qty });
+                    const prixUnitaire = parseFloat(qtyInput.dataset.price || '0') || 0;
+                    bon.produits.push({ index, name, qty, prixUnitaire });
                 }
             });
 
@@ -2337,13 +2499,22 @@
                 row.classList.remove('selected');
             });
 
-            // Réappliquer les quantités sauvegardées et ouvrir les catégories concernées
+            // Réappliquer les quantités sauvegardées, les éventuels tarifs unitaires, et ouvrir les catégories concernées
             (bon.produits || []).forEach(p => {
-                // Convertir l'index en string pour la correspondance avec data-index
                 const indexStr = String(p.index);
                 const row = document.querySelector(`.product-row[data-index="${indexStr}"]`);
                 if (row) {
                     const qtyInput = row.querySelector('.product-qty input');
+                    if (!qtyInput) return;
+                    // Appliquer le tarif unitaire spécifique à ce bon si présent
+                    if (p.prixUnitaire != null) {
+                        const prix = parseFloat(p.prixUnitaire) || 0;
+                        qtyInput.dataset.price = String(prix);
+                        const priceCell = row.querySelector('.product-price');
+                        if (priceCell) {
+                            priceCell.textContent = prix.toFixed(2) + '€';
+                        }
+                    }
                     // Utiliser quantite au lieu de qty (cohérence avec saveBonTech)
                     const quantite = parseFloat(p.quantite || p.qty || 0);
                     qtyInput.value = quantite;
@@ -2364,6 +2535,9 @@
                     console.warn('Produit non trouvé avec index:', p.index, p.nom);
                 }
             });
+
+            // Permettre à l'admin de modifier les tarifs / supprimer des lignes pour ce bon chargé
+            initialiserEditionPrixProduitsAdmin();
 
             // Charger les totaux sauvegardés si disponibles, sinon recalculer
             if (bon.subtotalProduits) {
