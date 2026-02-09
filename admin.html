@@ -68,6 +68,12 @@
         .price-input-admin { width: 100%; padding: 4px 6px; border: 2px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: right; font-family: 'Space Mono', monospace; }
         .btn-remove-prod-admin { margin-left: 6px; padding: 2px 6px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #e53e3e; background: #fff5f5; color: #c53030; cursor: pointer; }
         .btn-remove-prod-admin:hover { background: #fed7d7; }
+        .custom-products-list-admin { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .custom-product-row-admin { display: grid; grid-template-columns: 1fr 80px 40px; align-items: center; padding: 8px 12px; background: #f0f7ff; border: 2px solid var(--primary); border-radius: 8px; gap: 10px; }
+        .custom-product-row-admin input.custom-product-name-admin { padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: white; }
+        .custom-product-row-admin input.custom-product-qty-admin { width: 55px; padding: 6px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
+        .custom-product-row-admin .btn-remove-line-admin { padding: 4px 8px; font-size: 0.85rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .custom-product-row-admin .btn-remove-line-admin:hover { opacity: 0.9; }
 
         .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #ebf8ff; border: 2px solid var(--primary); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
         /* Ajuster la grille pour Main d'œuvre (sans demi-heures ni tarif unitaire) */
@@ -384,6 +390,13 @@
                         <input type="number" id="materialQty" value="1" min="1" placeholder="Qté">
                         <button class="btn-add" onclick="addMaterial()">+ Ajouter</button>
                     </div>
+                    <div class="material-selector-row" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);">
+                        <label style="flex: 0 0 auto; margin-right: 8px; font-weight: 600; color: var(--primary);">✏️ Ligne personnalisée (admin)</label>
+                        <input type="text" id="customProductNameAdmin" placeholder="Nom du produit (libre)" style="flex: 1; min-width: 180px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        <input type="number" id="customProductQtyAdmin" value="1" min="1" placeholder="Qté" style="width: 70px; padding: 10px; border: 2px solid var(--border); border-radius: 8px; text-align: center;">
+                        <button class="btn-add" onclick="addCustomProductLineAdmin()">+ Ajouter une ligne perso</button>
+                    </div>
+                    <div id="customProductsListAdmin" class="custom-products-list-admin"></div>
                 </div>
                 
                 <div class="category-section">
