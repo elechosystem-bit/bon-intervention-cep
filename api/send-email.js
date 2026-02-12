@@ -117,15 +117,15 @@ export default async function handler(req, res) {
                 <div style="background: #f7fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
                     <h3 style="color: ${societeCouleur}; margin-top: 0;">Bon d'Intervention ${bonData?.numero || ''}</h3>
                     <p>Bonjour,</p>
-                    <p>Veuillez trouver ci-joint le PDF de votre bon d'intervention${photos && photos.length > 0 ? ' ainsi que les photos de l\'intervention' : ''}.</p>
+                    <p>Veuillez trouver ci-joint le <strong>PDF complet du bon d'intervention</strong> (matériel, main d'œuvre, déplacement, totaux)${photos && photos.length > 0 ? ' ainsi que les <strong>photos</strong> de l\'intervention' : ''}.</p>
                     ${bonData ? `
                         <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
                             <p style="margin: 5px 0;"><strong>Date :</strong> ${bonData.date || ''}</p>
                             <p style="margin: 5px 0;"><strong>Client :</strong> ${bonData.client || ''}</p>
                             ${bonData.adresse ? `<p style="margin: 5px 0;"><strong>Adresse :</strong> ${bonData.adresse}</p>` : ''}
                             <p style="margin: 5px 0;"><strong>Technicien :</strong> ${bonData.technicien || ''}</p>
-                            ${bonData.heure_arrivee ? `<p style="margin: 5px 0;"><strong>Heure d'arrivee :</strong> ${bonData.heure_arrivee}</p>` : ''}
-                            ${bonData.heure_depart ? `<p style="margin: 5px 0;"><strong>Heure de depart :</strong> ${bonData.heure_depart}</p>` : ''}
+                            ${bonData.heure_arrivee ? `<p style="margin: 5px 0;"><strong>Heure d'arrivée :</strong> ${bonData.heure_arrivee}</p>` : ''}
+                            ${bonData.heure_depart ? `<p style="margin: 5px 0;"><strong>Heure de départ :</strong> ${bonData.heure_depart}</p>` : ''}
                         </div>
                     ` : ''}
                     ${photosHtml}

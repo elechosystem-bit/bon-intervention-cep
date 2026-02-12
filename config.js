@@ -92,7 +92,7 @@ const SOCIETES = {
     nom: 'Elecho System SARL',
     couleurPrimaire: '#E85D04',
     couleurSecondaire: '#C54E03',
-    emailCompta: 'compta@elechosystem.com',
+    emailCompta: 'elechosystem@gmail.com',
     techniciens: ['Will Lussaud', 'Aurelien Mathieu', 'Frederick Pagau'],
     adresse: '6, rue de Metz, 94240 L\'Hay-les-Roses',
     telephone: '01 56 04 19 96',

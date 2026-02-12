@@ -264,6 +264,13 @@
             .btn, .actions, .btn-clear, .material-selector { display: none !important; }
             .header, .footer, .totals-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
+        .anciens-bons-list { max-height: 60vh; overflow-y: auto; }
+        .anciens-bons-list .ancien-bon-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+        .anciens-bons-list .ancien-bon-row:hover { background: #edf2f7; }
+        .anciens-bons-list .ancien-bon-row span.numero { font-family: 'Space Mono', monospace; font-weight: 600; color: var(--primary); }
+        .ancien-bon-detail .detail-section { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed var(--border); }
+        .ancien-bon-detail .detail-section:last-child { border-bottom: none; }
+        .ancien-bon-detail .detail-label { font-weight: 600; color: var(--text-light); margin-bottom: 4px; }
     </style>
     <!-- EmailJS pour l'envoi automatique d'emails -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -344,14 +351,12 @@
                         <label>Email</label>
                         <input type="email" id="clientEmail" placeholder="email@exemple.fr">
                     </div>
-                    <div class="input-group">
+                    <div class="input-group" style="grid-column: 1 / -1;">
                         <label>Adresse complète</label>
-                        <div style="display: flex; gap: 8px; align-items: flex-end;">
-                            <input type="text" id="clientAddress" placeholder="Adresse complète" style="flex: 1;">
-                            <button type="button" class="btn btn-secondary" onclick="enregistrerAdresseClient()" style="padding: 8px 16px; white-space: nowrap; font-size: 0.9rem;">
-                                💾 Enregistrer
-                            </button>
-                        </div>
+                        <input type="text" id="clientAddress" placeholder="Adresse complète" style="width: 100%;">
+                        <button type="button" class="btn btn-secondary" onclick="enregistrerAdresseClient()" style="margin-top: 8px; padding: 8px 16px; font-size: 0.9rem;">
+                            💾 Enregistrer
+                        </button>
                     </div>
                 </div>
             </div>
@@ -368,14 +373,6 @@
                             <option value="Ricardo Dassilva">Ricardo Dassilva</option>
                             <option value="Mathieu Rodriguez">Mathieu Rodriguez</option>
                         </select>
-                    </div>
-                    <div class="input-group" id="blocCodeAcces" style="display: flex; flex-direction: row; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 140px;">
-                            <label>Code d'accès</label>
-                            <input type="password" id="codeAccesTechnicien" placeholder="Votre code" style="padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; width: 100%;" maxlength="20" autocomplete="off">
-                        </div>
-                        <button type="button" class="btn btn-primary" onclick="validerCodeTechnicien()" style="min-width: auto; padding: 10px 20px;">Valider</button>
-                        <span id="messageCodeAcces" style="font-size: 0.9rem; color: var(--success); font-weight: 500;"></span>
                     </div>
                     <div class="input-group" style="display: flex; flex-direction: column; gap: 0;">
                         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -646,7 +643,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimer</button>
+                <button class="btn btn-secondary" type="button" onclick="openAnciensBonsModal()">📋 Anciens bons (validés compta)</button>
                 <button class="btn btn-primary" id="btnSaveBonTech" type="button" onclick="if(this.disabled)return;this.disabled=true;saveBonTech();">💾 Enregistrer le bon et envoyer au client</button>
             </div>
             <div id="saveMessage" class="save-message">Bon enregistré.</div>
@@ -679,6 +676,25 @@
                 <h3 id="planningDayModalTitle">Lundi 15 janvier 2025</h3>
                 <div id="planningDayModalHours" class="planning-day-hours"></div>
                 <button type="button" class="btn btn-secondary" style="margin-top: 16px; width: 100%;" onclick="closePlanningDayModal()">Fermer</button>
+            </div>
+        </div>
+
+        <!-- Modal Anciens bons (validés / envoyés compta) -->
+        <div id="anciensBonsModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeAnciensBonsModal()">
+            <div class="modal" onclick="event.stopPropagation()" style="max-width: 520px;">
+                <h3>Bons validés (envoyés à la compta)</h3>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">Cliquez sur un bon pour en voir le détail.</p>
+                <div id="anciensBonsList" class="anciens-bons-list"></div>
+                <button type="button" class="btn btn-secondary" style="margin-top: 16px; width: 100%;" onclick="closeAnciensBonsModal()">Fermer</button>
+            </div>
+        </div>
+
+        <!-- Modal détail d'un ancien bon (lecture seule) -->
+        <div id="ancienBonDetailModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeAncienBonDetail()">
+            <div class="modal ancien-bon-detail" onclick="event.stopPropagation()" style="max-width: 560px; max-height: 90vh; overflow-y: auto;">
+                <h3 id="ancienBonDetailTitle">Bon n° —</h3>
+                <div id="ancienBonDetailContent"></div>
+                <button type="button" class="btn btn-secondary" style="margin-top: 16px; width: 100%;" onclick="closeAncienBonDetail()">Fermer</button>
             </div>
         </div>
 
@@ -843,7 +859,8 @@
                 const sel = document.getElementById('technicien');
                 if (sel) sel.value = stored;
                 afficherMessageCodeAcces('Connecté : ' + stored, true);
-                document.getElementById('codeAccesTechnicien').value = '';
+                const codeEl = document.getElementById('codeAccesTechnicien');
+                if (codeEl) codeEl.value = '';
             } else {
                 afficherMessageCodeAcces('', false);
             }
@@ -1041,7 +1058,8 @@
         function onChangeTechnicienSelect() {
             sessionStorage.removeItem('technicienValide_' + (societeActive ? societeActive.id : 'cep'));
             afficherMessageCodeAcces('', false);
-            document.getElementById('codeAccesTechnicien').value = '';
+            const codeEl = document.getElementById('codeAccesTechnicien');
+            if (codeEl) codeEl.value = '';
             updateVerrouillageSociete();
         }
 
@@ -1061,7 +1079,8 @@
             if (codeAttendu.length === 0) {
                 sessionStorage.setItem('technicienValide_' + (societeActive ? societeActive.id : 'cep'), nom);
                 afficherMessageCodeAcces('Connecté : ' + nom, true);
-                document.getElementById('codeAccesTechnicien').value = '';
+                const codeEl = document.getElementById('codeAccesTechnicien');
+                if (codeEl) codeEl.value = '';
                 updateVerrouillageSociete();
                 return;
             }
@@ -1071,7 +1090,8 @@
             }
             sessionStorage.setItem('technicienValide_' + (societeActive ? societeActive.id : 'cep'), nom);
             afficherMessageCodeAcces('Connecté : ' + nom, true);
-            document.getElementById('codeAccesTechnicien').value = '';
+            const codeEl2 = document.getElementById('codeAccesTechnicien');
+            if (codeEl2) codeEl2.value = '';
             updateVerrouillageSociete();
         }
 
@@ -1323,6 +1343,115 @@
                 return db.collection('compteurs').doc('bons');
             }
             return db.collection(`societes/${societeActive.id}/compteurs`).doc('bons');
+        }
+
+        // ============================================
+        // ANCIENS BONS (validés / envoyés compta) - accès technicien
+        // ============================================
+        async function openAnciensBonsModal() {
+            const modal = document.getElementById('anciensBonsModal');
+            const listEl = document.getElementById('anciensBonsList');
+            if (!modal || !listEl) return;
+            const technicien = (document.getElementById('technicien').value || '').trim();
+            if (!technicien) {
+                listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Sélectionnez votre nom (Technicien) en haut pour voir vos bons validés.</p>';
+                modal.style.display = 'flex';
+                return;
+            }
+            if (!societeActive) {
+                listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Sélectionnez une société.</p>';
+                modal.style.display = 'flex';
+                return;
+            }
+            listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Chargement...</p>';
+            modal.style.display = 'flex';
+            try {
+                const snap = await db.collection(getCollectionPath('bons')).get();
+                const bons = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const statut = (data.statut || '').toLowerCase();
+                    const isValide = statut === 'validé' || statut === 'valide';
+                    const sameTech = (data.technicien || '').trim() === technicien;
+                    if (isValide && sameTech)
+                        bons.push({ id: doc.id, ...data });
+                });
+                bons.sort((a, b) => {
+                    const dateA = (a.date || '').toString();
+                    const dateB = (b.date || '').toString();
+                    if (dateA !== dateB) return dateB.localeCompare(dateA);
+                    return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                });
+                if (bons.length === 0) {
+                    listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Aucun bon validé (envoyé à la compta) pour le moment.</p>';
+                    return;
+                }
+                listEl.innerHTML = bons.map(bon => {
+                    const numero = bon.numero != null ? String(bon.numero) : bon.id;
+                    const date = bon.date || '—';
+                    const client = (bon.client || '—').substring(0, 35) + ((bon.client || '').length > 35 ? '…' : '');
+                    return '<div class="ancien-bon-row" onclick="voirAncienBon(\'' + bon.id + '\')" data-bon-id="' + bon.id + '">' +
+                        '<span class="numero">' + numero + '</span> ' +
+                        '<span>' + date + ' — ' + client + '</span>' +
+                        '</div>';
+                }).join('');
+            } catch (e) {
+                console.error(e);
+                listEl.innerHTML = '<p style="color: var(--danger); padding: 16px;">Erreur de chargement.</p>';
+            }
+        }
+
+        function closeAnciensBonsModal() {
+            const modal = document.getElementById('anciensBonsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function voirAncienBon(id) {
+            if (!id) return;
+            const modal = document.getElementById('ancienBonDetailModal');
+            const titleEl = document.getElementById('ancienBonDetailTitle');
+            const contentEl = document.getElementById('ancienBonDetailContent');
+            if (!modal || !titleEl || !contentEl) return;
+            contentEl.innerHTML = '<p style="color: var(--text-light);">Chargement...</p>';
+            modal.style.display = 'flex';
+            db.collection(getCollectionPath('bons')).doc(id).get().then(doc => {
+                if (!doc.exists) {
+                    contentEl.innerHTML = '<p style="color: var(--danger);">Bon introuvable.</p>';
+                    return;
+                }
+                const bon = { id: doc.id, ...doc.data() };
+                titleEl.textContent = 'Bon n° ' + (bon.numero != null ? bon.numero : bon.id);
+                let html = '';
+                html += '<div class="detail-section"><div class="detail-label">Client</div><div>' + (bon.client || '—') + '</div></div>';
+                html += '<div class="detail-section"><div class="detail-label">Date intervention</div><div>' + (bon.date || '—') + '</div></div>';
+                if (bon.address) html += '<div class="detail-section"><div class="detail-label">Adresse</div><div>' + (bon.address || '—') + '</div></div>';
+                html += '<div class="detail-section"><div class="detail-label">Description</div><div>' + (bon.description || '—') + '</div></div>';
+                if ((bon.produits || []).length > 0) {
+                    html += '<div class="detail-section"><div class="detail-label">Produits / matériel</div><ul style="margin: 0; padding-left: 20px;">';
+                    (bon.produits || []).forEach(p => {
+                        const nom = p.nom || p.name || '—';
+                        const qte = p.quantite ?? p.qty ?? 0;
+                        const ref = p.reference || '';
+                        html += '<li>' + nom + (ref ? ' (' + ref + ')' : '') + ' — Qté : ' + qte + '</li>';
+                    });
+                    html += '</ul></div>';
+                }
+                html += '<div class="detail-section"><div class="detail-label">Totaux</div><div>';
+                html += 'Sous-total produits : ' + (bon.subtotalProduits || '—') + ' &nbsp; MO : ' + (bon.subtotalMO || '—') + ' &nbsp; Déplacement : ' + (bon.subtotalDepl || '—') + '<br>';
+                html += 'Total TTC : ' + (bon.totalTTC || '—') + '</div></div>';
+                if (bon.photos && bon.photos.length > 0) {
+                    html += '<div class="detail-section"><div class="detail-label">Photos</div><div>' + bon.photos.length + ' photo(s) jointes.</div></div>';
+                }
+                contentEl.innerHTML = html;
+            }).catch(e => {
+                console.error(e);
+                contentEl.innerHTML = '<p style="color: var(--danger);">Erreur de chargement du bon.</p>';
+            });
+        }
+
+        function closeAncienBonDetail() {
+            const modal = document.getElementById('ancienBonDetailModal');
+            if (modal) modal.style.display = 'none';
         }
 
         // ============================================
@@ -2660,7 +2789,10 @@
                     societe: societeActive.id,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     produits: [],
-                    photos: photosBon.map(photo => typeof photo === 'string' ? photo : photo.url), // Sauvegarder seulement les URLs
+                    photos: photosBon.map(photo => {
+                        if (typeof photo === 'string') return photo;
+                        return { url: photo.url, base64: photo.base64 || null };
+                    }),
                     signatures: {
                         technicien: (function () { const c = document.getElementById('signatureTech'); try { return c && c.toDataURL ? c.toDataURL() : null; } catch(e){ return null; } })(),
                         client: (function () { const c = document.getElementById('signatureClient'); try { return c && c.toDataURL ? c.toDataURL() : null; } catch(e){ return null; } })()

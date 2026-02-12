@@ -258,7 +258,6 @@
                     <div class="input-group">
                         <label>Email</label>
                         <input type="email" id="clientEmail" placeholder="email@exemple.fr">
-                        <button type="button" class="btn-email" onclick="envoyerClient()">Envoyer au client</button>
                     </div>
                     <div class="input-group"><label>Adresse</label><input type="text" id="clientAddress" placeholder="Adresse complète"></div>
                 </div>
@@ -795,6 +794,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script>
         let currentBonId = null; // id du document Firestore courant
+        let currentBonSocieteId = null; // société du bon chargé (pour PDF : CEP vs Elecho)
         let photosAdmin = [];
         
         // Variable globale pour la société active
@@ -1962,6 +1962,8 @@
                     console.warn('Erreur récupération photos:', e);
                 }
                 
+                const societeClientId = currentBonSocieteId || (societeActive ? societeActive.id : 'cep');
+                const societeClient = (typeof SOCIETES !== 'undefined' && SOCIETES[societeClientId]) ? SOCIETES[societeClientId] : null;
                 const bonData = {
                     numero: numeroBon,
                     date: document.getElementById('interventionDate').value || '',
@@ -1971,7 +1973,15 @@
                     technicien: document.getElementById('technicien').value || '',
                     description: document.getElementById('description').value || '',
                     heure_arrivee: document.getElementById('heureArrivee').value || '',
-                    heure_depart: document.getElementById('heureDepart').value || ''
+                    heure_depart: document.getElementById('heureDepart').value || '',
+                    societe: societeClient ? {
+                        nom: societeClient.nom,
+                        adresse: societeClient.adresse || '',
+                        telephone: societeClient.telephone || '',
+                        email: societeClient.email || '',
+                        siteWeb: societeClient.siteWeb || '',
+                        couleur: societeClient.couleurPrimaire || '#1a365d'
+                    } : null
                 };
                 
                 console.log('Envoi de l\'email via SMTP...');
@@ -2041,6 +2051,10 @@
                 const totalTVA = document.getElementById('totalTVA').textContent || bonData.totalTVA || '0.00€';
                 const totalTTC = document.getElementById('totalTTC').textContent || bonData.totalTTC || '0.00€';
                 
+                // Société du bon (pour nom expéditeur et contenu : CEP ou Elecho)
+                const societeComptaId = currentBonSocieteId || (societeActive ? societeActive.id : 'cep');
+                const societeCompta = (typeof SOCIETES !== 'undefined' && SOCIETES[societeComptaId]) ? SOCIETES[societeComptaId] : null;
+                
                 // Récupérer les produits
                 let produitsHtml = '';
                 if (bonData.produits && Array.isArray(bonData.produits) && bonData.produits.length > 0) {
@@ -2105,7 +2119,7 @@
                 body += photosHtml;
                 
                 body += '\n\n─'.repeat(50) + '\n';
-                body += 'Compagnie d\'Électricité Parisienne\n';
+                body += (societeCompta ? societeCompta.nom : 'Compagnie d\'Électricité Parisienne') + '\n';
                 body += 'Bon généré automatiquement\n';
                 
                 // Récupérer les heures d'arrivée et de départ
@@ -2153,7 +2167,33 @@
                         reader.readAsDataURL(pdfBlob);
                     });
                     
-                    // Préparer les données du bon pour l'email
+                    const emailComptaDest = societeCompta ? (societeCompta.emailCompta || '') : 'compta@cep75.fr';
+                    
+                    // Données complètes du bon pour l'email compta (matériel, MO, déplacement, totaux)
+                    const produitsPourEmail = [];
+                    document.querySelectorAll('.product-row').forEach(row => {
+                        const index = row.dataset.index;
+                        const qtyInput = row.querySelector('.product-qty input');
+                        if (!qtyInput) return;
+                        const qty = parseFloat(qtyInput.value) || 0;
+                        if (qty > 0) {
+                            const name = row.querySelector('.product-name')?.textContent || '';
+                            const ref = row.querySelector('.product-ref')?.textContent || '';
+                            const prixUnitaire = parseFloat(qtyInput.dataset.price || '0') || 0;
+                            produitsPourEmail.push({ nom: name, reference: ref, quantite: qty, prixUnitaire, name, qty });
+                        }
+                    });
+                    document.querySelectorAll('.custom-product-row-admin').forEach(row => {
+                        const nameInput = row.querySelector('input.custom-product-name-admin');
+                        const qtyInput = row.querySelector('input.custom-product-qty-admin');
+                        const priceInput = row.querySelector('input.custom-product-price-admin');
+                        const name = (nameInput && nameInput.value || '').trim();
+                        const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                        const prixUnitaire = parseFloat(priceInput && priceInput.value) || 0;
+                        if (name && qty > 0) {
+                            produitsPourEmail.push({ nom: name, reference: '', quantite: qty, prixUnitaire, name, qty });
+                        }
+                    });
                     const bonData = {
                         numero: numeroBon,
                         date: date,
@@ -2163,105 +2203,72 @@
                         technicien: technicien,
                         description: description,
                         heure_arrivee: heureArrivee,
-                        heure_depart: heureDepart
+                        heure_depart: heureDepart,
+                        produits: produitsPourEmail,
+                        mo_duree: moDuree,
+                        mo_demi_heures: moDemiHeures,
+                        subtotal_mo: moTotal,
+                        depl_nombre: deplNombre,
+                        subtotal_depl: deplTotal,
+                        subtotal_produits: subtotalProduits,
+                        total_ht: totalHT,
+                        total_tva: totalTVA,
+                        total_ttc: totalTTC,
+                        societe: societeCompta ? {
+                            nom: societeCompta.nom,
+                            adresse: societeCompta.adresse || '',
+                            telephone: societeCompta.telephone || '',
+                            email: societeCompta.email || '',
+                            siteWeb: societeCompta.siteWeb || '',
+                            couleur: societeCompta.couleurPrimaire || '#1a365d'
+                        } : null
                     };
                     
+                    // Convertir les photos (URLs) en base64 pour les pièces jointes
+                    const photosPourCompta = [];
+                    const urlsPhotos = (bonData.photos && Array.isArray(bonData.photos)) ? bonData.photos : (photosAdmin && photosAdmin.length ? photosAdmin : []);
+                    for (let i = 0; i < urlsPhotos.length; i++) {
+                        const url = urlsPhotos[i];
+                        if (!url || typeof url !== 'string') continue;
+                        try {
+                            const img = await new Promise((resolve, reject) => {
+                                const imgEl = new Image();
+                                imgEl.crossOrigin = 'anonymous';
+                                imgEl.onload = () => resolve(imgEl);
+                                imgEl.onerror = reject;
+                                imgEl.src = url;
+                            });
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                            photosPourCompta.push({ base64: dataUrl });
+                        } catch (err) {
+                            console.warn('Photo', i + 1, 'non convertie:', err);
+                        }
+                    }
+
                     // Envoyer l'email avec PDF en pièce jointe via SMTP OVH (Nodemailer)
                     console.log('=== PRÉPARATION ENVOI EMAIL COMPTABILITÉ ===');
-                    console.log('Email destinataire:', "a.mathieu@elechosystem.com");
+                    console.log('Email destinataire:', emailComptaDest);
                     console.log('Sujet:', `Bon d'intervention ${numeroBon} - ${client}`);
                     console.log('Taille PDF base64:', pdfBase64.length, 'caractères');
+                    console.log('Photos en pièces jointes:', photosPourCompta.length);
                     
-                    // Envoyer à la comptabilité
+                    // Envoyer à la comptabilité (PDF + photos)
                     await envoyerEmailAvecPDFSMTP({
-                        email: "a.mathieu@elechosystem.com",
+                        email: emailComptaDest || 'compta@cep75.fr',
                         subject: `Bon d'intervention ${numeroBon} - ${client}`,
                         pdfBase64: pdfBase64,
                         pdfFileName: `bon-intervention-${numeroBon}.pdf`,
-                        bonData: bonData
+                        bonData: bonData,
+                        photos: photosPourCompta
                     });
                     
                     console.log('✅ Email envoyé avec succès à la comptabilité');
-                    
-                    // Envoyer aussi au client si l'email est renseigné
-                    if (clientEmail && clientEmail.trim() !== '') {
-                        try {
-                            console.log('=== ENVOI FACTURE PROVISOIRE AU CLIENT ===');
-                            
-                            // Générer le lien de paiement
-                            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                            const paymentLink = isLocal 
-                                ? `${window.location.origin}/BI-${numeroBon}`
-                                : `https://pay.elecho-system.com/BI-${numeroBon}`;
-                            
-                            // Mettre à jour le bon avec le lien de paiement
-                            await db.collection(getCollectionPath('bons')).doc(currentBonId).update({
-                                paymentLink: paymentLink,
-                                paymentStatus: 'pending',
-                                paymentDate: null,
-                                paymentAmount: null
-                            });
-                            
-                            // Régénérer le PDF avec le lien de paiement pour le client
-                            const pdfBlobClient = await genererPDFBon(paymentLink);
-                            const pdfBase64Client = await new Promise((resolve, reject) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                    const base64String = reader.result.split(',')[1];
-                                    resolve(base64String);
-                                };
-                                reader.onerror = reject;
-                                reader.readAsDataURL(pdfBlobClient);
-                            });
-                            
-                            // Préparer les données pour l'email client
-                            const bonDataClient = {
-                                numero: numeroBon,
-                                date: date,
-                                client: client,
-                                adresse: clientAddress,
-                                telephone: clientPhone,
-                                technicien: technicien,
-                                description: description,
-                                heure_arrivee: heureArrivee,
-                                heure_depart: heureDepart,
-                                // Ajouter les montants pour le client
-                                subtotal_produits: subtotalProduits,
-                                main_oeuvre: moTotal,
-                                deplacement: deplTotal,
-                                total_ht: totalHT,
-                                total_tva: totalTVA,
-                                total_ttc: totalTTC
-                            };
-                            
-                            // Envoyer l'email au client avec la facture provisoire
-                            await envoyerEmailAvecPDFSMTP({
-                                email: clientEmail.trim(),
-                                subject: `FACTURE PROVISOIRE - Bon d'intervention ${numeroBon} - ${client}`,
-                                pdfBase64: pdfBase64Client,
-                                pdfFileName: `facture-provisoire-${numeroBon}.pdf`,
-                                bonData: bonDataClient,
-                                photos: []
-                            });
-                            
-                            console.log('✅ Email envoyé avec succès au client');
-                            
-                            // Toast discret au lieu d'alerte
-                            if (clientEmail && clientEmail.trim() !== '') {
-                                showToast('Emails envoyés avec succès');
-                            } else {
-                                showToast('Email envoyé à la comptabilité');
-                            }
-                            
-                        } catch (clientError) {
-                            console.error('❌ Erreur envoi email client:', clientError);
-                            // Toast discret pour l'erreur client, mais la compta a réussi
-                            showToast('Email envoyé à la comptabilité', false);
-                            // Ne pas bloquer si l'envoi au client échoue, la compta a déjà reçu l'email
-                        }
-                    } else {
-                        showToast('Email envoyé à la comptabilité');
-                    }
+                    showToast('Email envoyé à la comptabilité');
                     
                 } catch (pdfError) {
                     console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
@@ -2370,7 +2377,6 @@
             try {
                 await db.collection(getCollectionPath('bons')).doc(currentBonId).update(bon);
                 await renderHistorique();
-                // Toast discret au lieu d'alerte
                 showToast('Modifications enregistrées');
             } catch (e) {
                 console.error(e);
@@ -2582,7 +2588,8 @@
                 console.log('Produits:', bon.produits);
 
                 currentBonId = id;
-                
+                currentBonSocieteId = bon.societe || (societeActive ? societeActive.id : null);
+
                 // Vérifier si le bon est validé (protégé)
                 const estValide = bon.statut === 'validé' || bon.statut === 'valide';
                 const estModifiable = !estValide;
@@ -2637,7 +2644,15 @@
             const customListAdmin = document.getElementById('customProductsListAdmin');
             if (customListAdmin) customListAdmin.innerHTML = '';
 
-            // Réappliquer les quantités sauvegardées, les éventuels tarifs unitaires, et ouvrir les catégories concernées
+            // Fermer toutes les catégories (sous-menus) : flèche vers la droite
+            document.querySelectorAll('.category-header').forEach(header => {
+                header.classList.add('collapsed');
+            });
+            document.querySelectorAll('.category-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Réappliquer les quantités sauvegardées et les éventuels tarifs unitaires (catégories restent fermées)
             (bon.produits || []).forEach(p => {
                 const indexStr = String(p.index);
                 if (indexStr === 'custom') {
@@ -2700,16 +2715,6 @@
                     row.querySelector('input[type="checkbox"]').checked = quantite > 0;
                     row.classList.toggle('selected', quantite > 0);
                     updateRowTotal(qtyInput);
-
-                    // Ouvrir la catégorie pour que l'admin voie le produit installé
-                    const categoryContent = row.closest('.category-content');
-                    if (categoryContent && categoryContent.classList.contains('hidden')) {
-                        categoryContent.classList.remove('hidden');
-                        const header = categoryContent.previousElementSibling;
-                        if (header && header.classList.contains('collapsed')) {
-                            header.classList.remove('collapsed');
-                        }
-                    }
                 } else {
                     console.warn('Produit non trouvé avec index:', p.index, p.nom);
                 }
@@ -2744,6 +2749,9 @@
             // Recalculer les totaux finaux (pour s'assurer que tout est à jour)
             calculateTotals();
 
+            // Mettre à jour la variable globale pour le PDF compta (conserver url + base64 si présent)
+            photosAdmin = Array.isArray(bon.photos) ? bon.photos.slice() : [];
+
             // Afficher les photos (thumbnails cliquables)
             const photosContainer = document.getElementById('photosAdmin');
             console.log('=== DÉBOGAGE PHOTOS ===');
@@ -2758,7 +2766,8 @@
                 
                 if (bon.photos && Array.isArray(bon.photos) && bon.photos.length > 0) {
                     console.log('Affichage de', bon.photos.length, 'photos');
-                    bon.photos.forEach(function(url, index) {
+                    bon.photos.forEach(function(item, index) {
+                        const url = typeof item === 'string' ? item : (item && item.url);
                         console.log("Photo " + index + ":", url);
                         console.log("URL valide (commence par http)?", url && url.startsWith('http'));
                         
@@ -2989,7 +2998,16 @@
             const doc = new jsPDF();
             console.log('jsPDF initialisé, début génération PDF...');
             
-            const infoCEP = {
+            // Utiliser la société du bon chargé (évite bons CEP pour interventions Elecho)
+            const societeId = currentBonSocieteId || (societeActive ? societeActive.id : 'cep');
+            const societeConfig = (typeof SOCIETES !== 'undefined' && SOCIETES[societeId]) ? SOCIETES[societeId] : null;
+            const infoSociete = societeConfig ? {
+                nom: societeConfig.nom,
+                adresse: societeConfig.adresse || '',
+                tel: societeConfig.telephone ? 'Tél. ' + societeConfig.telephone : '',
+                email: societeConfig.email || '',
+                web: societeConfig.siteWeb || ''
+            } : {
                 nom: "CEP - Électricité Générale, Installation, Dépannage",
                 adresse: "6, rue de Metz, 94240 L'Haÿ-les-Roses",
                 tel: "Tél. 01 56 04 19 96",
@@ -3007,6 +3025,17 @@
             const description = document.getElementById('description').value || '';
             const totalTTC = document.getElementById('totalTTC').textContent || '0.00€';
             
+            // Utiliser les photos du bon (Firestore) si photosAdmin vide (pour PDF compta)
+            let photosPourPDF = (photosAdmin && photosAdmin.length > 0) ? photosAdmin.slice() : [];
+            if (photosPourPDF.length === 0 && currentBonId) {
+                try {
+                    const bonDoc = await db.collection(getCollectionPath('bons')).doc(currentBonId).get();
+                    if (bonDoc.exists && bonDoc.data().photos && Array.isArray(bonDoc.data().photos)) {
+                        photosPourPDF = bonDoc.data().photos.map(p => typeof p === 'string' ? p : { url: p?.url || p?.src || '', base64: p?.base64 || p?.b || null });
+                    }
+                } catch (e) { console.warn('Récupération photos bon pour PDF:', e); }
+            }
+            
             const produits = [];
             document.querySelectorAll('.product-row').forEach(row => {
                 const checkbox = row.querySelector('input[type="checkbox"]');
@@ -3017,6 +3046,17 @@
                     const ref = row.querySelector('.product-ref')?.textContent || '';
                     const price = parseFloat(qtyInput.dataset.price || '0');
                     produits.push({ nom: name, reference: ref, quantite: qty, prix: price });
+                }
+            });
+            document.querySelectorAll('.custom-product-row-admin').forEach(row => {
+                const nameInput = row.querySelector('input.custom-product-name-admin');
+                const qtyInput = row.querySelector('input.custom-product-qty-admin');
+                const priceInput = row.querySelector('input.custom-product-price-admin');
+                const name = nameInput?.value?.trim() || '';
+                const qty = parseFloat(qtyInput?.value) || 0;
+                const price = parseFloat(priceInput?.value) || 0;
+                if (name && qty > 0) {
+                    produits.push({ nom: name, reference: '', quantite: qty, prix: price });
                 }
             });
             
@@ -3039,16 +3079,17 @@
             
             doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
-            doc.text(infoCEP.nom, 105, yPos, { align: 'center' });
+            doc.text(infoSociete.nom, 105, yPos, { align: 'center' });
             yPos += 8;
             
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            doc.text(infoCEP.adresse, 105, yPos, { align: 'center' });
-            yPos += 5;
-            doc.text(infoCEP.tel, 105, yPos, { align: 'center' });
-            yPos += 5;
-            doc.text(infoCEP.email + ' / ' + infoCEP.web, 105, yPos, { align: 'center' });
+            if (infoSociete.adresse) doc.text(infoSociete.adresse, 105, yPos, { align: 'center' });
+            if (infoSociete.adresse) yPos += 5;
+            if (infoSociete.tel) doc.text(infoSociete.tel, 105, yPos, { align: 'center' });
+            if (infoSociete.tel) yPos += 5;
+            if (infoSociete.email || infoSociete.web) doc.text([infoSociete.email, infoSociete.web].filter(Boolean).join(' / '), 105, yPos, { align: 'center' });
+            if (infoSociete.email || infoSociete.web) yPos += 5;
             yPos += 10;
             
             doc.setLineWidth(0.5);
@@ -3057,10 +3098,7 @@
             
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text('FACTURE PROVISOIRE', 105, yPos, { align: 'center' });
-            yPos += 6;
-            doc.setFontSize(12);
-            doc.text('Bon d\'intervention N° ' + numeroBon, 105, yPos, { align: 'center' });
+            doc.text('BON D\'INTERVENTION N° ' + numeroBon, 105, yPos, { align: 'center' });
             yPos += 10;
             
             doc.setFontSize(11);
@@ -3100,8 +3138,42 @@
                 doc.text(descLines, 20, yPos);
                 yPos += descLines.length * 5 + 3;
             }
+
+            // Main d'œuvre
+            const moDuree = document.getElementById('moDuree')?.value || '';
+            const moDemiHeures = document.getElementById('moDemiHeures')?.value || '';
+            const moTotal = document.getElementById('moTotal')?.textContent || '0.00€';
+            if (moDuree || moTotal !== '0.00€') {
+                if (yPos > 250) { doc.addPage(); yPos = 20; }
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('MAIN D\'ŒUVRE :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                if (moDuree) doc.text('Durée : ' + moDuree, 20, yPos), yPos += 5;
+                if (moDemiHeures) doc.text('Demi-heures : ' + moDemiHeures, 20, yPos), yPos += 5;
+                doc.text('Montant : ' + moTotal, 20, yPos);
+                yPos += 8;
+            }
+
+            // Déplacement
+            const deplNombre = document.getElementById('deplNombre')?.value || '0';
+            const deplTotal = document.getElementById('deplTotal')?.textContent || '0.00€';
+            const nbDepl = parseFloat(deplNombre) || 0;
+            if (nbDepl > 0 || deplTotal !== '0.00€') {
+                if (yPos > 250) { doc.addPage(); yPos = 20; }
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text('DÉPLACEMENT :', 20, yPos);
+                yPos += 6;
+                doc.setFont(undefined, 'normal');
+                doc.text('Nombre : ' + deplNombre, 20, yPos);
+                yPos += 5;
+                doc.text('Montant : ' + deplTotal, 20, yPos);
+                yPos += 8;
+            }
             
-            if (photosAdmin && photosAdmin.length > 0) {
+            if (photosPourPDF.length > 0) {
                 if (yPos > 200) {
                     doc.addPage();
                     yPos = 20;
@@ -3117,29 +3189,40 @@
                 const photosPerRow = 2;
                 const spacing = 10;
                 
-                for (let i = 0; i < photosAdmin.length; i++) {
-                    const photoUrl = photosAdmin[i];
-                    if (!photoUrl) continue;
+                for (let i = 0; i < photosPourPDF.length; i++) {
+                    const photoItem = photosPourPDF[i];
+                    const photoUrl = typeof photoItem === 'string' ? photoItem : (photoItem?.url || photoItem?.src || '');
+                    const photoBase64 = typeof photoItem === 'object' && (photoItem?.base64 || photoItem?.b);
+                    // Utiliser le base64 si présent (comme l'envoi client) pour éviter CORS
+                    let imgData = photoBase64 || null;
                     
-                    let imgData;
-                    try {
-                        const img = await new Promise((resolve, reject) => {
-                            const imgElement = new Image();
-                            imgElement.crossOrigin = 'anonymous';
-                            imgElement.onload = () => resolve(imgElement);
-                            imgElement.onerror = reject;
-                            imgElement.src = photoUrl;
-                        });
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        imgData = canvas.toDataURL('image/jpeg', 0.8);
-                    } catch (err) {
-                        console.error(`Erreur conversion photo ${i + 1}:`, err);
-                        continue;
+                    if (!imgData && photoUrl && photoUrl.startsWith('http')) {
+                        try {
+                            const img = await new Promise((resolve, reject) => {
+                                const imgElement = new Image();
+                                imgElement.crossOrigin = 'anonymous';
+                                imgElement.onload = () => resolve(imgElement);
+                                imgElement.onerror = () => reject(new Error('Chargement image'));
+                                imgElement.src = photoUrl;
+                            });
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            imgData = canvas.toDataURL('image/jpeg', 0.8);
+                        } catch (err) {
+                            console.warn(`Photo ${i + 1} non incluse (CORS ou URL):`, photoUrl.substring(0, 50));
+                            doc.setFontSize(9);
+                            doc.setFont(undefined, 'normal');
+                            if (yPos + 12 > 270) { doc.addPage(); yPos = 20; }
+                            doc.text(`Photo ${i + 1} : (lien disponible en ligne)`, 20, yPos);
+                            yPos += 8;
+                            continue;
+                        }
                     }
+                    
+                    if (!imgData) continue;
                     
                     if (yPos + photoHeight > 270) {
                         doc.addPage();
@@ -3158,7 +3241,7 @@
                         console.error(`Erreur ajout photo ${i + 1}:`, photoError);
                         doc.setFontSize(9);
                         doc.setFont(undefined, 'normal');
-                        doc.text(`Photo ${i + 1} (erreur)`, xPos, yPos + 10);
+                        doc.text(`Photo ${i + 1}`, xPos, yPos + 10);
                     }
                     
                     if ((i + 1) % photosPerRow === 0) {
@@ -3166,7 +3249,7 @@
                     }
                 }
                 
-                if (photosAdmin.length % photosPerRow !== 0) {
+                if (photosPourPDF.length % photosPerRow !== 0) {
                     yPos += photoHeight + 12;
                 }
                 yPos += 5;
@@ -3415,7 +3498,7 @@
             
             try {
                 await db.collection(getCollectionPath('bons')).doc(id).delete();
-                if (currentBonId === id) currentBonId = null;
+                if (currentBonId === id) { currentBonId = null; currentBonSocieteId = null; }
                 showToast('Bon supprimé');
                 await renderHistorique();
             } catch (e) {
@@ -3502,7 +3585,7 @@
             for (const bon of bonsASupprimer) {
                 try {
                     await db.collection(getCollectionPath('bons')).doc(bon.id).delete();
-                    if (currentBonId === bon.id) currentBonId = null;
+                    if (currentBonId === bon.id) { currentBonId = null; currentBonSocieteId = null; }
                     succes++;
                 } catch (e) {
                     console.error(`Erreur suppression bon ${bon.id}:`, e);
@@ -3556,7 +3639,8 @@
             if (!currentBonId) return;
             
             try {
-                const url = photosAdmin[index];
+                const item = photosAdmin[index];
+                const url = typeof item === 'string' ? item : (item && item.url);
                 // Supprimer de Firebase Storage
                 if (url && storage && storage.refFromURL) {
                     try {
@@ -3580,12 +3664,13 @@
                     if (!photosAdmin.length) {
                         photosContainer.innerHTML = '<p style="color:var(--text-light); margin-top:4px;">Aucune photo pour ce bon.</p>';
                     } else {
-                        photosContainer.innerHTML = photosAdmin.map((url, idx) =>
-                            `<div class="photo-thumb-admin" data-index="${idx}">
-                                <img src="${url}" alt="Photo intervention" onclick="openPhotoLightbox('${url.replace(/'/g, "\\'")}')" />
+                        photosContainer.innerHTML = photosAdmin.map((item, idx) => {
+                            const u = typeof item === 'string' ? item : (item && item.url) || '';
+                            return `<div class="photo-thumb-admin" data-index="${idx}">
+                                <img src="${u}" alt="Photo intervention" onclick="openPhotoLightbox('${(u || '').replace(/'/g, "\\'")}')" />
                                 <button type="button" class="photo-remove-admin" onclick="removePhotoAdmin(${idx}); event.stopPropagation();">×</button>
-                            </div>`
-                        ).join("");
+                            </div>`;
+                        }).join("");
                     }
                 }
             } catch (e) {
