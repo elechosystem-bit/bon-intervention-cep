@@ -69,9 +69,10 @@
         .btn-remove-prod-admin { margin-left: 6px; padding: 2px 6px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #e53e3e; background: #fff5f5; color: #c53030; cursor: pointer; }
         .btn-remove-prod-admin:hover { background: #fed7d7; }
         .custom-products-list-admin { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-        .custom-product-row-admin { display: grid; grid-template-columns: 1fr 80px 40px; align-items: center; padding: 8px 12px; background: #f0f7ff; border: 2px solid var(--primary); border-radius: 8px; gap: 10px; }
+        .custom-product-row-admin { display: grid; grid-template-columns: 1fr 80px 80px 40px; align-items: center; padding: 8px 12px; background: #f0f7ff; border: 2px solid var(--primary); border-radius: 8px; gap: 10px; }
         .custom-product-row-admin input.custom-product-name-admin { padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: white; }
         .custom-product-row-admin input.custom-product-qty-admin { width: 55px; padding: 6px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
+        .custom-product-row-admin input.custom-product-price-admin { width: 60px; padding: 6px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
         .custom-product-row-admin .btn-remove-line-admin { padding: 4px 8px; font-size: 0.85rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; }
         .custom-product-row-admin .btn-remove-line-admin:hover { opacity: 0.9; }
 
@@ -1476,6 +1477,57 @@
             qtyInput.value = 1;
         }
 
+        function addCustomProductLineAdmin() {
+            const nameInput = document.getElementById('customProductNameAdmin');
+            const qtyInput = document.getElementById('customProductQtyAdmin');
+            const name = (nameInput && nameInput.value || '').trim();
+            const qty = parseInt(qtyInput && qtyInput.value, 10) || 1;
+            if (!name) return;
+            const container = document.getElementById('customProductsListAdmin');
+            if (!container) return;
+            const row = document.createElement('div');
+            row.className = 'custom-product-row-admin';
+            const nameField = document.createElement('input');
+            nameField.type = 'text';
+            nameField.className = 'custom-product-name-admin';
+            nameField.value = name;
+            nameField.placeholder = 'Nom';
+            nameField.oninput = function() { calculateTotals(); };
+            const qtyField = document.createElement('input');
+            qtyField.type = 'number';
+            qtyField.className = 'custom-product-qty-admin';
+            qtyField.value = qty;
+            qtyField.min = 1;
+            qtyField.onchange = function() { calculateTotals(); };
+            const priceField = document.createElement('input');
+            priceField.type = 'number';
+            priceField.className = 'custom-product-price-admin';
+            priceField.value = 0;
+            priceField.min = 0;
+            priceField.step = 0.01;
+            priceField.placeholder = 'Prix';
+            priceField.onchange = function() { calculateTotals(); };
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-remove-line-admin';
+            removeBtn.textContent = '✕';
+            removeBtn.onclick = function() { removeCustomProductLineAdmin(this); };
+            row.appendChild(nameField);
+            row.appendChild(qtyField);
+            row.appendChild(priceField);
+            row.appendChild(removeBtn);
+            container.appendChild(row);
+            if (nameInput) nameInput.value = '';
+            if (qtyInput) qtyInput.value = 1;
+            calculateTotals();
+        }
+
+        function removeCustomProductLineAdmin(btn) {
+            const row = btn && btn.closest('.custom-product-row-admin');
+            if (row) row.remove();
+            calculateTotals();
+        }
+
         function updateRowTotal(input) {
             const row = input.closest('.product-row');
             const checkbox = row.querySelector('input[type="checkbox"]');
@@ -1560,6 +1612,13 @@
                     sub += parseFloat(row.querySelector('.product-total').textContent) || 0;
                 }
             });
+            document.querySelectorAll('.custom-product-row-admin').forEach(row => {
+                const qtyInput = row.querySelector('input.custom-product-qty-admin');
+                const priceInput = row.querySelector('input.custom-product-price-admin');
+                const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                const price = parseFloat(priceInput && priceInput.value) || 0;
+                sub += qty * price;
+            });
             const mo = parseFloat(document.getElementById('moTotal').textContent) || 0;
             const depl = parseFloat(document.getElementById('deplTotal').textContent) || 0;
             const ht = sub + mo + depl;
@@ -1571,7 +1630,7 @@
             document.getElementById('totalTVA').textContent = tva.toFixed(2) + '€';
             document.getElementById('totalTTC').textContent = (ht + tva).toFixed(2) + '€';
 
-            // Récap produits pour l'admin (comme côté technicien)
+            // Récap produits pour l'admin (catalogue + lignes personnalisées)
             const container = document.getElementById('selectedProductsListAdmin');
             if (container) {
                 const lignes = [];
@@ -1585,15 +1644,38 @@
                         const ref = row.querySelector('.product-ref')?.textContent || '';
                         const prixUnitaire = parseFloat(qtyInput.dataset.price || 0).toFixed(2);
                         const totalLigne = row.querySelector('.product-total')?.textContent || '';
-                        lignes.push({ index, name, ref, qty, prixUnitaire, total: totalLigne });
+                        lignes.push({ index, name, ref, qty, prixUnitaire, total: totalLigne, custom: false });
+                    }
+                });
+                document.querySelectorAll('.custom-product-row-admin').forEach((row, i) => {
+                    const nameInput = row.querySelector('input.custom-product-name-admin');
+                    const qtyInput = row.querySelector('input.custom-product-qty-admin');
+                    const priceInput = row.querySelector('input.custom-product-price-admin');
+                    const name = (nameInput && nameInput.value || '').trim();
+                    const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                    const prixUnitaire = parseFloat(priceInput && priceInput.value) || 0;
+                    if (name && qty > 0) {
+                        const totalLigne = (qty * prixUnitaire).toFixed(2) + '€';
+                        lignes.push({ index: 'custom-' + i, name, ref: '', qty, prixUnitaire: prixUnitaire.toFixed(2), total: totalLigne, custom: true });
                     }
                 });
 
                 if (lignes.length === 0) {
                     container.innerHTML = "<p style=\"color:var(--text-light);\">Aucun produit sélectionné pour le moment.</p>";
                 } else {
-                    container.innerHTML = lignes.map(l => 
-                        `<div class="recap-line-admin" data-index="${l.index}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0; border-bottom:1px dashed var(--border);">
+                    container.innerHTML = lignes.map(l => {
+                        if (l.custom) {
+                            return `<div class="recap-line-admin" data-index="${l.index}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0; border-bottom:1px dashed var(--border);">
+                                <span>${(l.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+                                <span style="font-family:'Space Mono', monospace; display:flex; align-items:center; gap:6px;">
+                                    Qté : ${l.qty} × 
+                                    <input type="number" class="price-input-admin" min="0" step="0.01" value="${l.prixUnitaire}" data-index="${l.index}" onchange="corrigerPrixDepuisRecap(this)">€
+                                    = <span class="recap-total">${l.total}</span>
+                                    <button type="button" class="btn-remove-prod-admin" onclick="supprimerLigneDepuisRecap('${l.index}')" title="Supprimer cette ligne">✕</button>
+                                </span>
+                            </div>`;
+                        }
+                        return `<div class="recap-line-admin" data-index="${l.index}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0; border-bottom:1px dashed var(--border);">
                             <span>${l.name}${l.ref ? ' <span style="color:var(--text-light); font-size:0.8em;">(' + l.ref + ')</span>' : ''}</span>
                             <span style="font-family:'Space Mono', monospace; display:flex; align-items:center; gap:6px;">
                                 Qté : ${l.qty} × 
@@ -1601,8 +1683,8 @@
                                 = <span class="recap-total">${l.total}</span>
                                 <button type="button" class="btn-remove-prod-admin" onclick="supprimerLigneDepuisRecap('${l.index}')" title="Supprimer cette ligne">✕</button>
                             </span>
-                        </div>`
-                    ).join("");
+                        </div>`;
+                    }).join("");
                 }
             }
         }
@@ -1710,10 +1792,6 @@
             try {
                 const index = input.dataset.index;
                 if (!index) return;
-                const row = document.querySelector('.product-row[data-index="' + index + '"]');
-                if (!row) return;
-                const qtyInput = row.querySelector('.product-qty input');
-                if (!qtyInput) return;
 
                 let val = input.value.toString().trim().replace(',', '.');
                 const num = parseFloat(val);
@@ -1721,6 +1799,26 @@
                     alert('Tarif invalide. Indiquez un nombre positif.');
                     return;
                 }
+
+                if (String(index).startsWith('custom-')) {
+                    const i = parseInt(String(index).replace('custom-', ''), 10);
+                    if (isNaN(i) || i < 0) return;
+                    const customRows = document.querySelectorAll('.custom-product-row-admin');
+                    const row = customRows[i];
+                    if (row) {
+                        const priceInput = row.querySelector('input.custom-product-price-admin');
+                        if (priceInput) {
+                            priceInput.value = num.toFixed(2);
+                            calculateTotals();
+                        }
+                    }
+                    return;
+                }
+
+                const row = document.querySelector('.product-row[data-index="' + index + '"]');
+                if (!row) return;
+                const qtyInput = row.querySelector('.product-qty input');
+                if (!qtyInput) return;
 
                 qtyInput.dataset.price = String(num);
                 updateRowTotal(qtyInput);
@@ -1731,11 +1829,22 @@
             }
         }
 
-        /** Supprime une ligne produit (quantité à 0) depuis le récapitulatif. */
+        /** Supprime une ligne produit (quantité à 0) ou une ligne personnalisée depuis le récapitulatif. */
         function supprimerLigneDepuisRecap(index) {
             try {
-                if (!index && index !== 0) return;
-                const row = document.querySelector('.product-row[data-index="' + index + '"]');
+                if (index === undefined || index === null) return;
+                const indexStr = String(index);
+                if (indexStr.startsWith('custom-')) {
+                    const i = parseInt(indexStr.replace('custom-', ''), 10);
+                    if (isNaN(i) || i < 0) return;
+                    const customRows = document.querySelectorAll('.custom-product-row-admin');
+                    if (customRows[i]) {
+                        customRows[i].remove();
+                        calculateTotals();
+                    }
+                    return;
+                }
+                const row = document.querySelector('.product-row[data-index="' + indexStr + '"]');
                 if (!row) return;
                 const qtyInput = row.querySelector('.product-qty input');
                 const checkbox = row.querySelector('input[type="checkbox"]');
@@ -2245,6 +2354,18 @@
                     bon.produits.push({ index, name, qty, prixUnitaire });
                 }
             });
+            // Lignes personnalisées (admin)
+            document.querySelectorAll('.custom-product-row-admin').forEach(row => {
+                const nameInput = row.querySelector('input.custom-product-name-admin');
+                const qtyInput = row.querySelector('input.custom-product-qty-admin');
+                const priceInput = row.querySelector('input.custom-product-price-admin');
+                const name = (nameInput && nameInput.value || '').trim();
+                const qty = parseFloat(qtyInput && qtyInput.value) || 0;
+                const prixUnitaire = parseFloat(priceInput && priceInput.value) || 0;
+                if (name && qty > 0) {
+                    bon.produits.push({ index: 'custom', name, qty, prixUnitaire });
+                }
+            });
 
             try {
                 await db.collection(getCollectionPath('bons')).doc(currentBonId).update(bon);
@@ -2512,9 +2633,54 @@
                 row.classList.remove('selected');
             });
 
+            // Vider les lignes personnalisées avant de recharger
+            const customListAdmin = document.getElementById('customProductsListAdmin');
+            if (customListAdmin) customListAdmin.innerHTML = '';
+
             // Réappliquer les quantités sauvegardées, les éventuels tarifs unitaires, et ouvrir les catégories concernées
             (bon.produits || []).forEach(p => {
                 const indexStr = String(p.index);
+                if (indexStr === 'custom') {
+                    // Restaurer une ligne personnalisée (technicien: nom/quantite, admin: name/qty)
+                    const name = (p.nom != null && p.nom !== '') ? p.nom : (p.name || '');
+                    const qty = parseFloat(p.quantite ?? p.qty ?? 0);
+                    if (name && qty > 0 && customListAdmin) {
+                        const prixUnitaire = parseFloat(p.prixUnitaire ?? 0) || 0;
+                        const row = document.createElement('div');
+                        row.className = 'custom-product-row-admin';
+                        const nameField = document.createElement('input');
+                        nameField.type = 'text';
+                        nameField.className = 'custom-product-name-admin';
+                        nameField.value = name;
+                        nameField.placeholder = 'Nom';
+                        nameField.oninput = function() { calculateTotals(); };
+                        const qtyField = document.createElement('input');
+                        qtyField.type = 'number';
+                        qtyField.className = 'custom-product-qty-admin';
+                        qtyField.value = qty;
+                        qtyField.min = 1;
+                        qtyField.onchange = function() { calculateTotals(); };
+                        const priceField = document.createElement('input');
+                        priceField.type = 'number';
+                        priceField.className = 'custom-product-price-admin';
+                        priceField.value = prixUnitaire;
+                        priceField.min = 0;
+                        priceField.step = 0.01;
+                        priceField.placeholder = 'Prix';
+                        priceField.onchange = function() { calculateTotals(); };
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'btn-remove-line-admin';
+                        removeBtn.textContent = '✕';
+                        removeBtn.onclick = function() { removeCustomProductLineAdmin(this); };
+                        row.appendChild(nameField);
+                        row.appendChild(qtyField);
+                        row.appendChild(priceField);
+                        row.appendChild(removeBtn);
+                        customListAdmin.appendChild(row);
+                    }
+                    return;
+                }
                 const row = document.querySelector(`.product-row[data-index="${indexStr}"]`);
                 if (row) {
                     const qtyInput = row.querySelector('.product-qty input');
