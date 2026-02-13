@@ -46,6 +46,11 @@ service cloud.firestore {
       allow read, write: if true; // ⚠️ TEMPORAIRE
     }
     
+    // Astreintes par société (samedis, émis par admin)
+    match /societes/{societeId}/astreintes/{docId} {
+      allow read, write: if true; // ⚠️ TEMPORAIRE
+    }
+    
     // Bloquer l'accès à toutes les autres collections
     match /{document=**} {
       allow read, write: if false;

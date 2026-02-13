@@ -160,6 +160,27 @@
         .agenda-modal-inner .input-group { margin-bottom: 14px; }
         .agenda-modal-inner .actions { display: flex; gap: 10px; margin-top: 20px; }
 
+        .agenda-subtabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .agenda-subtabs button { padding: 10px 18px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .agenda-subtabs button:hover { background: #ebf8ff; }
+        .agenda-subtabs button.active { background: var(--primary); color: white; }
+        .agenda-astreintes-wrap .astreinte-toolbar { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px; }
+        .agenda-astreintes-wrap .astreinte-year-label { font-size: 1.3rem; font-weight: 700; color: var(--primary); min-width: 140px; text-align: center; }
+        .astreinte-month-grid { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; max-width: 800px; margin-left: auto; margin-right: auto; }
+        .astreinte-month-grid .astreinte-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-align: center; }
+        .astreinte-month-grid .astreinte-weeks { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .astreinte-month-grid .astreinte-cell { min-height: 52px; padding: 4px; border-radius: 8px; font-size: 0.85rem; color: var(--text-light); background: #f8fafc; border: 1px solid var(--border); }
+        .astreinte-month-grid .astreinte-cell .num { font-weight: 700; margin-bottom: 4px; }
+        .astreinte-month-grid .astreinte-cell.samedi { background: var(--primary); color: white; }
+        .astreinte-month-grid .astreinte-cell.samedi .astreinte-select { width: 100%; min-height: 36px; font-size: 0.8rem; padding: 4px 6px; border: 1px solid rgba(255,255,255,0.6); border-radius: 6px; background: rgba(255,255,255,0.2); color: white; cursor: pointer; }
+        .astreinte-month-grid .astreinte-cell.samedi .astreinte-select option { background: var(--primary); color: white; }
+        .astreinte-month-grid .astreinte-cell.samedi.prochain { background: #c53030; box-shadow: 0 0 0 2px #9b2c2c; }
+        .astreinte-month-grid .astreinte-cell.samedi.prochain .astreinte-select { min-height: 40px; font-size: 0.85rem; background: rgba(255,255,255,0.25); }
+        .astreinte-month-grid .astreinte-cell.other-month { opacity: 0.5; }
+        .modal-astreinte-admin { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 3050; }
+        .modal-astreinte-inner { background: white; padding: 24px; border-radius: 16px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-astreinte-inner h3 { margin-bottom: 16px; color: var(--primary); }
+
         .btn-info-droits { width: 28px; height: 28px; padding: 0; border: 2px solid var(--primary); background: #ebf8ff; color: var(--primary); border-radius: 50%; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .btn-info-droits:hover { background: var(--primary); color: white; }
         .label-with-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -639,7 +660,12 @@
         <div id="vueAgenda" class="vue-content">
             <div class="section">
                 <h3 class="section-title">Agenda des interventions</h3>
-                <p style="color: var(--text-light); margin-bottom: 16px;">Les interventions affichées et créées concernent <strong>uniquement la société sélectionnée</strong> en haut de page. Cliquez sur un jour pour voir les interventions et en ajouter.</p>
+                <div class="agenda-subtabs">
+                    <button type="button" id="agendaSubInterventions" class="active" onclick="showAgendaSub('interventions')">📅 Interventions</button>
+                    <button type="button" id="agendaSubAstreintes" onclick="showAgendaSub('astreintes')">🔄 Astreintes</button>
+                </div>
+                <p style="color: var(--text-light); margin-bottom: 16px;" id="agendaSubDesc">Les interventions affichées et créées concernent <strong>uniquement la société sélectionnée</strong> en haut de page. Cliquez sur un jour pour voir les interventions et en ajouter.</p>
+                <div id="agendaInterventionsWrap">
                 <div class="agenda-toolbar">
                     <span class="agenda-month" id="agendaMonthLabel">Janvier 2025</span>
                     <div class="agenda-nav">
@@ -661,6 +687,31 @@
                     <h4 id="agendaDayDetailTitle">Interventions du …</h4>
                     <div class="agenda-day-list" id="agendaDayList"></div>
                     <button type="button" class="btn btn-primary" style="margin-top: 12px;" onclick="openAgendaModal()">➕ Ajouter une intervention</button>
+                </div>
+                </div>
+                <div id="agendaAstreintesWrap" class="agenda-astreintes-wrap" style="display: none;">
+                    <p style="color: var(--text-light); margin-bottom: 12px;">Vue sur 1 mois. Les astreintes sont celles de la société sélectionnée en haut (CEP ou Elecho). Sur chaque samedi : liste des techniciens de la société pour les affecter.</p>
+                    <div class="astreinte-toolbar">
+                        <button type="button" class="btn btn-secondary" onclick="astreinteAdminPrevMonth()">← Mois préc.</button>
+                        <span class="astreinte-year-label" id="astreinteAdminMonthLabel">Janvier 2025</span>
+                        <button type="button" class="btn btn-secondary" onclick="astreinteAdminNextMonth()">Mois suiv. →</button>
+                    </div>
+                    <div id="astreinteAdminMonthGrid" class="astreinte-month-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-astreinte-admin" id="modalAstreinteAdmin" onclick="if(event.target===this) closeAstreinteAdminModal()" style="display: none;">
+            <div class="modal-astreinte-inner" onclick="event.stopPropagation()">
+                <h3>Ajouter une astreinte</h3>
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 12px;" id="modalAstreinteDateLabel">Samedi …</p>
+                <div class="input-group">
+                    <label>Technicien</label>
+                    <select id="astreinteModalTechnicien"></select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="button" class="btn btn-primary" onclick="saveAstreinteAdmin()">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAstreinteAdminModal()">Annuler</button>
                 </div>
             </div>
         </div>
@@ -1023,12 +1074,31 @@
         let agendaSelectedDay = null;
         let agendaBonsByDate = {};
 
+        let agendaSubMode = 'interventions';
+
+        function showAgendaSub(mode) {
+            agendaSubMode = mode;
+            document.getElementById('agendaSubInterventions').classList.toggle('active', mode === 'interventions');
+            document.getElementById('agendaSubAstreintes').classList.toggle('active', mode === 'astreintes');
+            document.getElementById('agendaInterventionsWrap').style.display = mode === 'interventions' ? 'block' : 'none';
+            document.getElementById('agendaAstreintesWrap').style.display = mode === 'astreintes' ? 'block' : 'none';
+            var desc = document.getElementById('agendaSubDesc');
+            desc.textContent = mode === 'interventions' ? 'Les interventions affichées et créées concernent uniquement la société sélectionnée en haut de page. Cliquez sur un jour pour voir les interventions et en ajouter.' : 'Vue sur 1 mois. Les astreintes sont celles de la société sélectionnée (CEP ou Elecho). Sur chaque samedi : liste des techniciens pour les affecter.';
+            if (mode === 'interventions') renderAgenda();
+            else if (mode === 'astreintes') renderAstreinteAdminCalendar();
+            if (mode === 'astreintes') renderAstreinteAdminCalendar();
+        }
+
         function showVueAdmin(vue) {
             document.getElementById('vueBons').classList.toggle('active', vue === 'bons');
             document.getElementById('vueAgenda').classList.toggle('active', vue === 'agenda');
             document.getElementById('tabBons').classList.toggle('active', vue === 'bons');
             document.getElementById('tabAgenda').classList.toggle('active', vue === 'agenda');
-            if (vue === 'agenda') renderAgenda();
+            if (vue === 'agenda') {
+                showAgendaSub(agendaSubMode);
+                if (agendaSubMode === 'interventions') renderAgenda();
+                else renderAstreinteAdminCalendar();
+            }
         }
 
         async function renderAgenda() {
@@ -1142,6 +1212,158 @@
 
         function closeAgendaModal() {
             document.getElementById('agendaModal').classList.remove('show');
+        }
+
+        // --- Astreintes (admin) : vue 1 mois, liste techniciens de la société (CEP / Elecho) ---
+        let astreinteAdminYear = new Date().getFullYear();
+        let astreinteAdminMonth = new Date().getMonth() + 1;
+        let astreintesAdminByDate = {};
+        let astreinteAdminSelectedDate = null;
+
+        async function loadAstreintesAdminForMonth() {
+            if (!societeActive) return;
+            var debut = astreinteAdminYear + '-' + String(astreinteAdminMonth).padStart(2, '0') + '-01';
+            var lastDay = new Date(astreinteAdminYear, astreinteAdminMonth, 0).getDate();
+            var fin = astreinteAdminYear + '-' + String(astreinteAdminMonth).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+            astreintesAdminByDate = {};
+            try {
+                var snap = await db.collection(getCollectionPath('astreintes')).where('date', '>=', debut).where('date', '<=', fin).get();
+                snap.forEach(function(doc) {
+                    var d = doc.data().date;
+                    if (!astreintesAdminByDate[d]) astreintesAdminByDate[d] = [];
+                    astreintesAdminByDate[d].push({ id: doc.id, ...doc.data() });
+                });
+            } catch (e) { console.warn('Chargement astreintes admin:', e); }
+        }
+
+        function renderAstreinteAdminCalendar() {
+            var labelEl = document.getElementById('astreinteAdminMonthLabel');
+            var gridEl = document.getElementById('astreinteAdminMonthGrid');
+            if (!labelEl || !gridEl) return;
+            var moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+            labelEl.textContent = moisNoms[astreinteAdminMonth - 1] + ' ' + astreinteAdminYear;
+            loadAstreintesAdminForMonth().then(function() {
+                var now = new Date();
+                var daysUntilSat = (6 - now.getDay() + 7) % 7;
+                var prochainSamedi = new Date(now);
+                prochainSamedi.setDate(prochainSamedi.getDate() + daysUntilSat);
+                var prochainStr = prochainSamedi.getFullYear() + '-' + String(prochainSamedi.getMonth() + 1).padStart(2, '0') + '-' + String(prochainSamedi.getDate()).padStart(2, '0');
+                var first = new Date(astreinteAdminYear, astreinteAdminMonth - 1, 1);
+                var last = new Date(astreinteAdminYear, astreinteAdminMonth, 0);
+                var startWeekday = first.getDay();
+                var startWeekdayLu = startWeekday === 0 ? 6 : startWeekday - 1;
+                var html = '<div class="astreinte-weekdays"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div><div class="astreinte-weeks">';
+                var emptyCells = startWeekdayLu;
+                for (var i = 0; i < emptyCells; i++) html += '<div class="astreinte-cell other-month"></div>';
+                for (var d = 1; d <= last.getDate(); d++) {
+                    var date = new Date(astreinteAdminYear, astreinteAdminMonth - 1, d);
+                    var dateStr = astreinteAdminYear + '-' + String(astreinteAdminMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                    var isSam = date.getDay() === 6;
+                    var prochain = (dateStr === prochainStr) ? ' prochain' : '';
+                    if (isSam) {
+                        var list = (astreintesAdminByDate[dateStr] || []).slice();
+                        var selectedName = list.length > 0 ? (list[0].technicien || '') : '';
+                        var safeDate = dateStr.replace(/'/g, "\\'");
+                        var selectHtml = '<select class="astreinte-select" data-date="' + dateStr + '" onchange="saveAstreinteFromSelect(\'' + safeDate + '\', this)" title="Choisir le technicien d\'astreinte (l\'un ou l\'autre)">';
+                        selectHtml += '<option value="">— Choisir —</option>';
+                        listeTechniciensActuelle.forEach(function(t) {
+                            var nom = t.nom || t;
+                            var sel = (nom === selectedName) ? ' selected' : '';
+                            selectHtml += '<option value="' + nom.replace(/"/g, '&quot;') + '"' + sel + '>' + nom.replace(/</g, '&lt;') + '</option>';
+                        });
+                        selectHtml += '</select>';
+                        html += '<div class="astreinte-cell samedi' + prochain + '"><span class="num">' + d + '</span>' + selectHtml + '</div>';
+                    } else {
+                        html += '<div class="astreinte-cell"><span class="num">' + d + '</span></div>';
+                    }
+                }
+                html += '</div>';
+                gridEl.innerHTML = html;
+            });
+        }
+
+        function astreinteAdminPrevMonth() {
+            astreinteAdminMonth--;
+            if (astreinteAdminMonth < 1) { astreinteAdminMonth = 12; astreinteAdminYear--; }
+            renderAstreinteAdminCalendar();
+        }
+        function astreinteAdminNextMonth() {
+            astreinteAdminMonth++;
+            if (astreinteAdminMonth > 12) { astreinteAdminMonth = 1; astreinteAdminYear++; }
+            renderAstreinteAdminCalendar();
+        }
+
+        async function saveAstreinteFromSelect(dateStr, selectEl) {
+            if (!societeActive || !dateStr) return;
+            var technicien = (selectEl.value || '').trim();
+            try {
+                var existing = (astreintesAdminByDate[dateStr] || []).slice();
+                for (var i = 0; i < existing.length; i++) {
+                    await db.collection(getCollectionPath('astreintes')).doc(existing[i].id).delete();
+                }
+                if (technicien) {
+                    await db.collection(getCollectionPath('astreintes')).add({
+                        date: dateStr,
+                        technicien: technicien,
+                        societe: societeActive.id,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                await loadAstreintesAdminForMonth();
+                showToast(technicien ? 'Astreinte enregistrée' : 'Astreinte supprimée');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || 'voir console'), true);
+            }
+        }
+
+        function openAstreinteAdminModal() {
+            if (!astreinteAdminSelectedDate) return;
+            var d = new Date(astreinteAdminSelectedDate + 'T12:00:00');
+            document.getElementById('modalAstreinteDateLabel').textContent = 'Samedi ' + d.getDate() + ' ' + ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][d.getMonth()] + ' ' + d.getFullYear();
+            var sel = document.getElementById('astreinteModalTechnicien');
+            sel.innerHTML = listeTechniciensActuelle.map(function(t) {
+                var nom = t.nom || t;
+                return '<option value="' + nom.replace(/"/g, '&quot;') + '">' + nom.replace(/</g, '&lt;') + '</option>';
+            }).join('');
+            document.getElementById('modalAstreinteAdmin').style.display = 'flex';
+        }
+
+        function closeAstreinteAdminModal() {
+            document.getElementById('modalAstreinteAdmin').style.display = 'none';
+        }
+
+        async function saveAstreinteAdmin() {
+            var technicien = (document.getElementById('astreinteModalTechnicien').value || '').trim();
+            if (!technicien || !astreinteAdminSelectedDate || !societeActive) return;
+            try {
+                await db.collection(getCollectionPath('astreintes')).add({
+                    date: astreinteAdminSelectedDate,
+                    technicien: technicien,
+                    societe: societeActive.id,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                closeAstreinteAdminModal();
+                await loadAstreintesAdminForYear();
+                renderAstreinteAdminCalendar();
+                showToast('Astreinte enregistrée');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || 'voir console'), true);
+            }
+        }
+
+        async function supprimerAstreinteAdmin(astreinteId, dateStr) {
+            if (!astreinteId || !confirm('Supprimer cette astreinte ?')) return;
+            try {
+                await db.collection(getCollectionPath('astreintes')).doc(astreinteId).delete();
+                await loadAstreintesAdminForYear();
+                renderAstreinteAdminCalendar();
+                showToast('Astreinte supprimée');
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || 'voir console'), true);
+            }
         }
 
         function ouvrirModalDroitsTechniciens() {
