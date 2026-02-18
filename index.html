@@ -397,6 +397,14 @@
                             <label>🕐 Heure de départ</label>
                             <input type="time" id="heureDepart" onchange="calculerMainOeuvre()">
                         </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 15px;">
+                            <label>⏸️ Pause (de … à …)</label>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <input type="time" id="pauseDe" onchange="calculerMainOeuvre()" title="Heure de début de pause">
+                                <span style="color: var(--text-light);">à</span>
+                                <input type="time" id="pauseA" onchange="calculerMainOeuvre()" title="Heure de fin de pause">
+                            </div>
+                        </div>
                     </div>
                     <div class="input-group" style="grid-column: 1 / -1;">
                         <label>Description</label>
@@ -1684,6 +1692,10 @@
             document.getElementById('description').value = '';
             document.getElementById('heureArrivee').value = '';
             document.getElementById('heureDepart').value = '';
+            var pauseDeEl = document.getElementById('pauseDe');
+            var pauseAEl = document.getElementById('pauseA');
+            if (pauseDeEl) pauseDeEl.value = '';
+            if (pauseAEl) pauseAEl.value = '';
             document.getElementById('moDuree').value = '';
             document.getElementById('moDemiHeures').value = '';
             document.getElementById('deplNombre').value = '';
@@ -1864,13 +1876,25 @@
             const minutesArrivee = hArr * 60 + mArr;
             const minutesDepart = hDep * 60 + mDep;
             
-            // Calculer la durée en minutes
+            // Calculer la durée en minutes (arrivée → départ)
             let dureeMinutes = minutesDepart - minutesArrivee;
             
             // Gérer le cas où le départ est le lendemain (après minuit)
             if (dureeMinutes < 0) {
                 dureeMinutes += 24 * 60; // Ajouter 24 heures
             }
+            
+            // Soustraire la pause (de … à …) du temps total
+            const pauseDe = document.getElementById('pauseDe')?.value || '';
+            const pauseA = document.getElementById('pauseA')?.value || '';
+            let pauseMinutes = 0;
+            if (pauseDe && pauseA) {
+                const [h1, m1] = pauseDe.split(':').map(Number);
+                const [h2, m2] = pauseA.split(':').map(Number);
+                pauseMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (pauseMinutes < 0) pauseMinutes += 24 * 60;
+            }
+            dureeMinutes = Math.max(0, dureeMinutes - pauseMinutes);
             
             // Convertir en heures et minutes pour l'affichage
             const heures = Math.floor(dureeMinutes / 60);
@@ -2396,6 +2420,12 @@
                 if (heureArrivee) yPos += 5;
                 doc.text('Heure de départ : ' + heureDepart, 20, yPos);
             }
+            const pauseDe = document.getElementById('pauseDe')?.value || '';
+            const pauseA = document.getElementById('pauseA')?.value || '';
+            if (pauseDe && pauseA) {
+                yPos += 5;
+                doc.text('Pause : de ' + pauseDe + ' à ' + pauseA, 20, yPos);
+            }
             yPos += 8;
             
             // Description
@@ -2874,6 +2904,8 @@
                     description: document.getElementById('description').value || '',
                     heureArrivee: document.getElementById('heureArrivee').value || '',
                     heureDepart: document.getElementById('heureDepart').value || '',
+                    pauseDe: document.getElementById('pauseDe')?.value || '',
+                    pauseA: document.getElementById('pauseA')?.value || '',
                     moDuree: document.getElementById('moDuree').value || '0h00',
                     moDemiHeures: document.getElementById('moDemiHeures').value || '0 demi-heures',
                     moTarif: document.getElementById('moTarif').value || '35',

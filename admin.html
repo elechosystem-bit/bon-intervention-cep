@@ -69,12 +69,21 @@
         .btn-remove-prod-admin { margin-left: 6px; padding: 2px 6px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #e53e3e; background: #fff5f5; color: #c53030; cursor: pointer; }
         .btn-remove-prod-admin:hover { background: #fed7d7; }
         .custom-products-list-admin { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-        .custom-product-row-admin { display: grid; grid-template-columns: 1fr 80px 80px 40px; align-items: center; padding: 8px 12px; background: #f0f7ff; border: 2px solid var(--primary); border-radius: 8px; gap: 10px; }
+        .custom-product-row-admin { display: grid; grid-template-columns: 1fr 80px 80px 100px 40px; align-items: center; padding: 8px 12px; background: #f0f7ff; border: 2px solid var(--primary); border-radius: 8px; gap: 10px; }
         .custom-product-row-admin input.custom-product-name-admin { padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: white; }
         .custom-product-row-admin input.custom-product-qty-admin { width: 55px; padding: 6px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
         .custom-product-row-admin input.custom-product-price-admin { width: 60px; padding: 6px; text-align: center; border: 2px solid var(--border); border-radius: 6px; font-family: 'Space Mono', monospace; }
         .custom-product-row-admin .btn-remove-line-admin { padding: 4px 8px; font-size: 0.85rem; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; }
         .custom-product-row-admin .btn-remove-line-admin:hover { opacity: 0.9; }
+        .custom-product-row-admin .btn-save-catalog { padding: 4px 8px; font-size: 0.75rem; background: var(--success); color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+        .custom-product-row-admin .btn-save-catalog:hover { opacity: 0.9; }
+        .modal-catalogue-perso { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 3040; }
+        .modal-catalogue-perso.show { display: flex; }
+        .modal-catalogue-perso-inner { background: white; padding: 24px; border-radius: 16px; max-width: 380px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-catalogue-perso-inner h3 { margin-bottom: 16px; color: var(--primary); font-size: 1.1rem; }
+        .modal-catalogue-perso-inner .input-group { margin-bottom: 14px; }
+        .modal-catalogue-perso-inner .input-group label { display: block; margin-bottom: 6px; font-weight: 600; }
+        .modal-catalogue-perso-inner select { width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; }
 
         .service-row { display: grid; grid-template-columns: 1fr 120px 120px 120px; align-items: center; padding: 15px; background: #ebf8ff; border: 2px solid var(--primary); border-radius: 10px; margin-bottom: 10px; gap: 10px; }
         /* Ajuster la grille pour Main d'œuvre (sans demi-heures ni tarif unitaire) */
@@ -308,6 +317,14 @@
                         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 15px;">
                             <label>🕐 Heure de départ</label>
                             <input type="time" id="heureDepart" onchange="calculerMainOeuvre()">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 15px;">
+                            <label>⏸️ Pause (de … à …)</label>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <input type="time" id="pauseDe" onchange="calculerMainOeuvre()" title="Heure de début de pause">
+                                <span style="color: var(--text-light);">à</span>
+                                <input type="time" id="pauseA" onchange="calculerMainOeuvre()" title="Heure de fin de pause">
+                            </div>
                         </div>
                     </div>
                     <div class="input-group" style="grid-column: 1 / -1;">
@@ -697,6 +714,21 @@
                         <button type="button" class="btn btn-secondary" onclick="astreinteAdminNextMonth()">Mois suiv. →</button>
                     </div>
                     <div id="astreinteAdminMonthGrid" class="astreinte-month-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-catalogue-perso" id="modalCataloguePerso" onclick="if(event.target===this) closeModalCataloguePerso()">
+            <div class="modal-catalogue-perso-inner" onclick="event.stopPropagation()">
+                <h3>Enregistrer dans le catalogue</h3>
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 12px;">Choisissez la catégorie (onglet) à laquelle attribuer ce produit (ex. Variateurs, Appareillages Plexo…).</p>
+                <div class="input-group">
+                    <label>Catégorie</label>
+                    <select id="cataloguePersoCategorie"></select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="button" class="btn btn-primary" onclick="saveLignePersoAuCatalogue()">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModalCataloguePerso()">Annuler</button>
                 </div>
             </div>
         </div>
@@ -1523,10 +1555,17 @@
             // Charger et afficher les techniciens (Firebase ou config)
             await loadParametresTechniciens();
             
+            // Charger le catalogue personnalisé (lignes perso enregistrées par catégorie) et fusionner
+            let societePourMateriel = societe;
+            const customByCat = await loadCataloguePerso();
+            if (Object.keys(customByCat).length > 0) {
+                societePourMateriel = buildMaterielAvecPerso(societe, customByCat);
+            }
+            
             // Régénérer le select de matériel
             const materialSelect = document.getElementById('materialSelect');
             if (materialSelect) {
-                materialSelect.innerHTML = genererSelectMateriel(societe);
+                materialSelect.innerHTML = genererSelectMateriel(societePourMateriel);
             }
             
             // Remplacer toutes les catégories de matériel
@@ -1538,7 +1577,7 @@
                 const materialSelector = materielSection.querySelector('.material-selector');
                 if (materialSelector) {
                     const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = genererMateriel(societe);
+                    tempDiv.innerHTML = genererMateriel(societePourMateriel);
                     while (tempDiv.firstChild) {
                         materialSelector.parentNode.insertBefore(tempDiv.firstChild, materialSelector.nextSibling);
                     }
@@ -1729,6 +1768,12 @@
             priceField.step = 0.01;
             priceField.placeholder = 'Prix';
             priceField.onchange = function() { calculateTotals(); };
+            const saveCatalogBtn = document.createElement('button');
+            saveCatalogBtn.type = 'button';
+            saveCatalogBtn.className = 'btn-save-catalog';
+            saveCatalogBtn.textContent = '💾 Au catalogue';
+            saveCatalogBtn.title = 'Enregistrer ce produit dans une catégorie (Variateur, Plexo…)';
+            saveCatalogBtn.onclick = function() { openModalCataloguePerso(row); };
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.className = 'btn-remove-line-admin';
@@ -1737,6 +1782,7 @@
             row.appendChild(nameField);
             row.appendChild(qtyField);
             row.appendChild(priceField);
+            row.appendChild(saveCatalogBtn);
             row.appendChild(removeBtn);
             container.appendChild(row);
             if (nameInput) nameInput.value = '';
@@ -1748,6 +1794,113 @@
             const row = btn && btn.closest('.custom-product-row-admin');
             if (row) row.remove();
             calculateTotals();
+        }
+
+        let currentCustomRowForCatalog = null;
+
+        function openModalCataloguePerso(row) {
+            if (!societeActive || !societeActive.materiel) return;
+            const nameInput = row.querySelector('input.custom-product-name-admin');
+            const priceInput = row.querySelector('input.custom-product-price-admin');
+            const nom = (nameInput && nameInput.value || '').trim();
+            if (!nom) {
+                showToast('Indiquez le nom du produit', true);
+                return;
+            }
+            currentCustomRowForCatalog = row;
+            const sel = document.getElementById('cataloguePersoCategorie');
+            sel.innerHTML = societeActive.materiel.map(function(c) {
+                return '<option value="' + (c.categorie || '').replace(/"/g, '&quot;') + '">' + (c.categorie || '').replace(/</g, '&lt;') + '</option>';
+            }).join('');
+            document.getElementById('modalCataloguePerso').classList.add('show');
+        }
+
+        function closeModalCataloguePerso() {
+            currentCustomRowForCatalog = null;
+            document.getElementById('modalCataloguePerso').classList.remove('show');
+        }
+
+        async function saveLignePersoAuCatalogue() {
+            if (!currentCustomRowForCatalog || !societeActive) return;
+            const nameInput = currentCustomRowForCatalog.querySelector('input.custom-product-name-admin');
+            const priceInput = currentCustomRowForCatalog.querySelector('input.custom-product-price-admin');
+            const categorie = (document.getElementById('cataloguePersoCategorie').value || '').trim();
+            const nom = (nameInput && nameInput.value || '').trim();
+            const prix = parseFloat(priceInput && priceInput.value) || 0;
+            if (!categorie || !nom) {
+                showToast('Choisissez une catégorie et un nom', true);
+                return;
+            }
+            try {
+                await db.collection(getCollectionPath('catalogue_perso')).add({
+                    categorie: categorie,
+                    nom: nom,
+                    reference: '',
+                    prix: prix,
+                    unite: 'u'
+                });
+                closeModalCataloguePerso();
+                showToast('Produit enregistré dans « ' + categorie + ' »');
+                var customByCat = await loadCataloguePerso();
+                var merged = buildMaterielAvecPerso(societeActive, customByCat);
+                refreshMaterielSection(merged);
+            } catch (e) {
+                console.error(e);
+                showToast('Erreur : ' + (e.message || 'voir console'), true);
+            }
+        }
+
+        async function loadCataloguePerso() {
+            if (!societeActive || typeof db === 'undefined') return {};
+            var out = {};
+            try {
+                var snap = await db.collection(getCollectionPath('catalogue_perso')).get();
+                snap.forEach(function(doc) {
+                    var d = doc.data();
+                    var cat = d.categorie || 'Divers';
+                    if (!out[cat]) out[cat] = [];
+                    out[cat].push({
+                        nom: d.nom || '',
+                        reference: d.reference || '',
+                        prix: parseFloat(d.prix) || 0,
+                        unite: d.unite || 'u'
+                    });
+                });
+            } catch (e) { console.warn('Chargement catalogue_perso:', e); }
+            return out;
+        }
+
+        function buildMaterielAvecPerso(societe, customByCat) {
+            if (!societe || !societe.materiel) return societe;
+            if (!customByCat || Object.keys(customByCat).length === 0) return societe;
+            return {
+                ...societe,
+                materiel: societe.materiel.map(function(cat) {
+                    var perso = (customByCat[cat.categorie] || []).map(function(p) {
+                        return { nom: p.nom, prix: p.prix, reference: p.reference || '', unite: p.unite || 'u' };
+                    });
+                    return { ...cat, produits: (cat.produits || []).concat(perso) };
+                })
+            };
+        }
+
+        function refreshMaterielSection(mergedSociete) {
+            var materialSelect = document.getElementById('materialSelect');
+            if (materialSelect) materialSelect.innerHTML = genererSelectMateriel(mergedSociete);
+            var materielSection = document.querySelector('.section:has(.material-selector)');
+            if (materielSection) {
+                var categories = materielSection.querySelectorAll('.category-section');
+                categories.forEach(function(c) { c.remove(); });
+                var materialSelector = materielSection.querySelector('.material-selector');
+                if (materialSelector) {
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = genererMateriel(mergedSociete);
+                    while (tempDiv.firstChild) {
+                        materialSelector.parentNode.insertBefore(tempDiv.firstChild, materialSelector.nextSibling);
+                    }
+                }
+            }
+            initialiserEditionPrixProduitsAdmin();
         }
 
         function updateRowTotal(input) {
@@ -1789,13 +1942,25 @@
             const minutesArrivee = hArr * 60 + mArr;
             const minutesDepart = hDep * 60 + mDep;
             
-            // Calculer la durée en minutes
+            // Calculer la durée en minutes (arrivée → départ)
             let dureeMinutes = minutesDepart - minutesArrivee;
             
             // Gérer le cas où le départ est le lendemain (après minuit)
             if (dureeMinutes < 0) {
                 dureeMinutes += 24 * 60; // Ajouter 24 heures
             }
+            
+            // Soustraire la pause (de … à …) du temps total
+            const pauseDe = document.getElementById('pauseDe')?.value || '';
+            const pauseA = document.getElementById('pauseA')?.value || '';
+            let pauseMinutes = 0;
+            if (pauseDe && pauseA) {
+                const [h1, m1] = pauseDe.split(':').map(Number);
+                const [h2, m2] = pauseA.split(':').map(Number);
+                pauseMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (pauseMinutes < 0) pauseMinutes += 24 * 60;
+            }
+            dureeMinutes = Math.max(0, dureeMinutes - pauseMinutes);
             
             // Convertir en heures et minutes pour l'affichage
             const heures = Math.floor(dureeMinutes / 60);
@@ -2389,7 +2554,7 @@
                         reader.readAsDataURL(pdfBlob);
                     });
                     
-                    const emailComptaDest = societeCompta ? (societeCompta.emailCompta || '') : 'compta@cep75.fr';
+                    const emailComptaDest = societeCompta ? (societeCompta.emailCompta || '') : 'bonintervention@cep75.fr';
                     
                     // Données complètes du bon pour l'email compta (matériel, MO, déplacement, totaux)
                     const produitsPourEmail = [];
@@ -2481,7 +2646,7 @@
                     
                     // Envoyer à la comptabilité (PDF + photos)
                     await envoyerEmailAvecPDFSMTP({
-                        email: emailComptaDest || 'compta@cep75.fr',
+                        email: emailComptaDest || 'bonintervention@cep75.fr',
                         subject: `Bon d'intervention ${numeroBon} - ${client}`,
                         pdfBase64: pdfBase64,
                         pdfFileName: `bon-intervention-${numeroBon}.pdf`,
@@ -2557,6 +2722,8 @@
                 description: document.getElementById('description').value || '',
                 heureArrivee: document.getElementById('heureArrivee').value || '',
                 heureDepart: document.getElementById('heureDepart').value || '',
+                pauseDe: document.getElementById('pauseDe')?.value || '',
+                pauseA: document.getElementById('pauseA')?.value || '',
                 moDuree: document.getElementById('moDuree').value || '0h00',
                 moDemiHeures: document.getElementById('moDemiHeures').value || '0 demi-heures',
                 moTarif: document.getElementById('moTarif').value || '35',
@@ -2842,6 +3009,10 @@
             document.getElementById('description').value = bon.description;
             document.getElementById('heureArrivee').value = bon.heureArrivee || '';
             document.getElementById('heureDepart').value = bon.heureDepart || '';
+            var pauseDeEl = document.getElementById('pauseDe');
+            var pauseAEl = document.getElementById('pauseA');
+            if (pauseDeEl) pauseDeEl.value = bon.pauseDe || '';
+            if (pauseAEl) pauseAEl.value = bon.pauseA || '';
             document.getElementById('moDuree').value = bon.moDuree || '0h00';
             document.getElementById('moDemiHeures').value = bon.moDemiHeures || '0 demi-heures';
             document.getElementById('moTarif').value = bon.moTarif || '35';
@@ -2905,6 +3076,12 @@
                         priceField.step = 0.01;
                         priceField.placeholder = 'Prix';
                         priceField.onchange = function() { calculateTotals(); };
+                        const saveCatalogBtn = document.createElement('button');
+                        saveCatalogBtn.type = 'button';
+                        saveCatalogBtn.className = 'btn-save-catalog';
+                        saveCatalogBtn.textContent = '💾 Au catalogue';
+                        saveCatalogBtn.title = 'Enregistrer ce produit dans une catégorie';
+                        saveCatalogBtn.onclick = function() { openModalCataloguePerso(row); };
                         const removeBtn = document.createElement('button');
                         removeBtn.type = 'button';
                         removeBtn.className = 'btn-remove-line-admin';
@@ -2913,6 +3090,7 @@
                         row.appendChild(nameField);
                         row.appendChild(qtyField);
                         row.appendChild(priceField);
+                        row.appendChild(saveCatalogBtn);
                         row.appendChild(removeBtn);
                         customListAdmin.appendChild(row);
                     }
@@ -3348,6 +3526,12 @@
             if (heureDepart) {
                 if (heureArrivee) yPos += 5;
                 doc.text('Heure de départ : ' + heureDepart, 20, yPos);
+            }
+            const pauseDe = document.getElementById('pauseDe')?.value || '';
+            const pauseA = document.getElementById('pauseA')?.value || '';
+            if (pauseDe && pauseA) {
+                yPos += 5;
+                doc.text('Pause : de ' + pauseDe + ' à ' + pauseA + ' (soustraite du temps total)', 20, yPos);
             }
             yPos += 8;
             

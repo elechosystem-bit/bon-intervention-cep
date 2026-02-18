@@ -51,6 +51,11 @@ service cloud.firestore {
       allow read, write: if true; // ⚠️ TEMPORAIRE
     }
     
+    // Catalogue personnalisé par société (lignes perso enregistrées dans une catégorie)
+    match /societes/{societeId}/catalogue_perso/{docId} {
+      allow read, write: if true; // ⚠️ TEMPORAIRE
+    }
+    
     // Bloquer l'accès à toutes les autres collections
     match /{document=**} {
       allow read, write: if false;
