@@ -665,7 +665,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-secondary" type="button" onclick="openAnciensBonsModal()">📋 Anciens bons (validés compta)</button>
+                <button class="btn btn-secondary" type="button" onclick="openAnciensBonsModal()">📋 Ancien bon</button>
                 <button class="btn btn-primary" id="btnSaveBonTech" type="button" onclick="if(this.disabled)return;this.disabled=true;saveBonTech();">💾 Enregistrer le bon et envoyer au client</button>
             </div>
             <div id="saveMessage" class="save-message">Bon enregistré.</div>
@@ -715,11 +715,11 @@
             </div>
         </div>
 
-        <!-- Modal Anciens bons (validés / envoyés compta) -->
+        <!-- Modal Ancien bon -->
         <div id="anciensBonsModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeAnciensBonsModal()">
             <div class="modal" onclick="event.stopPropagation()" style="max-width: 520px;">
-                <h3>Bons validés (envoyés à la compta)</h3>
-                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">Cliquez sur un bon pour en voir le détail.</p>
+                <h3>Ancien bon</h3>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">Bons déjà validés (envoyés à la compta). Cliquez sur un bon pour en voir le détail.</p>
                 <div id="anciensBonsList" class="anciens-bons-list"></div>
                 <button type="button" class="btn btn-secondary" style="margin-top: 16px; width: 100%;" onclick="closeAnciensBonsModal()">Fermer</button>
             </div>
@@ -1328,15 +1328,15 @@
             const introEl = document.getElementById('planningIntro');
             if (!listContainer) return;
             const technicien = (document.getElementById('technicien').value || '').trim();
-            if (!technicien) {
+            if (!technicien && !societeActive) {
                 titleEl.textContent = 'Mon planning';
-                introEl.textContent = 'Sélectionnez votre nom (Technicien) en haut pour voir vos interventions.';
-                listContainer.innerHTML = '<div class="planning-empty">Sélectionnez votre nom dans la liste « Technicien » pour afficher votre planning.</div>';
+                introEl.textContent = 'Sélectionnez votre nom (Technicien) ou une société pour voir le planning.';
+                listContainer.innerHTML = '<div class="planning-empty">Sélectionnez votre nom dans la liste « Technicien » pour afficher le planning.</div>';
                 if (calendarWrap) calendarWrap.style.display = 'none';
                 return;
             }
-            titleEl.textContent = 'Mon planning — ' + technicien;
-            introEl.textContent = 'Cliquez sur un jour pour voir les interventions heure par heure.';
+            titleEl.textContent = societeActive ? ('Planning — ' + (societeActive.nom || 'Tous les techniciens')) : 'Mon planning';
+            introEl.textContent = 'Cliquez sur un jour pour voir les interventions heure par heure (tous les techniciens de la société).';
             listContainer.innerHTML = '';
             if (calendarWrap) calendarWrap.style.display = 'block';
             const weekViewEl = document.getElementById('planningWeekView');
@@ -1350,8 +1350,7 @@
                 planningBons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
-                    if ((data.technicien || '').trim() === technicien)
-                        planningBons.push({ id: doc.id, ...data });
+                    planningBons.push({ id: doc.id, ...data });
                 });
                 planningBons.sort((a, b) => {
                     const dateA = (a.date || '').toString();
@@ -1378,23 +1377,21 @@
             const introEl = document.getElementById('planningIntro');
             if (!container) return;
             const technicien = (document.getElementById('technicien').value || '').trim();
-            if (!technicien) {
+            if (!societeActive) {
                 titleEl.textContent = 'Mon planning';
-                introEl.textContent = 'Sélectionnez votre nom (Technicien) en haut pour voir vos interventions.';
-                container.innerHTML = '<div class="planning-empty">Sélectionnez votre nom dans la liste « Technicien » pour afficher votre planning.</div>';
+                introEl.textContent = 'Sélectionnez une société pour voir le planning.';
+                container.innerHTML = '<div class="planning-empty">Sélectionnez une société pour afficher le planning (tous les techniciens).</div>';
                 return;
             }
-            titleEl.textContent = 'Mon planning — ' + technicien;
-            introEl.textContent = 'Vos interventions par date. Cliquez sur « Créer un bon » pour ajouter une intervention.';
+            titleEl.textContent = 'Planning — ' + (societeActive.nom || 'Tous les techniciens');
+            introEl.textContent = 'Interventions par date (tous les techniciens). Cliquez sur « Créer un bon » pour ajouter une intervention.';
             container.innerHTML = '<div class="planning-empty">Chargement...</div>';
             try {
-                if (!societeActive) { container.innerHTML = '<div class="planning-empty">Sélectionnez une société.</div>'; return; }
                 const snap = await db.collection(getCollectionPath('bons')).get();
                 const bons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
-                    if ((data.technicien || '').trim() === technicien)
-                        bons.push({ id: doc.id, ...data });
+                    bons.push({ id: doc.id, ...data });
                 });
                 bons.sort((a, b) => {
                     const dateA = (a.date || '').toString();
@@ -1454,18 +1451,12 @@
         }
 
         // ============================================
-        // ANCIENS BONS (validés / envoyés compta) - accès technicien
+        // Ancien bon - accès technicien
         // ============================================
         async function openAnciensBonsModal() {
             const modal = document.getElementById('anciensBonsModal');
             const listEl = document.getElementById('anciensBonsList');
             if (!modal || !listEl) return;
-            const technicien = (document.getElementById('technicien').value || '').trim();
-            if (!technicien) {
-                listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Sélectionnez votre nom (Technicien) en haut pour voir vos bons validés.</p>';
-                modal.style.display = 'flex';
-                return;
-            }
             if (!societeActive) {
                 listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Sélectionnez une société.</p>';
                 modal.style.display = 'flex';
@@ -1480,8 +1471,7 @@
                     const data = doc.data();
                     const statut = (data.statut || '').toLowerCase();
                     const isValide = statut === 'validé' || statut === 'valide';
-                    const sameTech = (data.technicien || '').trim() === technicien;
-                    if (isValide && sameTech)
+                    if (isValide)
                         bons.push({ id: doc.id, ...data });
                 });
                 bons.sort((a, b) => {
@@ -1491,7 +1481,7 @@
                     return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                 });
                 if (bons.length === 0) {
-                    listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Aucun bon validé (envoyé à la compta) pour le moment.</p>';
+                    listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Aucun ancien bon pour le moment.</p>';
                     return;
                 }
                 listEl.innerHTML = bons.map(bon => {
@@ -1544,9 +1534,7 @@
                     });
                     html += '</ul></div>';
                 }
-                html += '<div class="detail-section"><div class="detail-label">Totaux</div><div>';
-                html += 'Sous-total produits : ' + (bon.subtotalProduits || '—') + ' &nbsp; MO : ' + (bon.subtotalMO || '—') + ' &nbsp; Déplacement : ' + (bon.subtotalDepl || '—') + '<br>';
-                html += 'Total TTC : ' + (bon.totalTTC || '—') + '</div></div>';
+                // Anciens bons : pas de totaux ni prix (consultation non chiffrée)
                 if (bon.photos && bon.photos.length > 0) {
                     html += '<div class="detail-section"><div class="detail-label">Photos</div><div>' + bon.photos.length + ' photo(s) jointes.</div></div>';
                 }
