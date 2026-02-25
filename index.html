@@ -284,6 +284,9 @@
         .ancien-bon-detail .detail-section { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed var(--border); }
         .ancien-bon-detail .detail-section:last-child { border-bottom: none; }
         .ancien-bon-detail .detail-label { font-weight: 600; color: var(--text-light); margin-bottom: 4px; }
+        .anciens-bons-search { margin-bottom: 12px; }
+        .anciens-bons-search input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
+        .anciens-bons-search input:focus { outline: none; border-color: var(--primary); }
     </style>
     <!-- EmailJS pour l'envoi automatique d'emails -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -720,6 +723,9 @@
             <div class="modal" onclick="event.stopPropagation()" style="max-width: 520px;">
                 <h3>Ancien bon</h3>
                 <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">Bons déjà validés (envoyés à la compta). Cliquez sur un bon pour en voir le détail.</p>
+                <div class="anciens-bons-search">
+                    <input type="text" id="anciensBonsSearchInput" placeholder="🔍 Rechercher par n° bon, client ou date..." oninput="filterAnciensBonsList(this.value)">
+                </div>
                 <div id="anciensBonsList" class="anciens-bons-list"></div>
                 <button type="button" class="btn btn-secondary" style="margin-top: 16px; width: 100%;" onclick="closeAnciensBonsModal()">Fermer</button>
             </div>
@@ -1484,19 +1490,52 @@
                     listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Aucun ancien bon pour le moment.</p>';
                     return;
                 }
-                listEl.innerHTML = bons.map(bon => {
-                    const numero = bon.numero != null ? String(bon.numero) : bon.id;
-                    const date = bon.date || '—';
-                    const client = (bon.client || '—').substring(0, 35) + ((bon.client || '').length > 35 ? '…' : '');
-                    return '<div class="ancien-bon-row" onclick="voirAncienBon(\'' + bon.id + '\')" data-bon-id="' + bon.id + '">' +
-                        '<span class="numero">' + numero + '</span> ' +
-                        '<span>' + date + ' — ' + client + '</span>' +
-                        '</div>';
-                }).join('');
+                window._anciensBonsCache = bons;
+                renderAnciensBonsList(bons);
+                const searchInput = document.getElementById('anciensBonsSearchInput');
+                if (searchInput) searchInput.value = '';
             } catch (e) {
                 console.error(e);
                 listEl.innerHTML = '<p style="color: var(--danger); padding: 16px;">Erreur de chargement.</p>';
             }
+        }
+
+        function renderAnciensBonsList(bons) {
+            const listEl = document.getElementById('anciensBonsList');
+            if (!listEl) return;
+            if (!bons || bons.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-light); padding: 16px;">Aucun bon ne correspond à la recherche.</p>';
+                return;
+            }
+            listEl.innerHTML = bons.map(bon => {
+                const numero = bon.numero != null ? String(bon.numero) : bon.id;
+                const date = bon.date || '—';
+                const client = (bon.client || '—').substring(0, 35) + ((bon.client || '').length > 35 ? '…' : '');
+                return '<div class="ancien-bon-row" onclick="voirAncienBon(\'' + bon.id + '\')" data-bon-id="' + bon.id + '">' +
+                    '<span class="numero">' + numero + '</span> ' +
+                    '<span>' + date + ' — ' + client + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function filterAnciensBonsList(searchTerm) {
+            const cache = window._anciensBonsCache;
+            if (!cache || !Array.isArray(cache)) return;
+            const q = (searchTerm || '').trim().toLowerCase();
+            if (!q) {
+                renderAnciensBonsList(cache);
+                return;
+            }
+            const filtered = cache.filter(bon => {
+                const numero = (bon.numero != null ? String(bon.numero) : bon.id || '').toLowerCase();
+                const client = (bon.client || '').toLowerCase();
+                const date = (bon.date || '').toLowerCase();
+                const desc = (bon.description || '').toLowerCase();
+                const address = (bon.address || '').toLowerCase();
+                return numero.indexOf(q) !== -1 || client.indexOf(q) !== -1 || date.indexOf(q) !== -1 ||
+                    desc.indexOf(q) !== -1 || address.indexOf(q) !== -1;
+            });
+            renderAnciensBonsList(filtered);
         }
 
         function closeAnciensBonsModal() {
