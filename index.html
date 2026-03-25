@@ -325,7 +325,7 @@
                 <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()" title="Accès administrateur">Admin</button>
             </div>
             <div class="logo-section">
-                <h1 id="societeNom">BONJOUR ☀️</h1>
+                <h1 id="societeNom">BONJOUR TOUT LE MONDE ☀️</h1>
                 <p id="societeSousTitre">Bon d'intervention/planning</p>
             </div>
             <div class="bon-number">
@@ -351,7 +351,7 @@
         <!-- Connexion technicien : société imposée par l'admin (nom + code) -->
         <div id="connexionTechnicien" class="connexion-technicien" style="display: none;">
             <div class="connexion-inner">
-                <h3>BONJOUR ☀️</h3>
+                <h3>BONJOUR TOUT LE MONDE ☀️</h3>
                 <p class="connexion-intro">Votre accès est limité à une société définie par l'administrateur. Indiquez votre nom et votre code.</p>
                 <div class="input-group"><label>Votre nom</label><select id="technicienConnexion"><option value="">-- Sélectionner --</option></select></div>
                 <div class="input-group"><label>Code d'accès</label><input type="password" id="codeAccesConnexion" placeholder="Votre code" maxlength="20" autocomplete="off"></div>
@@ -1022,7 +1022,7 @@
             if (btnDeco) btnDeco.style.display = afficherBlocConnexion ? 'none' : 'inline-block';
             if (afficherBlocConnexion) {
                 document.body.classList.remove('technicien-connecte');
-                if (societeNomEl) societeNomEl.textContent = 'BONJOUR ☀️';
+                if (societeNomEl) societeNomEl.textContent = 'BONJOUR TOUT LE MONDE ☀️';
                 if (footerEl) footerEl.textContent = 'Bon d\'intervention/planning';
                 const sousTitreEl = document.getElementById('societeSousTitre');
                 if (sousTitreEl) sousTitreEl.textContent = 'Bon d\'intervention/planning';
