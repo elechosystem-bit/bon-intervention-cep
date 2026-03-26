@@ -3265,45 +3265,113 @@
         let clientsCollectionPath = null; // 'clients' (racine) ou 'societes/xxx/clients' selon ce qui a fonctionné
 
         // Rechercher un client dans la liste déroulante
+        // Timer pour éviter trop d'appels API pendant la frappe
+        let rechercheTimer = null;
+
         async function rechercherClient(searchTerm) {
             const resultsDiv = document.getElementById('clientSearchResults');
             if (!resultsDiv) return;
-            
+
             if (!searchTerm || searchTerm.length < 2) {
                 resultsDiv.style.display = 'none';
                 return;
             }
 
-            try {
-                // Charger les clients depuis Firestore si nécessaire
-                if (tousLesClients.length === 0) {
-                    await chargerTousLesClients();
+            // Attendre 300ms après la dernière frappe avant de chercher
+            clearTimeout(rechercheTimer);
+            rechercheTimer = setTimeout(async () => {
+                try {
+                    // Chercher d'abord dans Pennylane via l'API serveur
+                    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                        ? '' : '';
+                    const response = await fetch(`/api/pennylane-clients?search=${encodeURIComponent(searchTerm)}`);
+
+                    let clientsPennylane = [];
+                    if (response.ok) {
+                        const data = await response.json();
+                        clientsPennylane = data.clients || [];
+                    }
+
+                    // Aussi chercher dans Firebase (clients locaux)
+                    if (tousLesClients.length === 0) {
+                        await chargerTousLesClients();
+                    }
+                    const term = searchTerm.toLowerCase();
+                    const clientsFirebase = tousLesClients.filter(client =>
+                        client.nom.toLowerCase().includes(term) ||
+                        (client.email && client.email.toLowerCase().includes(term))
+                    ).slice(0, 5);
+
+                    // Fusionner les résultats (Pennylane en premier, puis Firebase)
+                    const tousResultats = [];
+
+                    // Ajouter les clients Pennylane
+                    clientsPennylane.forEach(c => {
+                        tousResultats.push({
+                            id: 'pennylane_' + c.id,
+                            nom: c.nom,
+                            email: c.email,
+                            adresse: c.adresse,
+                            telephone: c.telephone,
+                            source: 'pennylane'
+                        });
+                    });
+
+                    // Ajouter les clients Firebase (éviter les doublons par nom)
+                    clientsFirebase.forEach(c => {
+                        const dejaPresent = tousResultats.some(r =>
+                            r.nom.toLowerCase() === (c.nom || '').toLowerCase()
+                        );
+                        if (!dejaPresent) {
+                            tousResultats.push({
+                                id: c.id,
+                                nom: c.nom,
+                                email: c.email,
+                                adresse: c.adresse,
+                                telephone: c.telephone,
+                                source: 'firebase'
+                            });
+                        }
+                    });
+
+                    if (tousResultats.length === 0) {
+                        resultsDiv.innerHTML = '<div style="padding: 10px; color: var(--text-light); font-style: italic;">Aucun client trouvé</div>';
+                        resultsDiv.style.display = 'block';
+                        return;
+                    }
+
+                    // Afficher les résultats (max 10)
+                    resultsDiv.innerHTML = tousResultats.slice(0, 10).map(client => `
+                        <div onclick="selectionnerClientResultat(${JSON.stringify(client).replace(/"/g, '&quot;')})"
+                             style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s;"
+                             onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+                            <div style="font-weight: 600;">${client.nom}</div>
+                            ${client.adresse ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.adresse}</div>` : ''}
+                            ${client.email ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.email}</div>` : ''}
+                        </div>
+                    `).join('');
+                    resultsDiv.style.display = 'block';
+                } catch (error) {
+                    console.error('Erreur recherche client:', error);
                 }
+            }, 300);
+        }
 
-                // Filtrer les clients
-                const term = searchTerm.toLowerCase();
-                const filtered = tousLesClients.filter(client => 
-                    client.nom.toLowerCase().includes(term) ||
-                    (client.email && client.email.toLowerCase().includes(term))
-                ).slice(0, 5); // Limiter à 5 résultats
+        // Sélectionner un client depuis les résultats de recherche (Pennylane ou Firebase)
+        function selectionnerClientResultat(client) {
+            document.getElementById('clientName').value = client.nom || '';
+            document.getElementById('clientEmail').value = client.email || '';
+            document.getElementById('clientAddress').value = client.adresse || '';
+            const phoneField = document.getElementById('clientPhone');
+            if (phoneField) phoneField.value = client.telephone || '';
 
-                if (filtered.length === 0) {
-                    resultsDiv.style.display = 'none';
-                    return;
-                }
+            // Masquer les résultats
+            const resultsDiv = document.getElementById('clientSearchResults');
+            if (resultsDiv) resultsDiv.style.display = 'none';
+            const searchInput = document.getElementById('clientSearch');
+            if (searchInput) searchInput.value = '';
 
-                // Afficher les résultats
-                resultsDiv.innerHTML = filtered.map(client => `
-                    <div onclick="selectionnerClient('${client.id}')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s;" 
-                         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
-                        <div style="font-weight: 600;">${client.nom}</div>
-                        ${client.email ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.email}</div>` : ''}
-                    </div>
-                `).join('');
-                resultsDiv.style.display = 'block';
-            } catch (error) {
-                console.error('Erreur recherche client:', error);
-            }
+            console.log('Client sélectionné:', client.nom, '(source:', client.source, ')');
         }
 
         // Charger tous les clients depuis Firestore (sous-collection par société, ou racine "clients" en secours)
