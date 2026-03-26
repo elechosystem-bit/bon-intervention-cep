@@ -3281,54 +3281,56 @@
             clearTimeout(rechercheTimer);
             rechercheTimer = setTimeout(async () => {
                 try {
-                    // Chercher d'abord dans Pennylane via l'API serveur
-                    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                        ? '' : '';
-                    const response = await fetch(`/api/pennylane-clients?search=${encodeURIComponent(searchTerm)}`);
-
+                    // Chercher dans Pennylane via l'API serveur
                     let clientsPennylane = [];
-                    if (response.ok) {
-                        const data = await response.json();
-                        clientsPennylane = data.clients || [];
+                    try {
+                        const response = await fetch('/api/pennylane-clients?search=' + encodeURIComponent(searchTerm));
+                        if (response.ok) {
+                            const data = await response.json();
+                            clientsPennylane = data.clients || [];
+                        }
+                    } catch (e) {
+                        console.warn('Pennylane non disponible:', e.message);
                     }
 
                     // Aussi chercher dans Firebase (clients locaux)
-                    if (tousLesClients.length === 0) {
-                        await chargerTousLesClients();
+                    let clientsFirebase = [];
+                    try {
+                        if (tousLesClients.length === 0) {
+                            await chargerTousLesClients();
+                        }
+                        const term = searchTerm.toLowerCase();
+                        clientsFirebase = tousLesClients.filter(client =>
+                            (client.nom || '').toLowerCase().includes(term) ||
+                            (client.email && client.email.toLowerCase().includes(term))
+                        ).slice(0, 5);
+                    } catch (e) {
+                        console.warn('Firebase non disponible:', e.message);
                     }
-                    const term = searchTerm.toLowerCase();
-                    const clientsFirebase = tousLesClients.filter(client =>
-                        client.nom.toLowerCase().includes(term) ||
-                        (client.email && client.email.toLowerCase().includes(term))
-                    ).slice(0, 5);
 
-                    // Fusionner les résultats (Pennylane en premier, puis Firebase)
+                    // Fusionner les résultats (Pennylane en premier)
                     const tousResultats = [];
 
-                    // Ajouter les clients Pennylane
                     clientsPennylane.forEach(c => {
                         tousResultats.push({
-                            id: 'pennylane_' + c.id,
-                            nom: c.nom,
-                            email: c.email,
-                            adresse: c.adresse,
-                            telephone: c.telephone,
+                            nom: c.nom || '',
+                            email: c.email || '',
+                            adresse: c.adresse || '',
+                            telephone: c.telephone || '',
                             source: 'pennylane'
                         });
                     });
 
-                    // Ajouter les clients Firebase (éviter les doublons par nom)
                     clientsFirebase.forEach(c => {
                         const dejaPresent = tousResultats.some(r =>
                             r.nom.toLowerCase() === (c.nom || '').toLowerCase()
                         );
                         if (!dejaPresent) {
                             tousResultats.push({
-                                id: c.id,
-                                nom: c.nom,
-                                email: c.email,
-                                adresse: c.adresse,
-                                telephone: c.telephone,
+                                nom: c.nom || '',
+                                email: c.email || '',
+                                adresse: c.adresse || '',
+                                telephone: c.telephone || '',
                                 source: 'firebase'
                             });
                         }
@@ -3340,14 +3342,17 @@
                         return;
                     }
 
+                    // Stocker les résultats pour la sélection
+                    window._resultatsRecherche = tousResultats;
+
                     // Afficher les résultats (max 10)
-                    resultsDiv.innerHTML = tousResultats.slice(0, 10).map(client => `
-                        <div onclick="selectionnerClientResultat(${JSON.stringify(client).replace(/"/g, '&quot;')})"
+                    resultsDiv.innerHTML = tousResultats.slice(0, 10).map((client, index) => `
+                        <div onclick="selectionnerClientResultat(${index})"
                              style="padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.2s;"
                              onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
                             <div style="font-weight: 600;">${client.nom}</div>
-                            ${client.adresse ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.adresse}</div>` : ''}
-                            ${client.email ? `<div style="font-size: 0.85rem; color: var(--text-light);">${client.email}</div>` : ''}
+                            ${client.adresse ? '<div style="font-size: 0.85rem; color: var(--text-light);">' + client.adresse + '</div>' : ''}
+                            ${client.email ? '<div style="font-size: 0.85rem; color: var(--text-light);">' + client.email + '</div>' : ''}
                         </div>
                     `).join('');
                     resultsDiv.style.display = 'block';
@@ -3357,8 +3362,11 @@
             }, 300);
         }
 
-        // Sélectionner un client depuis les résultats de recherche (Pennylane ou Firebase)
-        function selectionnerClientResultat(client) {
+        // Sélectionner un client depuis les résultats de recherche (par index)
+        function selectionnerClientResultat(index) {
+            const client = window._resultatsRecherche[index];
+            if (!client) return;
+
             document.getElementById('clientName').value = client.nom || '';
             document.getElementById('clientEmail').value = client.email || '';
             document.getElementById('clientAddress').value = client.adresse || '';
