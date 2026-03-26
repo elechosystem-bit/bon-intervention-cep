@@ -372,10 +372,10 @@
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
                 <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: flex-end;">
-                    <div class="input-group" style="flex: 1;">
+                    <div class="input-group" style="flex: 1; position: relative;">
                         <label>Rechercher un client existant</label>
-                        <input type="text" id="clientSearch" placeholder="Tapez le nom du client..." autocomplete="off" oninput="rechercherClient(this.value)" style="position: relative;">
-                        <div id="clientSearchResults" style="display: none; position: absolute; background: white; border: 2px solid var(--border); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px;"></div>
+                        <input type="text" id="clientSearch" placeholder="Tapez le nom du client..." autocomplete="off" oninput="rechercherClient(this.value)">
+                        <div id="clientSearchResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #ccc; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%;"></div>
                     </div>
                 </div>
                 <div class="input-grid">
