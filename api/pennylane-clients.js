@@ -1,6 +1,67 @@
 // Fonction serverless Vercel pour rechercher les clients Pennylane
 // Le token API reste côté serveur, jamais exposé au navigateur
 
+// Cache en mémoire pour éviter de surcharger l'API Pennylane
+let cachedClients = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+async function chargerTousLesClientsPennylane(token) {
+    // Utiliser le cache si encore valide
+    if (cachedClients && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+        return cachedClients;
+    }
+
+    let allClients = [];
+    let hasMore = true;
+    let cursor = null;
+
+    while (hasMore) {
+        let url = 'https://app.pennylane.com/api/external/v2/customers?per_page=100';
+        if (cursor) {
+            url += `&cursor=${encodeURIComponent(cursor)}`;
+        }
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Pennylane API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        allClients = allClients.concat(data.items || []);
+        hasMore = data.has_more || false;
+        cursor = data.next_cursor || null;
+
+        // Pause entre les pages pour éviter le rate limit
+        if (hasMore) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+
+    // Transformer et mettre en cache
+    cachedClients = allClients.map(client => ({
+        id: client.id,
+        nom: client.name || '',
+        email: (client.emails && client.emails.length > 0) ? client.emails[0] : '',
+        telephone: client.phone || '',
+        adresse: formatAdresse(client.billing_address),
+        ville: client.billing_address?.city || '',
+        codePostal: client.billing_address?.postal_code || '',
+        rue: client.billing_address?.address || ''
+    }));
+    cachedClients.sort((a, b) => a.nom.localeCompare(b.nom));
+    cacheTimestamp = Date.now();
+
+    return cachedClients;
+}
+
 export default async function handler(req, res) {
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,48 +84,8 @@ export default async function handler(req, res) {
     try {
         const { search } = req.query;
 
-        // Récupérer TOUS les clients Pennylane (pagination automatique)
-        let allClients = [];
-        let hasMore = true;
-        let cursor = null;
-
-        while (hasMore) {
-            let url = 'https://app.pennylane.com/api/external/v2/customers?per_page=100';
-            if (cursor) {
-                url += `&cursor=${encodeURIComponent(cursor)}`;
-            }
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Erreur Pennylane:', response.status, errorText);
-                return res.status(response.status).json({ error: 'Erreur API Pennylane', details: errorText });
-            }
-
-            const data = await response.json();
-            allClients = allClients.concat(data.items || []);
-            hasMore = data.has_more || false;
-            cursor = data.next_cursor || null;
-        }
-
-        // Transformer les données
-        let clients = allClients.map(client => ({
-            id: client.id,
-            nom: client.name || '',
-            email: (client.emails && client.emails.length > 0) ? client.emails[0] : '',
-            telephone: client.phone || '',
-            adresse: formatAdresse(client.billing_address),
-            ville: client.billing_address?.city || '',
-            codePostal: client.billing_address?.postal_code || '',
-            rue: client.billing_address?.address || ''
-        }));
+        // Charger tous les clients (avec cache)
+        let clients = await chargerTousLesClientsPennylane(token);
 
         // Filtrer côté serveur si recherche
         if (search && search.length >= 2) {
@@ -75,9 +96,6 @@ export default async function handler(req, res) {
                 (c.adresse && c.adresse.toLowerCase().includes(term))
             );
         }
-
-        // Trier par nom
-        clients.sort((a, b) => a.nom.localeCompare(b.nom));
 
         return res.status(200).json({
             clients,
