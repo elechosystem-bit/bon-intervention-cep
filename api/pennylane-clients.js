@@ -21,35 +21,41 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { search, page = 1 } = req.query;
+        const { search } = req.query;
 
-        // Construire l'URL Pennylane avec filtre si recherche
-        let url = `https://app.pennylane.com/api/external/v2/customers?page=${page}&per_page=100`;
+        // Récupérer TOUS les clients Pennylane (pagination automatique)
+        let allClients = [];
+        let hasMore = true;
+        let cursor = null;
 
-        if (search && search.length >= 2) {
-            // Filtre par nom via l'API Pennylane
-            const filter = JSON.stringify([{"field": "name", "operator": "contains", "value": search}]);
-            url += `&filter=${encodeURIComponent(filter)}`;
-        }
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+        while (hasMore) {
+            let url = 'https://app.pennylane.com/api/external/v2/customers?per_page=100';
+            if (cursor) {
+                url += `&cursor=${encodeURIComponent(cursor)}`;
             }
-        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Erreur Pennylane:', response.status, errorText);
-            return res.status(response.status).json({ error: 'Erreur API Pennylane', details: errorText });
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Erreur Pennylane:', response.status, errorText);
+                return res.status(response.status).json({ error: 'Erreur API Pennylane', details: errorText });
+            }
+
+            const data = await response.json();
+            allClients = allClients.concat(data.items || []);
+            hasMore = data.has_more || false;
+            cursor = data.next_cursor || null;
         }
 
-        const data = await response.json();
-
-        // Extraire uniquement les infos utiles (lecture seule)
-        const clients = (data.items || []).map(client => ({
+        // Transformer les données
+        let clients = allClients.map(client => ({
             id: client.id,
             nom: client.name || '',
             email: (client.emails && client.emails.length > 0) ? client.emails[0] : '',
@@ -60,10 +66,22 @@ export default async function handler(req, res) {
             rue: client.billing_address?.address || ''
         }));
 
+        // Filtrer côté serveur si recherche
+        if (search && search.length >= 2) {
+            const term = search.toLowerCase();
+            clients = clients.filter(c =>
+                c.nom.toLowerCase().includes(term) ||
+                (c.email && c.email.toLowerCase().includes(term)) ||
+                (c.adresse && c.adresse.toLowerCase().includes(term))
+            );
+        }
+
+        // Trier par nom
+        clients.sort((a, b) => a.nom.localeCompare(b.nom));
+
         return res.status(200).json({
             clients,
-            total: clients.length,
-            has_more: data.has_more || false
+            total: clients.length
         });
 
     } catch (error) {
