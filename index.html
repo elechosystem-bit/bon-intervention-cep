@@ -3068,28 +3068,26 @@
                         console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
                     }
                 }
-                // Envoyer sur WhatsApp si le client a un numéro de téléphone
-                const clientPhoneBon = (document.getElementById('clientPhone')?.value || '').trim();
+                // Envoyer sur WhatsApp à l'équipe (associés + assistante)
                 let whatsappEnvoye = false;
-                if (clientPhoneBon) {
-                    try {
-                        const numeroBon = document.getElementById('bonNumber').textContent;
-                        const dateBon = document.getElementById('interventionDate').value || '';
-                        const descBon = document.getElementById('description').value || '';
-                        const techBon = document.getElementById('technicien').value || '';
-                        const clientNomBon = document.getElementById('clientName').value || '';
-                        whatsappEnvoye = envoyerWhatsApp(clientPhoneBon, numeroBon, clientNomBon, dateBon, descBon, techBon);
-                    } catch (waError) {
-                        console.error('Erreur WhatsApp:', waError);
-                    }
+                try {
+                    const numeroBon = document.getElementById('bonNumber').textContent;
+                    const dateBon = document.getElementById('interventionDate').value || '';
+                    const descBon = document.getElementById('description').value || '';
+                    const techBon = document.getElementById('technicien').value || '';
+                    const clientNomBon = document.getElementById('clientName').value || '';
+                    const adresseBon = document.getElementById('clientAddress')?.value || '';
+                    whatsappEnvoye = envoyerWhatsAppEquipe(numeroBon, clientNomBon, dateBon, descBon, techBon, adresseBon);
+                } catch (waError) {
+                    console.error('Erreur WhatsApp:', waError);
                 }
 
                 if (emailEnvoye && whatsappEnvoye) {
-                    showToast('Email envoyé et WhatsApp ouvert');
+                    showToast('Email client envoyé + WhatsApp équipe ouvert');
                 } else if (emailEnvoye) {
                     showToast('Email envoyé avec succès');
                 } else if (whatsappEnvoye) {
-                    showToast('Bon enregistré, WhatsApp ouvert');
+                    showToast('Bon enregistré, WhatsApp équipe ouvert');
                 } else {
                     showToast('Bon enregistré.');
                 }
@@ -3107,37 +3105,17 @@
             }
         }
 
-        // --- Envoi WhatsApp ---
-        function formaterNumeroWhatsApp(numero) {
-            if (!numero) return null;
-            // Nettoyer le numéro (garder uniquement les chiffres et le +)
-            let clean = numero.replace(/[^0-9+]/g, '');
-            // Si commence par 0, remplacer par +33 (France)
-            if (clean.startsWith('0')) {
-                clean = '33' + clean.substring(1);
-            }
-            // Si ne commence pas par +, ajouter
-            if (!clean.startsWith('+')) {
-                clean = '+' + clean;
-            }
-            // Retirer le + pour le format wa.me
-            return clean.replace('+', '');
-        }
-
-        function envoyerWhatsApp(telephone, numeroBon, clientNom, date, description, technicien) {
-            const numero = formaterNumeroWhatsApp(telephone);
-            if (!numero) return false;
-
-            const societeNom = societeActive ? societeActive.nom : 'Compagnie d\'Électricité Parisienne';
-
-            let message = `Bonjour,\n\n`;
-            message += `Veuillez trouver ci-joint votre bon d'intervention *${numeroBon}*.\n\n`;
+        // --- Envoi WhatsApp à l'équipe ---
+        function envoyerWhatsAppEquipe(numeroBon, clientNom, date, description, technicien, adresse) {
+            let message = `📋 *Nouveau bon d'intervention ${numeroBon}*\n\n`;
+            message += `👤 Client : ${clientNom}\n`;
             message += `📅 Date : ${date}\n`;
+            if (adresse) message += `📍 Adresse : ${adresse}\n`;
             message += `🔧 Technicien : ${technicien}\n`;
             if (description) message += `📝 Description : ${description}\n`;
-            message += `\nCordialement,\n${societeNom}`;
 
-            const url = `https://wa.me/${numero}?text=${encodeURIComponent(message)}`;
+            // Ouvre WhatsApp sans numéro = l'utilisateur choisit le groupe
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
             return true;
         }
