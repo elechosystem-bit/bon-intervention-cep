@@ -3068,29 +3068,12 @@
                         console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
                     }
                 }
-                // Préparer les données WhatsApp avant le resetForm
-                const numeroBonWA = document.getElementById('bonNumber').textContent;
-                const dateBonWA = document.getElementById('interventionDate').value || '';
-                const descBonWA = document.getElementById('description').value || '';
-                const techBonWA = document.getElementById('technicien').value || '';
-                const clientNomBonWA = document.getElementById('clientName').value || '';
-                const adresseBonWA = document.getElementById('clientAddress')?.value || '';
-
                 if (emailEnvoye) {
-                    showToast('Email envoyé, ouverture WhatsApp...');
+                    showToast('Email envoyé avec succès');
                 } else {
-                    showToast('Bon enregistré, ouverture WhatsApp...');
+                    showToast('Bon enregistré.');
                 }
                 resetForm();
-
-                // Ouvrir WhatsApp APRÈS l'email et le reset, avec un délai pour ne pas interrompre le réseau
-                setTimeout(() => {
-                    try {
-                        envoyerWhatsAppEquipe(numeroBonWA, clientNomBonWA, dateBonWA, descBonWA, techBonWA, adresseBonWA);
-                    } catch (waError) {
-                        console.error('Erreur WhatsApp:', waError);
-                    }
-                }, 1500);
             } catch (e) {
                 console.error('Erreur Firestore saveBonTech', e);
                 alert("Erreur lors de l'enregistrement du bon (Firestore) : " + (e.message || e));
@@ -3102,21 +3085,6 @@
                     btnSave.textContent = (droits && droits.envoyerEmail) ? '💾 Enregistrer le bon et envoyer au client' : '💾 Enregistrer le bon';
                 }
             }
-        }
-
-        // --- Envoi WhatsApp à l'équipe ---
-        function envoyerWhatsAppEquipe(numeroBon, clientNom, date, description, technicien, adresse) {
-            let message = `📋 *Nouveau bon d'intervention ${numeroBon}*\n\n`;
-            message += `👤 Client : ${clientNom}\n`;
-            message += `📅 Date : ${date}\n`;
-            if (adresse) message += `📍 Adresse : ${adresse}\n`;
-            message += `🔧 Technicien : ${technicien}\n`;
-            if (description) message += `📝 Description : ${description}\n`;
-
-            // Ouvre WhatsApp normal (pas Business) avec le sélecteur de contact/groupe
-            const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
-            return true;
         }
 
         // --- Gestion des photos côté technicien ---
