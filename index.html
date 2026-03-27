@@ -3068,30 +3068,29 @@
                         console.error('Erreur lors de l\'envoi de l\'email au client:', emailError);
                     }
                 }
-                // Envoyer sur WhatsApp à l'équipe (associés + assistante)
-                let whatsappEnvoye = false;
-                try {
-                    const numeroBon = document.getElementById('bonNumber').textContent;
-                    const dateBon = document.getElementById('interventionDate').value || '';
-                    const descBon = document.getElementById('description').value || '';
-                    const techBon = document.getElementById('technicien').value || '';
-                    const clientNomBon = document.getElementById('clientName').value || '';
-                    const adresseBon = document.getElementById('clientAddress')?.value || '';
-                    whatsappEnvoye = envoyerWhatsAppEquipe(numeroBon, clientNomBon, dateBon, descBon, techBon, adresseBon);
-                } catch (waError) {
-                    console.error('Erreur WhatsApp:', waError);
-                }
+                // Préparer les données WhatsApp avant le resetForm
+                const numeroBonWA = document.getElementById('bonNumber').textContent;
+                const dateBonWA = document.getElementById('interventionDate').value || '';
+                const descBonWA = document.getElementById('description').value || '';
+                const techBonWA = document.getElementById('technicien').value || '';
+                const clientNomBonWA = document.getElementById('clientName').value || '';
+                const adresseBonWA = document.getElementById('clientAddress')?.value || '';
 
-                if (emailEnvoye && whatsappEnvoye) {
-                    showToast('Email client envoyé + WhatsApp équipe ouvert');
-                } else if (emailEnvoye) {
-                    showToast('Email envoyé avec succès');
-                } else if (whatsappEnvoye) {
-                    showToast('Bon enregistré, WhatsApp équipe ouvert');
+                if (emailEnvoye) {
+                    showToast('Email envoyé, ouverture WhatsApp...');
                 } else {
-                    showToast('Bon enregistré.');
+                    showToast('Bon enregistré, ouverture WhatsApp...');
                 }
                 resetForm();
+
+                // Ouvrir WhatsApp APRÈS l'email et le reset, avec un délai pour ne pas interrompre le réseau
+                setTimeout(() => {
+                    try {
+                        envoyerWhatsAppEquipe(numeroBonWA, clientNomBonWA, dateBonWA, descBonWA, techBonWA, adresseBonWA);
+                    } catch (waError) {
+                        console.error('Erreur WhatsApp:', waError);
+                    }
+                }, 1500);
             } catch (e) {
                 console.error('Erreur Firestore saveBonTech', e);
                 alert("Erreur lors de l'enregistrement du bon (Firestore) : " + (e.message || e));
