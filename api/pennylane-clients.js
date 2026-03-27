@@ -4,7 +4,7 @@
 // Cache en mémoire pour éviter de surcharger l'API Pennylane
 let cachedClients = null;
 let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 async function chargerTousLesClientsPennylane(token) {
     // Utiliser le cache si encore valide

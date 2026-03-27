@@ -278,7 +278,10 @@
         <div class="tabs-nav">
             <button type="button" id="tabBons" class="active" onclick="showVueAdmin('bons')">📋 Bons</button>
             <button type="button" id="tabAgenda" onclick="showVueAdmin('agenda')">📅 Agenda</button>
-            <label class="samedi-check"><input type="checkbox" id="adminCheckSamedi" onchange="calculerMainOeuvre(); updateDepl();"> samedi</label>
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-left: auto;">
+                <label class="samedi-check"><input type="checkbox" id="adminCheckSamedi" onchange="calculerMainOeuvre(); updateDepl();"> samedi</label>
+                <label class="samedi-check"><input type="checkbox" id="adminCheckContrat" onchange="updateDepl();"> contrat</label>
+            </div>
         </div>
 
         <div id="vueBons" class="vue-content active">
@@ -1995,6 +1998,8 @@
             let total = nombre * tarifForfait;
             const samediCoeff = document.getElementById('adminCheckSamedi')?.checked ? 1.5 : 1;
             total = total * samediCoeff;
+            const isContrat = document.getElementById('adminCheckContrat')?.checked || false;
+            if (isContrat) total = total / 2;
             document.getElementById('deplTotal').textContent = total.toFixed(2) + '€';
             calculateTotals();
         }

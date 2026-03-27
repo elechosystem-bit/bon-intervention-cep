@@ -1781,7 +1781,6 @@
             document.getElementById('moDuree').value = '';
             document.getElementById('moDemiHeures').value = '';
             document.getElementById('deplNombre').value = '';
-            
             // Réinitialiser les produits
             document.querySelectorAll('.product-row input[type="checkbox"]').forEach(cb => cb.checked = false);
             document.querySelectorAll('.product-qty input').forEach(input => input.value = 0);
@@ -2003,7 +2002,7 @@
         function updateDepl() {
             const nombre = parseFloat(document.getElementById('deplNombre').value) || 0;
             const tarifForfait = 70; // 70€ par déplacement
-            const total = nombre * tarifForfait;
+            let total = nombre * tarifForfait;
             document.getElementById('deplTotal').textContent = total.toFixed(2) + '€';
             calculateTotals();
         }
@@ -3264,6 +3263,22 @@
         let tousLesClients = []; // Cache des clients
         let clientsCollectionPath = null; // 'clients' (racine) ou 'societes/xxx/clients' selon ce qui a fonctionné
 
+        // Cache des clients Pennylane (chargé depuis le fichier statique)
+        window._clientsPennylaneCache = null;
+        window._clientsPennylaneLoading = false;
+
+        // Précharger les clients depuis le fichier statique (instantané)
+        fetch('/clients-pennylane.json')
+            .then(r => r.json())
+            .then(data => {
+                window._clientsPennylaneCache = data.clients || [];
+                console.log('Clients Pennylane chargés:', window._clientsPennylaneCache.length);
+            })
+            .catch(e => {
+                console.warn('Erreur chargement clients:', e.message);
+                window._clientsPennylaneCache = [];
+            });
+
         // Rechercher un client dans la liste déroulante
         // Timer pour éviter trop d'appels API pendant la frappe
         let rechercheTimer = null;
@@ -3280,36 +3295,21 @@
             // Attendre 300ms après la dernière frappe avant de chercher
             clearTimeout(rechercheTimer);
             rechercheTimer = setTimeout(async () => {
+                // Vérifier que le terme n'a pas changé entre-temps
+                const currentTerm = document.getElementById('clientSearch')?.value || '';
+                if (currentTerm !== searchTerm) return;
+
                 try {
-                    // Chercher dans Pennylane via l'API serveur
-                    let clientsPennylane = [];
-                    try {
-                        const response = await fetch('/api/pennylane-clients?search=' + encodeURIComponent(searchTerm));
-                        if (response.ok) {
-                            const data = await response.json();
-                            clientsPennylane = data.clients || [];
-                        }
-                    } catch (e) {
-                        console.warn('Pennylane non disponible:', e.message);
-                    }
-
-                    // Aussi chercher dans Firebase (clients locaux)
-                    let clientsFirebase = [];
-                    try {
-                        if (tousLesClients.length === 0) {
-                            await chargerTousLesClients();
-                        }
-                        const term = searchTerm.toLowerCase();
-                        clientsFirebase = tousLesClients.filter(client =>
-                            (client.nom || '').toLowerCase().includes(term) ||
-                            (client.email && client.email.toLowerCase().includes(term))
-                        ).slice(0, 5);
-                    } catch (e) {
-                        console.warn('Firebase non disponible:', e.message);
-                    }
-
-                    // Fusionner les résultats (Pennylane en premier)
+                    const term = searchTerm.toLowerCase();
                     const tousResultats = [];
+
+                    // Filtrer les clients Pennylane en local (fichier statique préchargé)
+                    const cache = window._clientsPennylaneCache || [];
+                    const clientsPennylane = cache.filter(c =>
+                        (c.nom || '').toLowerCase().includes(term) ||
+                        (c.email && c.email.toLowerCase().includes(term)) ||
+                        (c.adresse && c.adresse.toLowerCase().includes(term))
+                    ).slice(0, 10);
 
                     clientsPennylane.forEach(c => {
                         tousResultats.push({
@@ -3319,21 +3319,6 @@
                             telephone: c.telephone || '',
                             source: 'pennylane'
                         });
-                    });
-
-                    clientsFirebase.forEach(c => {
-                        const dejaPresent = tousResultats.some(r =>
-                            r.nom.toLowerCase() === (c.nom || '').toLowerCase()
-                        );
-                        if (!dejaPresent) {
-                            tousResultats.push({
-                                nom: c.nom || '',
-                                email: c.email || '',
-                                adresse: c.adresse || '',
-                                telephone: c.telephone || '',
-                                source: 'firebase'
-                            });
-                        }
                     });
 
                     if (tousResultats.length === 0) {

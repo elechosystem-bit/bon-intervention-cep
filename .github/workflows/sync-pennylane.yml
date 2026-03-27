@@ -1,0 +1,77 @@
+name: Sync clients Pennylane
+
+on:
+  schedule:
+    # Tous les jours à 5h du matin (heure de Paris = 4h UTC)
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Permet de lancer manuellement
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Télécharger les clients depuis Pennylane
+        env:
+          PENNYLANE_API_TOKEN: ${{ secrets.PENNYLANE_API_TOKEN }}
+        run: |
+          echo "Début de la synchronisation Pennylane..."
+
+          # Télécharger toutes les pages de clients
+          ALL_CLIENTS="[]"
+          HAS_MORE=true
+          CURSOR=""
+          PAGE=0
+
+          while [ "$HAS_MORE" = "true" ]; do
+            PAGE=$((PAGE + 1))
+            URL="https://app.pennylane.com/api/external/v2/customers?per_page=100"
+            if [ -n "$CURSOR" ]; then
+              URL="${URL}&cursor=${CURSOR}"
+            fi
+
+            echo "Page $PAGE..."
+            RESPONSE=$(curl -s -H "Authorization: Bearer $PENNYLANE_API_TOKEN" -H "Accept: application/json" "$URL")
+
+            # Extraire les items et les ajouter
+            ITEMS=$(echo "$RESPONSE" | jq -r '.items // []')
+            ALL_CLIENTS=$(echo "$ALL_CLIENTS $ITEMS" | jq -s 'add')
+
+            # Vérifier s'il y a plus de pages
+            HAS_MORE=$(echo "$RESPONSE" | jq -r '.has_more // false')
+            CURSOR=$(echo "$RESPONSE" | jq -r '.next_cursor // empty')
+
+            sleep 0.5
+          done
+
+          # Transformer en format utilisé par l'app
+          echo "$ALL_CLIENTS" | jq '{
+            clients: [.[] | {
+              id: .id,
+              nom: (.name // ""),
+              email: ((.emails // [])[0] // ""),
+              telephone: (.phone // ""),
+              adresse: (([(.billing_address.address // ""), (.billing_address.postal_code // ""), (.billing_address.city // "")] | map(select(. != "")) | join(", ")) // ""),
+              ville: (.billing_address.city // ""),
+              codePostal: (.billing_address.postal_code // ""),
+              rue: (.billing_address.address // "")
+            }] | sort_by(.nom),
+            total: length,
+            syncDate: (now | todate)
+          }' > clients-pennylane.json
+
+          TOTAL=$(jq '.total' clients-pennylane.json)
+          echo "Synchronisation terminée : $TOTAL clients"
+
+      - name: Commit et push si changements
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add clients-pennylane.json
+          if git diff --staged --quiet; then
+            echo "Aucun changement détecté"
+          else
+            git commit -m "Sync auto Pennylane : mise à jour des clients $(date +%Y-%m-%d)"
+            git push
+          fi
