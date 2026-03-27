@@ -3114,8 +3114,8 @@
             message += `🔧 Technicien : ${technicien}\n`;
             if (description) message += `📝 Description : ${description}\n`;
 
-            // Ouvre WhatsApp sans numéro = l'utilisateur choisit le groupe
-            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+            // Ouvre WhatsApp normal (pas Business) avec le sélecteur de contact/groupe
+            const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
             return true;
         }
