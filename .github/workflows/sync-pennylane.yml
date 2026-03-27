@@ -6,6 +6,9 @@ on:
     - cron: '0 4 * * *'
   workflow_dispatch: # Permet de lancer manuellement
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
