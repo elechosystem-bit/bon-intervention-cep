@@ -1,65 +1,83 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Collection des bons d'intervention
+
+    // Structure par société : /societes/{societeId}/...
+    match /societes/{societeId} {
+
+      // Bons d'intervention par société — SUPPRESSION INTERDITE
+      match /bons/{bonId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if true;
+        allow delete: if false;
+      }
+
+      // Clients par société
+      match /clients/{clientId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if true;
+        allow delete: if true;
+      }
+
+      // Compteurs par société
+      match /compteurs/{compteurId} {
+        allow read: if true;
+        allow write: if true;
+      }
+
+      // Paramètres par société (techniciens, codes d'accès, etc.)
+      match /parametres/{docId} {
+        allow read, write: if true;
+      }
+
+      // Astreintes par société (samedis, émis par admin)
+      match /astreintes/{docId} {
+        allow read, write: if true;
+      }
+
+      // Catalogue personnalisé (lignes perso enregistrées dans une catégorie)
+      match /catalogue_perso/{docId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Ancienne structure (pour compatibilité) — SUPPRESSION INTERDITE
     match /bons/{bonId} {
-      // Lecture : autorisée pour tous (nécessaire pour l'affichage)
       allow read: if true;
-      
-      // Écriture : autorisée pour tous (temporaire)
-      // Pour l'instant, on permet l'écriture car l'app n'utilise pas Firebase Auth
-      // TODO: Implémenter Firebase Authentication pour sécuriser l'écriture
-      allow create: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
-      allow update: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
-      allow delete: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+      allow create: if true;
+      allow update: if true;
+      allow delete: if false;
     }
-    
-    // Collection des clients
+
     match /clients/{clientId} {
-      // Lecture : autorisée pour tous (nécessaire pour la recherche)
       allow read: if true;
-      
-      // Écriture : autorisée pour tous (temporaire)
-      // TODO: Implémenter Firebase Authentication pour sécuriser l'écriture
-      allow create: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
-      allow update: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
-      allow delete: if true; // ⚠️ TEMPORAIRE - À sécuriser avec auth
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
-    
-    // Paramètres par société (techniciens, codes d'accès, etc.)
-    match /societes/{societeId}/parametres/{docId} {
-      allow read, write: if true; // ⚠️ TEMPORAIRE - nécessaire pour gestion des accès techniciens
+
+    match /compteurs/{compteurId} {
+      allow read: if true;
+      allow write: if true;
     }
-    
-    // Clients par société (recherche et formulaire technicien / admin)
-    match /societes/{societeId}/clients/{clientId} {
-      allow read, write: if true; // ⚠️ TEMPORAIRE - nécessaire pour la base clients
+
+    // Clients Pennylane (sync automatique)
+    match /clientsPennylane/{docId} {
+      allow read: if true;
+      allow write: if true;
     }
-    
-    // Bons d'intervention par société
-    match /societes/{societeId}/bons/{bonId} {
-      allow read, write: if true; // ⚠️ TEMPORAIRE
+
+    // Paiements GoCardless
+    match /paiements/{docId} {
+      allow read: if true;
+      allow write: if true;
     }
-    
-    // Compteurs par société (numérotation des bons)
-    match /societes/{societeId}/compteurs/{docId} {
-      allow read, write: if true; // ⚠️ TEMPORAIRE
-    }
-    
-    // Astreintes par société (samedis, émis par admin)
-    match /societes/{societeId}/astreintes/{docId} {
-      allow read, write: if true; // ⚠️ TEMPORAIRE
-    }
-    
-    // Catalogue personnalisé par société (lignes perso enregistrées dans une catégorie)
-    match /societes/{societeId}/catalogue_perso/{docId} {
-      allow read, write: if true; // ⚠️ TEMPORAIRE
-    }
-    
+
     // Bloquer l'accès à toutes les autres collections
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-
