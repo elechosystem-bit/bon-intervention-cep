@@ -7641,6 +7641,16 @@
       "rue": "rue Montchavant"
     },
     {
+      "id": 270601580,
+      "nom": "MC DONALD'S - DELI SAS",
+      "email": "a.chevassus@xlgestion.fr",
+      "telephone": "+33 6 99 05 61 01",
+      "adresse": "4 rue du Donjon, 94300, VINCENNES",
+      "ville": "VINCENNES",
+      "codePostal": "94300",
+      "rue": "4 rue du Donjon"
+    },
+    {
       "id": 248733331,
       "nom": "MC DONALD'S - FAYAR8 SARL - SD1516",
       "email": "1516@net.mcdonalds.fr",
@@ -11931,6 +11941,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1193,
-  "syncDate": "2026-03-30T04:55:39Z"
+  "total": 1194,
+  "syncDate": "2026-03-31T04:48:05Z"
 }
