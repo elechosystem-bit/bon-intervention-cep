@@ -9701,6 +9701,16 @@
       "rue": "11, rue Guisarde"
     },
     {
+      "id": 271279024,
+      "nom": "Paulo",
+      "email": "",
+      "telephone": "",
+      "adresse": "22 Rue Henri Barbusse, 77290 Mitry-Mory, 77290, Mitry-Mory",
+      "ville": "Mitry-Mory",
+      "codePostal": "77290",
+      "rue": "22 Rue Henri Barbusse, 77290 Mitry-Mory"
+    },
+    {
       "id": 248732647,
       "nom": "PÈRES ET FILLES",
       "email": "",
@@ -11941,6 +11951,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1194,
-  "syncDate": "2026-03-31T04:48:05Z"
+  "total": 1195,
+  "syncDate": "2026-04-01T04:56:30Z"
 }
