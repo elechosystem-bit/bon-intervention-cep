@@ -7703,8 +7703,8 @@
     {
       "id": 248732792,
       "nom": "MC DONALD'S ABLIS (KENF)",
-      "email": "facturation.kenf@gmail.com",
-      "telephone": "",
+      "email": "cristina.szilaghy@fr.mcd.com",
+      "telephone": "+33 7 50 68 08 27",
       "adresse": "6, rue du Grèbe Huppé, 91410, Dourdan",
       "ville": "Dourdan",
       "codePostal": "91410",
@@ -7923,8 +7923,8 @@
     {
       "id": 248732613,
       "nom": "MC DONALD'S DOURDAN (KIWA)",
-      "email": "sebastienjonvel@yahoo.fr",
-      "telephone": "0169949461",
+      "email": "cristina.szilaghy@fr.mcd.com",
+      "telephone": "+33 7 50 68 08 27",
       "adresse": "11, rue d'Orsonville, 91410, Dourdan",
       "ville": "Dourdan",
       "codePostal": "91410",
@@ -11952,5 +11952,5 @@
     }
   ],
   "total": 1195,
-  "syncDate": "2026-04-01T04:56:30Z"
+  "syncDate": "2026-04-02T04:44:03Z"
 }
