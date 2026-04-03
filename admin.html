@@ -2800,6 +2800,7 @@
                 const bons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
+                    if (data.statut === 'archivé') return;
                     bons.push({ id: doc.id, ...data });
                 });
 
@@ -3835,7 +3836,7 @@
                     console.error('Erreur récupération statut:', e);
                 }
             }
-            
+
             // Si le bon est validé, demander le code admin
             if (bonStatut === 'validé' || bonStatut === 'valide') {
                 const code = prompt("Ce bon a été envoyé à la compta. Entrez le code admin pour supprimer :");
@@ -3844,14 +3845,14 @@
                     return;
                 }
             }
-            
+
             // Confirmation de suppression
             if (!confirm("Êtes-vous sûr de vouloir supprimer ce bon ?")) {
                 return;
             }
-            
+
             try {
-                await db.collection(getCollectionPath('bons')).doc(id).delete();
+                await db.collection(getCollectionPath('bons')).doc(id).update({ statut: 'archivé', archivedAt: firebase.firestore.FieldValue.serverTimestamp() });
                 if (currentBonId === id) { currentBonId = null; currentBonSocieteId = null; }
                 showToast('Bon supprimé');
                 await renderHistorique();
@@ -3932,17 +3933,17 @@
                 return;
             }
             
-            // Supprimer les bons un par un
+            // Archiver les bons un par un
             let succes = 0;
             let erreurs = 0;
-            
+
             for (const bon of bonsASupprimer) {
                 try {
-                    await db.collection(getCollectionPath('bons')).doc(bon.id).delete();
+                    await db.collection(getCollectionPath('bons')).doc(bon.id).update({ statut: 'archivé', archivedAt: firebase.firestore.FieldValue.serverTimestamp() });
                     if (currentBonId === bon.id) { currentBonId = null; currentBonSocieteId = null; }
                     succes++;
                 } catch (e) {
-                    console.error(`Erreur suppression bon ${bon.id}:`, e);
+                    console.error(`Erreur archivage bon ${bon.id}:`, e);
                     erreurs++;
                 }
             }

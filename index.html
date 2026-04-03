@@ -1372,6 +1372,7 @@
                 planningBons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
+                    if (data.statut === 'archivé') return;
                     planningBons.push({ id: doc.id, ...data });
                 });
                 planningBons.sort((a, b) => {
@@ -1413,6 +1414,7 @@
                 const bons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
+                    if (data.statut === 'archivé') return;
                     bons.push({ id: doc.id, ...data });
                 });
                 bons.sort((a, b) => {
