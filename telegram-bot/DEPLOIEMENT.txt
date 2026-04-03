@@ -1,0 +1,114 @@
+# GUIDE DE DEPLOIEMENT — Bot Telegram Bons d'Intervention CEP
+# VPS Windows OVH + Docker
+# =============================================================================
+
+# =============================================================================
+# 1. VARIABLES DU FICHIER .env
+# =============================================================================
+#
+# Crée le fichier telegram-bot/.env et remplis ces 6 variables :
+#
+# TELEGRAM_BOT_TOKEN=7123456789:AAH...
+#   → Va sur Telegram, parle à @BotFather, fais /newbot, donne-lui un nom.
+#     BotFather te donne un token. Colle-le ici.
+#
+# TELEGRAM_ADMIN_ID=123456789
+#   → Ton ID Telegram personnel (pas ton @username).
+#     Parle à @userinfobot sur Telegram, il te donne un nombre.
+#     C'est toi qui recevras les bons et les boutons.
+#
+# TELEGRAM_SURVEILLANCE_CHAT_ID=-1001234567890
+#   → L'ID du groupe/canal de surveillance.
+#     Crée un groupe Telegram, ajoute ton bot dedans, envoie un message,
+#     puis va sur : https://api.telegram.org/bot<TON_TOKEN>/getUpdates
+#     Tu verras le chat.id du groupe (nombre négatif genre -1001234567890).
+#
+# PENNYLANE_API_KEY=ton_token_ici
+#   → Va dans Pennylane > Paramètres > Intégrations > API.
+#     Génère une clé API pour le compte CEP.
+#
+# FIREBASE_CREDENTIALS=/app/firebase-credentials.json
+#   → Laisse cette valeur telle quelle. C'est le chemin DANS le conteneur Docker.
+#     Le fichier JSON est monté automatiquement par docker-compose.
+#
+# MAX_DRAFTS_PER_DAY=10
+#   → Nombre max de brouillons Pennylane par jour. Laisse 10.
+#     Au-delà le bot se coupe automatiquement (sécurité).
+
+
+# =============================================================================
+# 2. RECUPERER LES CREDENTIALS FIREBASE
+# =============================================================================
+#
+# 1. Va sur https://console.firebase.google.com
+# 2. Ouvre le projet "bon-d-intervention-cep"
+# 3. Paramètres du projet (roue dentée) > Comptes de service
+# 4. Clique "Générer une nouvelle clé privée"
+# 5. Télécharge le fichier JSON
+# 6. Renomme-le en firebase-credentials.json
+# 7. Place-le dans le dossier telegram-bot/
+
+
+# =============================================================================
+# 3. ETAPES DE DEPLOIEMENT (dans l'ordre)
+# =============================================================================
+
+# --- Étape 1 : Installe Docker Desktop sur le VPS ---
+# Télécharge depuis https://www.docker.com/products/docker-desktop/
+# Installe, redémarre le VPS si demandé
+# Vérifie que Docker tourne :
+docker --version
+
+# --- Étape 2 : Clone le repo ---
+git clone https://github.com/elechosystem-bit/bon-intervention-cep.git
+cd bon-intervention-cep
+git checkout claude/telegram-intervention-bot-cdIjE
+
+# --- Étape 3 : Prépare les fichiers ---
+cd telegram-bot
+copy .env.example .env
+# Ouvre .env avec un éditeur et remplis les 6 variables
+# Place firebase-credentials.json dans ce dossier
+
+# --- Étape 4 : Lance le bot ---
+docker-compose up -d --build
+
+# --- Étape 5 : Vérifie que ça tourne ---
+docker-compose logs -f
+
+# --- Étape 6 : Teste ---
+# 1. Va sur Telegram, envoie /start à ton bot
+#    → Il doit répondre "Bot Bons d'Intervention CEP actif"
+# 2. Envoie /status pour voir l'état
+# 3. Crée un bon de test dans l'appli avec signatures (technicien + client)
+#    → Le bot doit t'envoyer le résumé avec les 3 boutons
+
+
+# =============================================================================
+# 4. COMMANDES UTILES APRES DEPLOIEMENT
+# =============================================================================
+
+# Voir les logs en direct
+docker-compose logs -f
+
+# Redémarrer le bot
+docker-compose restart
+
+# Arrêter le bot
+docker-compose down
+
+# Reconstruire après une mise à jour du code
+git pull
+docker-compose up -d --build
+
+
+# =============================================================================
+# 5. CHECKLIST AVANT DE LANCER
+# =============================================================================
+#
+# [ ] Docker Desktop installé et démarré
+# [ ] .env rempli avec les 6 variables
+# [ ] firebase-credentials.json présent dans telegram-bot/
+# [ ] Le bot Telegram est créé via @BotFather
+# [ ] Le bot est ajouté au groupe de surveillance
+# [ ] Le projet Firebase actif est bien bon-d-intervention-cep
