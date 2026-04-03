@@ -1662,8 +1662,8 @@
     },
     {
       "id": 261107967,
-      "nom": "Bistrot du Marché",
-      "email": "",
+      "nom": "Bistrot du Marché - ALBANOLA",
+      "email": "bistrotdumarche.chaville@gmail.com",
       "telephone": "",
       "adresse": "15 Place du Marché, 92370 Chaville, 92370, Chaville",
       "ville": "Chaville",
@@ -7633,7 +7633,7 @@
     {
       "id": 248732915,
       "nom": "MC DONALD'S - COPECUR",
-      "email": "",
+      "email": "jle.jb@orange.fr",
       "telephone": "",
       "adresse": "rue Montchavant, 77250, Ecuelles",
       "ville": "Ecuelles",
@@ -9333,7 +9333,7 @@
     {
       "id": 248733640,
       "nom": "PETITE MARGUERITE",
-      "email": "",
+      "email": "opera.mamiescool@dext.cc",
       "telephone": "",
       "adresse": "21, rue du Plaisir, 93400, Saint-Ouen",
       "ville": "Saint-Ouen",
@@ -11952,5 +11952,5 @@
     }
   ],
   "total": 1195,
-  "syncDate": "2026-04-02T04:44:03Z"
+  "syncDate": "2026-04-03T04:45:03Z"
 }
