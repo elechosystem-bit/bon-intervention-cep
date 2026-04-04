@@ -15,8 +15,8 @@ PENNYLANE_API_URL = "https://app.pennylane.com/api/external/v2"
 # Firebase
 FIREBASE_CREDENTIALS = os.getenv("FIREBASE_CREDENTIALS")
 
-# Societe CEP dans Firebase
-SOCIETE_ID = "cep"
+# Societe Elechosystem dans Firebase
+SOCIETE_ID = "elechosystem"
 BONS_COLLECTION = f"societes/{SOCIETE_ID}/bons"
 
 # Securite
@@ -37,10 +37,10 @@ OVH_SMTP_USER = os.getenv("OVH_SMTP_USER", "intervention@cep75.fr")
 OVH_SMTP_PASSWORD = os.getenv("OVH_SMTP_PASSWORD")
 EMAIL_COMPTA = "cepelecho@gmail.com"
 
-# Societe CEP
-SOCIETE_NOM = "Compagnie d'Electricite Parisienne"
-SOCIETE_COULEUR = "#1a365d"
+# Societe Elechosystem
+SOCIETE_NOM = "Elecho System SARL"
+SOCIETE_COULEUR = "#E85D04"
 SOCIETE_ADRESSE = "6, rue de Metz, 94240 L'Hay-les-Roses"
 SOCIETE_TELEPHONE = "01 56 04 19 96"
-SOCIETE_EMAIL = "contact@cep75.fr"
-SOCIETE_SITE_WEB = "www.cep75.fr"
+SOCIETE_EMAIL = "contact@elechosystem.com"
+SOCIETE_SITE_WEB = "www.elechosystem.com"

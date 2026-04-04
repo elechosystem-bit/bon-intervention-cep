@@ -220,7 +220,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Acces refuse.")
         return
     await update.message.reply_text(
-        "Bot Bons d'Intervention CEP actif.\n"
+        "Bot Bons d'Intervention Elechosystem actif.\n"
         "Les bons signes apparaitront ici automatiquement.\n\n"
         "/bon [recherche] - Rappeler un bon (par numero, client, technicien...)\n"
         "/status - Etat du bot\n"
