@@ -696,6 +696,7 @@
                         <button type="button" onclick="agendaNextMonth()">Mois suivant →</button>
                     </div>
                 </div>
+                <div id="agendaFiltreTechniciens" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
                 <div class="agenda-grid" id="agendaGrid">
                     <div class="agenda-weekday">Lun</div>
                     <div class="agenda-weekday">Mar</div>
@@ -1111,6 +1112,8 @@
         let agendaMonth = new Date().getMonth() + 1;
         let agendaSelectedDay = null;
         let agendaBonsByDate = {};
+        let agendaAllBonsByDate = {};
+        let agendaFiltreTechnicien = null; // null = tous
 
         let agendaSubMode = 'interventions';
 
@@ -1151,19 +1154,70 @@
                 var fin = new Date(agendaYear, agendaMonth, 0);
                 var finStr = fin.getFullYear() + '-' + String(fin.getMonth() + 1).padStart(2, '0') + '-' + String(fin.getDate()).padStart(2, '0');
                 var snap = await db.collection(getCollectionPath('bons')).get();
-                agendaBonsByDate = {};
+                agendaAllBonsByDate = {};
                 snap.forEach(function(doc) {
                     var dateKey = doc.data().date;
                     if (dateKey && dateKey >= debut && dateKey <= finStr) {
-                        if (!agendaBonsByDate[dateKey]) agendaBonsByDate[dateKey] = [];
-                        agendaBonsByDate[dateKey].push({ id: doc.id, ...doc.data() });
+                        if (!agendaAllBonsByDate[dateKey]) agendaAllBonsByDate[dateKey] = [];
+                        agendaAllBonsByDate[dateKey].push({ id: doc.id, ...doc.data() });
                     }
                 });
             } catch (e) {
                 console.error(e);
-                agendaBonsByDate = {};
+                agendaAllBonsByDate = {};
             }
+            renderAgendaFiltreTechniciens();
+            applyAgendaFiltre();
 
+            // Le rendu des jours est fait par renderAgendaDays() appelé via applyAgendaFiltre()
+        }
+
+        function renderAgendaFiltreTechniciens() {
+            var container = document.getElementById('agendaFiltreTechniciens');
+            if (!container) return;
+            // Collect all techniciens from this month's bons
+            var techs = new Set();
+            Object.values(agendaAllBonsByDate).forEach(function(bons) {
+                bons.forEach(function(b) { if (b.technicien) techs.add(b.technicien); });
+            });
+            // Also add from the societe config
+            (listeTechniciensActuelle || []).forEach(function(t) {
+                var nom = t.nom || t;
+                if (nom) techs.add(nom);
+            });
+            var sorted = Array.from(techs).sort();
+            var html = '<button type="button" onclick="setAgendaFiltre(null)" style="padding:6px 14px;border-radius:20px;border:2px solid var(--primary);cursor:pointer;font-weight:600;font-size:0.85rem;' + (!agendaFiltreTechnicien ? 'background:var(--primary);color:white;' : 'background:white;color:var(--primary);') + '">Tous</button>';
+            sorted.forEach(function(tech) {
+                var active = agendaFiltreTechnicien === tech;
+                html += '<button type="button" onclick="setAgendaFiltre(\'' + tech.replace(/'/g, "\\'") + '\')" style="padding:6px 14px;border-radius:20px;border:2px solid var(--primary);cursor:pointer;font-weight:600;font-size:0.85rem;' + (active ? 'background:var(--primary);color:white;' : 'background:white;color:var(--primary);') + '">' + tech + '</button>';
+            });
+            container.innerHTML = html;
+        }
+
+        function setAgendaFiltre(technicien) {
+            agendaFiltreTechnicien = technicien;
+            renderAgendaFiltreTechniciens();
+            applyAgendaFiltre();
+            // Re-render day detail if open
+            if (agendaSelectedDay) openDayAgenda(agendaSelectedDay);
+        }
+
+        function applyAgendaFiltre() {
+            agendaBonsByDate = {};
+            Object.keys(agendaAllBonsByDate).forEach(function(dateKey) {
+                var bons = agendaAllBonsByDate[dateKey];
+                if (agendaFiltreTechnicien) {
+                    bons = bons.filter(function(b) { return b.technicien === agendaFiltreTechnicien; });
+                }
+                if (bons.length > 0) {
+                    agendaBonsByDate[dateKey] = bons;
+                }
+            });
+            // Re-render calendar days with updated counts
+            renderAgendaDays();
+        }
+
+        function renderAgendaDays() {
             var firstDay = new Date(agendaYear, agendaMonth - 1, 1);
             var lastDay = new Date(agendaYear, agendaMonth, 0);
             var startWeekday = firstDay.getDay();
@@ -1176,7 +1230,7 @@
             var i, d, dateStr, count;
             for (i = 1; i < startWeekday; i++) {
                 d = prevLast - startWeekday + i + 1;
-                html += '<button type="button" class="agenda-day other-month" data-date="' + prevYear + '-' + String(prevMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0') + '"><span class="num">' + d + '</span></button>';
+                html += '<button type="button" class="agenda-day other-month"><span class="num">' + d + '</span></button>';
             }
             for (d = 1; d <= daysInMonth; d++) {
                 dateStr = agendaYear + '-' + String(agendaMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -1185,11 +1239,8 @@
             }
             var remaining = 42 - (startWeekday - 1 + daysInMonth);
             var nextD = 1;
-            var nextMonth = agendaMonth === 12 ? 1 : agendaMonth + 1;
-            var nextYear = agendaMonth === 12 ? agendaYear + 1 : agendaYear;
             while (remaining > 0) {
-                dateStr = nextYear + '-' + String(nextMonth).padStart(2, '0') + '-' + String(nextD).padStart(2, '0');
-                html += '<button type="button" class="agenda-day other-month" data-date="' + dateStr + '"><span class="num">' + nextD + '</span></button>';
+                html += '<button type="button" class="agenda-day other-month"><span class="num">' + nextD + '</span></button>';
                 nextD++;
                 remaining--;
             }
