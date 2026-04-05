@@ -150,7 +150,7 @@
         .agenda-nav { display: flex; gap: 8px; }
         .agenda-nav button { padding: 8px 16px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; }
         .agenda-nav button:hover { background: var(--primary); color: white; }
-        .agenda-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .agenda-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
         .agenda-weekday { background: var(--primary); color: white; padding: 8px; text-align: center; font-size: 0.75rem; font-weight: 600; }
         .agenda-day { background: var(--card); padding: 8px; min-height: 70px; cursor: pointer; transition: background 0.2s; border: none; text-align: left; font-family: inherit; }
         .agenda-day:hover { background: #ebf8ff; }
@@ -704,8 +704,7 @@
                     <div class="agenda-weekday">Jeu</div>
                     <div class="agenda-weekday">Ven</div>
                     <div class="agenda-weekday">Sam</div>
-                    <div class="agenda-weekday">Dim</div>
-                    <div id="agendaDays" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;"></div>
+                    <div id="agendaDays" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;"></div>
                 </div>
                 <div class="agenda-day-detail" id="agendaDayDetail" style="display: none;">
                     <h4 id="agendaDayDetailTitle">Interventions du …</h4>
@@ -1228,16 +1227,22 @@
             var prevLast = new Date(prevYear, prevMonth, 0).getDate();
             var html = '';
             var i, d, dateStr, count;
+            // Jours du mois précédent (Lun=1 à Sam=6, pas de Dim)
             for (i = 1; i < startWeekday; i++) {
                 d = prevLast - startWeekday + i + 1;
                 html += '<button type="button" class="agenda-day other-month"><span class="num">' + d + '</span></button>';
             }
             for (d = 1; d <= daysInMonth; d++) {
                 dateStr = agendaYear + '-' + String(agendaMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                var dayOfWeek = new Date(agendaYear, agendaMonth - 1, d).getDay();
+                // Sauter les dimanches (0)
+                if (dayOfWeek === 0) continue;
                 count = (agendaBonsByDate[dateStr] || []).length;
                 html += '<button type="button" class="agenda-day" data-date="' + dateStr + '" onclick="openDayAgenda(\'' + dateStr + '\')"><span class="num">' + d + '</span>' + (count > 0 ? '<span class="count">' + count + ' intervention(s)</span>' : '') + '</button>';
             }
-            var remaining = 42 - (startWeekday - 1 + daysInMonth);
+            // Remplir les cases restantes pour compléter la grille (lignes de 6)
+            var totalCells = html.split('agenda-day').length - 1;
+            var remaining = (6 - (totalCells % 6)) % 6;
             var nextD = 1;
             while (remaining > 0) {
                 html += '<button type="button" class="agenda-day other-month"><span class="num">' + nextD + '</span></button>';
