@@ -1839,9 +1839,9 @@
             var heureStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
             var bar = document.getElementById('headerInfoBar');
             if (bar) bar.innerHTML = (_meteoEmoji ? '<span style="font-style:normal;font-size:1.3rem;">' + _meteoEmoji + '</span> ' : '') + dateStr + ' <span style="color:#a0aec0;font-size:0.9rem;">•</span> ' + heureStr + (_meteoCache ? ' <span style="color:#a0aec0;font-size:0.9rem;">•</span> ' + _meteoCache : '');
-            // Mettre à jour l'emoji du titre Bonjour
+            // Mettre à jour l'emoji du titre Bonjour (seulement si pas de logo)
             var titre = document.getElementById('societeNom');
-            if (titre && _meteoEmoji) {
+            if (titre && _meteoEmoji && !titre.querySelector('img')) {
                 var txt = titre.textContent.replace(/[\u2600-\u27BF\u{1F300}-\u{1F9FF}]/gu, '').trim();
                 titre.textContent = txt + ' ' + _meteoEmoji;
             }
