@@ -7,72 +7,77 @@ service cloud.firestore {
 
       // Bons d'intervention par société — SUPPRESSION INTERDITE
       match /bons/{bonId} {
-        allow read: if true;
-        allow create: if true;
-        allow update: if true;
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
         allow delete: if false;
       }
 
       // Clients par société
       match /clients/{clientId} {
-        allow read: if true;
-        allow create: if true;
-        allow update: if true;
-        allow delete: if true;
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null;
       }
 
       // Compteurs par société
       match /compteurs/{compteurId} {
-        allow read: if true;
-        allow write: if true;
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
       }
 
       // Paramètres par société (techniciens, codes d'accès, etc.)
       match /parametres/{docId} {
-        allow read, write: if true;
+        allow read, write: if request.auth != null;
       }
 
       // Astreintes par société (samedis, émis par admin)
       match /astreintes/{docId} {
-        allow read, write: if true;
+        allow read, write: if request.auth != null;
       }
 
       // Catalogue personnalisé (lignes perso enregistrées dans une catégorie)
       match /catalogue_perso/{docId} {
-        allow read, write: if true;
+        allow read, write: if request.auth != null;
+      }
+
+      // Planning des interventions (rendez-vous) — SUPPRESSION AUTORISEE
+      match /planning/{docId} {
+        allow read, write: if request.auth != null;
       }
     }
 
     // Ancienne structure (pour compatibilité) — SUPPRESSION INTERDITE
     match /bons/{bonId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if true;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
       allow delete: if false;
     }
 
     match /clients/{clientId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
     }
 
     match /compteurs/{compteurId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
     // Clients Pennylane (sync automatique)
     match /clientsPennylane/{docId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
     // Paiements GoCardless
     match /paiements/{docId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
     // Bloquer l'accès à toutes les autres collections

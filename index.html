@@ -1373,18 +1373,17 @@
                     if (weekViewEl) weekViewEl.innerHTML = '<div class="planning-empty">Sélectionnez une société.</div>';
                     return;
                 }
-                const snap = await db.collection(getCollectionPath('bons')).get();
+                const snap = await db.collection(getCollectionPath('planning')).get();
                 planningBons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
-                    if (data.statut === 'archivé') return;
                     planningBons.push({ id: doc.id, ...data });
                 });
                 planningBons.sort((a, b) => {
                     const dateA = (a.date || '').toString();
                     const dateB = (b.date || '').toString();
                     if (dateA !== dateB) return dateA.localeCompare(dateB);
-                    return ((a.heureArrivee || '').toString()).localeCompare((b.heureArrivee || '').toString());
+                    return ((a.heure || a.heureArrivee || '').toString()).localeCompare((b.heure || b.heureArrivee || '').toString());
                 });
                 planningWeekStart = getMonday(new Date());
                 if (planningBons.length === 0) {
