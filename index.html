@@ -352,7 +352,7 @@
         <!-- Connexion technicien : société imposée par l'admin (nom + code) -->
         <div id="connexionTechnicien" class="connexion-technicien" style="display: none;">
             <div class="connexion-inner">
-                <h3 id="headerInfoBar" style="font-size:1.1rem;color:var(--primary);"></h3>
+                <h3 id="headerInfoBar" style="font-size:1.1rem;color:#4a5568;background:linear-gradient(135deg,#f7fafc,#edf2f7);padding:10px 16px;border-radius:10px;text-align:center;"></h3>
                 <p class="connexion-intro">Votre accès est limité à une société définie par l'administrateur. Indiquez votre nom et votre code.</p>
                 <div class="input-group"><label>Votre nom</label><select id="technicienConnexion"><option value="">-- Sélectionner --</option></select></div>
                 <div class="input-group"><label>Code d'accès</label><input type="password" id="codeAccesConnexion" placeholder="Votre code" maxlength="20" autocomplete="off"></div>
@@ -1818,20 +1818,42 @@
         
         // -- Date, heure, météo dans le header --
         var _meteoCache = '';
+        var _meteoEmoji = '';
+        function getMeteoEmoji(condition) {
+            var c = (condition || '').toLowerCase();
+            if (c.includes('soleil') || c.includes('sunny') || c.includes('clear') || c.includes('ensoleill')) return '☀️';
+            if (c.includes('partly') || c.includes('partiellement') || c.includes('eclaircies') || c.includes('voil')) return '⛅';
+            if (c.includes('nuageux') || c.includes('cloudy') || c.includes('couvert') || c.includes('overcast')) return '☁️';
+            if (c.includes('pluie') || c.includes('rain') || c.includes('averse') || c.includes('drizzle')) return '🌧️';
+            if (c.includes('orage') || c.includes('thunder') || c.includes('storm')) return '⛈️';
+            if (c.includes('neige') || c.includes('snow')) return '❄️';
+            if (c.includes('brouillard') || c.includes('fog') || c.includes('mist') || c.includes('brume')) return '🌫️';
+            return '🌤️';
+        }
         function updateHeaderInfo() {
             var now = new Date();
-            var jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-            var mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+            var jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+            var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
             var dateStr = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()];
             var heureStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
             var bar = document.getElementById('headerInfoBar');
-            if (bar) bar.textContent = dateStr + ' | ' + heureStr + (_meteoCache ? ' | ' + _meteoCache : '');
+            if (bar) bar.textContent = (_meteoEmoji ? _meteoEmoji + ' ' : '') + dateStr + ' | ' + heureStr + (_meteoCache ? ' | ' + _meteoCache : '');
+            // Mettre à jour l'emoji du titre Bonjour
+            var titre = document.getElementById('societeNom');
+            if (titre && _meteoEmoji) {
+                var txt = titre.textContent.replace(/[\u2600-\u27BF\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                titre.textContent = txt + ' ' + _meteoEmoji;
+            }
         }
         function loadMeteo() {
             fetch('https://wttr.in/Paris?format=%t+%C&lang=fr')
                 .then(function(r) { return r.text(); })
-                .then(function(t) { _meteoCache = t.trim(); updateHeaderInfo(); })
-                .catch(function() { _meteoCache = ''; });
+                .then(function(t) {
+                    _meteoCache = t.trim();
+                    _meteoEmoji = getMeteoEmoji(t);
+                    updateHeaderInfo();
+                })
+                .catch(function() { _meteoCache = ''; _meteoEmoji = ''; });
         }
         updateHeaderInfo();
         setInterval(updateHeaderInfo, 30000);
