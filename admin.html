@@ -1289,13 +1289,16 @@
                 listEl.innerHTML = list.map(function(b) {
                     var heure = (b.heure || b.heureArrivee || '').trim() || '—';
                     var desc = b.description ? ' — ' + b.description : '';
-                    return '<div class="agenda-day-item"><span><span class="heure">' + heure + '</span>' + (b.client || '-') + ' — ' + (b.technicien || '-') + desc + '</span><button type="button" class="btn btn-secondary" style="padding:6px 12px; font-size:0.85rem;" onclick="supprimerRdvPlanning(\'' + b.id + '\')">Supprimer</button></div>';
+                    return '<div class="agenda-day-item"><span><span class="heure">' + heure + '</span>' + (b.client || '-') + ' — ' + (b.technicien || '-') + desc + '</span><div style="display:flex;gap:6px;"><button type="button" class="btn btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="modifierRdvPlanning(\'' + b.id + '\')">Modifier</button><button type="button" class="btn btn-secondary" style="padding:6px 12px; font-size:0.85rem;" onclick="supprimerRdvPlanning(\'' + b.id + '\')">Supprimer</button></div></div>';
                 }).join('');
             }
             document.getElementById('agendaDayDetail').style.display = 'block';
         }
 
+        let agendaEditingRdvId = null;
+
         function openAgendaModal() {
+            agendaEditingRdvId = null;
             if (!agendaSelectedDay) return;
             document.getElementById('agendaModalDate').value = agendaSelectedDay;
             var heureInput = document.getElementById('agendaModalHeure');
@@ -1307,6 +1310,29 @@
             }).join('');
             document.getElementById('agendaModalClient').value = '';
             document.getElementById('agendaModalAddress').value = '';
+            document.getElementById('agendaModal').classList.add('show');
+        }
+
+        function modifierRdvPlanning(docId) {
+            // Trouver le RDV dans les données chargées
+            var rdv = null;
+            Object.values(agendaAllBonsByDate).forEach(function(list) {
+                list.forEach(function(b) { if (b.id === docId) rdv = b; });
+            });
+            if (!rdv) { showToast('RDV introuvable', true); return; }
+
+            agendaEditingRdvId = docId;
+            document.getElementById('agendaModalDate').value = rdv.date || '';
+            var heureInput = document.getElementById('agendaModalHeure');
+            if (heureInput) heureInput.value = rdv.heure || rdv.heureArrivee || '';
+            var sel = document.getElementById('agendaModalTechnicien');
+            sel.innerHTML = listeTechniciensActuelle.map(function(t) {
+                var nom = t.nom || t;
+                var selected = (nom === rdv.technicien) ? ' selected' : '';
+                return '<option value="' + nom.replace(/"/g, '&quot;') + '"' + selected + '>' + nom.replace(/</g, '&lt;') + '</option>';
+            }).join('');
+            document.getElementById('agendaModalClient').value = rdv.client || '';
+            document.getElementById('agendaModalAddress').value = rdv.adresse || rdv.address || '';
             document.getElementById('agendaModal').classList.add('show');
         }
 
@@ -1497,20 +1523,27 @@
                 return;
             }
             try {
-                await db.collection(getCollectionPath('planning')).add({
+                var rdvData = {
                     date: dateStr,
                     heure: heureArrivee,
                     technicien: technicien,
                     client: client,
                     adresse: address,
-                    description: '',
-                    societe: societeActive.id,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                    societe: societeActive.id
+                };
+                if (agendaEditingRdvId) {
+                    await db.collection(getCollectionPath('planning')).doc(agendaEditingRdvId).update(rdvData);
+                    showToast('RDV modifie');
+                } else {
+                    rdvData.description = '';
+                    rdvData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection(getCollectionPath('planning')).add(rdvData);
+                    showToast('RDV ajoute');
+                }
+                agendaEditingRdvId = null;
                 closeAgendaModal();
                 renderAgenda();
                 if (agendaSelectedDay === dateStr) openDayAgenda(dateStr);
-                showToast('RDV ajouté');
             } catch (e) {
                 console.error(e);
                 showToast('Erreur : ' + (e.message || ''), true);
