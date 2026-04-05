@@ -326,7 +326,7 @@
                 <button type="button" class="btn-admin-toggle" onclick="location.reload()" title="Actualiser la page">Actualiser</button>
             </div>
             <div class="logo-section">
-                <h1 id="societeNom">BONJOUR TOUT LE MONDE ☀️</h1>
+                <h1 id="societeNom">BONJOUR TOUT LE MONDE</h1>
                 <p id="societeSousTitre">Bon d'intervention/planning</p>
             </div>
             <div class="bon-number">
@@ -1028,7 +1028,7 @@
             if (btnDeco) btnDeco.style.display = afficherBlocConnexion ? 'none' : 'inline-block';
             if (afficherBlocConnexion) {
                 document.body.classList.remove('technicien-connecte');
-                if (societeNomEl) societeNomEl.textContent = 'BONJOUR TOUT LE MONDE ☀️';
+                if (societeNomEl) societeNomEl.textContent = 'BONJOUR TOUT LE MONDE' + (_meteoEmoji ? ' ' + _meteoEmoji : '');
                 if (footerEl) footerEl.textContent = 'Bon d\'intervention/planning';
                 const sousTitreEl = document.getElementById('societeSousTitre');
                 if (sousTitreEl) sousTitreEl.textContent = 'Bon d\'intervention/planning';
