@@ -257,7 +257,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <div style="display:flex;justify-content:flex-end;width:100%;margin-bottom:4px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:4px;padding:0 14px;">
+                <span id="headerInfoBar" style="font-size:0.7rem;color:rgba(255,255,255,0.9);"></span>
                 <button type="button" onclick="location.reload()" style="padding:3px 8px;font-size:0.65rem;border-radius:6px;border:1px solid rgba(255,255,255,0.6);background:rgba(0,0,0,0.2);color:#fff;cursor:pointer;">Actualiser</button>
             </div>
             <div class="logo-section">
@@ -903,6 +904,28 @@
             appId: "1:323636987494:web:0b07cffbb086c767320fa7"
         };
         firebase.initializeApp(firebaseConfig);
+
+        // -- Date, heure, météo dans le header --
+        var _meteoCache = '';
+        function updateHeaderInfo() {
+            var now = new Date();
+            var jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+            var mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+            var dateStr = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()];
+            var heureStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            var bar = document.getElementById('headerInfoBar');
+            if (bar) bar.textContent = dateStr + ' | ' + heureStr + (_meteoCache ? ' | ' + _meteoCache : '');
+        }
+        function loadMeteo() {
+            fetch('https://wttr.in/Paris?format=%t+%C&lang=fr')
+                .then(function(r) { return r.text(); })
+                .then(function(t) { _meteoCache = t.trim(); updateHeaderInfo(); })
+                .catch(function() { _meteoCache = ''; });
+        }
+        updateHeaderInfo();
+        setInterval(updateHeaderInfo, 30000);
+        loadMeteo();
+
         // Authentification anonyme pour sécuriser l'accès Firestore
         firebase.auth().signInAnonymously().catch(function(err) {
             console.error('Erreur auth anonyme:', err);

@@ -323,6 +323,7 @@
         <div class="header">
             <div class="header-admin-link">
                 <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()" title="Accès administrateur">Admin</button>
+                <span id="headerInfoBar" style="font-size:0.7rem;color:rgba(255,255,255,0.9);text-align:center;"></span>
                 <button type="button" class="btn-admin-toggle" onclick="location.reload()" title="Actualiser la page">Actualiser</button>
             </div>
             <div class="logo-section">
@@ -1816,6 +1817,27 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
+        // -- Date, heure, météo dans le header --
+        var _meteoCache = '';
+        function updateHeaderInfo() {
+            var now = new Date();
+            var jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+            var mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+            var dateStr = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()];
+            var heureStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            var bar = document.getElementById('headerInfoBar');
+            if (bar) bar.textContent = dateStr + ' | ' + heureStr + (_meteoCache ? ' | ' + _meteoCache : '');
+        }
+        function loadMeteo() {
+            fetch('https://wttr.in/Paris?format=%t+%C&lang=fr')
+                .then(function(r) { return r.text(); })
+                .then(function(t) { _meteoCache = t.trim(); updateHeaderInfo(); })
+                .catch(function() { _meteoCache = ''; });
+        }
+        updateHeaderInfo();
+        setInterval(updateHeaderInfo, 30000);
+        loadMeteo();
+
         document.addEventListener('DOMContentLoaded', async function() {
             const societeId = sessionStorage.getItem('technicienSocieteId');
             const nomValide = societeId ? sessionStorage.getItem('technicienValide_' + societeId) : null;
