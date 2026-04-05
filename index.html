@@ -878,7 +878,8 @@
             if (sel) sel.value = societeId;
             
             // Changer le nom
-            document.getElementById('societeNom').innerHTML = '⚡ ' + societe.nom;
+            var logoUrl = societeId === 'cep' ? 'logo-cep.png' : 'logo-elecho.jpg';
+            document.getElementById('societeNom').innerHTML = '<img src="' + logoUrl + '" alt="' + societe.nom + '" style="max-height:60px;max-width:200px;vertical-align:middle;">';
             
             // Changer le footer
             const footer = document.getElementById('footerSociete');
@@ -2483,13 +2484,34 @@
             }
             
             let yPos = 20;
-            
-            // En-tête société
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(...hexToRgb(societeActive.couleurPrimaire));
-            doc.text(infoSociete.nom, 105, yPos, { align: 'center' });
-            yPos += 8;
+
+            // En-tête société avec logo
+            try {
+                var logoSrc = societeActive.id === 'cep' ? 'logo-cep.png' : 'logo-elecho.jpg';
+                var logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                await new Promise(function(resolve, reject) {
+                    logoImg.onload = resolve;
+                    logoImg.onerror = reject;
+                    logoImg.src = logoSrc;
+                });
+                var canvas = document.createElement('canvas');
+                canvas.width = logoImg.naturalWidth;
+                canvas.height = logoImg.naturalHeight;
+                canvas.getContext('2d').drawImage(logoImg, 0, 0);
+                var logoData = canvas.toDataURL('image/png');
+                var logoH = 20;
+                var logoW = logoH * (logoImg.naturalWidth / logoImg.naturalHeight);
+                doc.addImage(logoData, 'PNG', 105 - logoW / 2, yPos - 5, logoW, logoH);
+                yPos += logoH + 2;
+            } catch(e) {
+                // Fallback texte si le logo ne charge pas
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(...hexToRgb(societeActive.couleurPrimaire));
+                doc.text(infoSociete.nom, 105, yPos, { align: 'center' });
+                yPos += 8;
+            }
             
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
