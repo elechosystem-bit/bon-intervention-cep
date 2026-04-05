@@ -879,6 +879,7 @@
     <script src="config.js"></script>
     <!-- Firebase v8 (app + firestore + storage) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script>
@@ -899,6 +900,10 @@
             appId: "1:323636987494:web:0b07cffbb086c767320fa7"
         };
         firebase.initializeApp(firebaseConfig);
+        // Authentification anonyme pour sécuriser l'accès Firestore
+        firebase.auth().signInAnonymously().catch(function(err) {
+            console.error('Erreur auth anonyme:', err);
+        });
         const db = firebase.firestore();
         const storage = firebase.storage();
         
