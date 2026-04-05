@@ -323,7 +323,6 @@
         <div class="header">
             <div class="header-admin-link">
                 <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()" title="Accès administrateur">Admin</button>
-                <span id="headerInfoBar" style="font-size:0.7rem;color:rgba(255,255,255,0.9);text-align:center;"></span>
                 <button type="button" class="btn-admin-toggle" onclick="location.reload()" title="Actualiser la page">Actualiser</button>
             </div>
             <div class="logo-section">
@@ -349,6 +348,8 @@
                 </div>
             </div>
         </div>
+
+        <div id="headerInfoBar" style="text-align:center;padding:10px 16px;font-size:1rem;font-weight:600;color:var(--primary);background:rgba(26,54,93,0.06);border-radius:10px;margin:8px 0;"></div>
 
         <!-- Connexion technicien : société imposée par l'admin (nom + code) -->
         <div id="connexionTechnicien" class="connexion-technicien" style="display: none;">
