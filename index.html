@@ -352,7 +352,7 @@
         <!-- Connexion technicien : société imposée par l'admin (nom + code) -->
         <div id="connexionTechnicien" class="connexion-technicien" style="display: none;">
             <div class="connexion-inner">
-                <h3 id="headerInfoBar" style="font-size:1.1rem;color:#4a5568;background:linear-gradient(135deg,#f7fafc,#edf2f7);padding:10px 16px;border-radius:10px;text-align:center;"></h3>
+                <h3 id="headerInfoBar" style="font-size:1.05rem;color:#2d3748;background:linear-gradient(135deg,#f0f4f8,#e2e8f0);padding:12px 20px;border-radius:12px;text-align:center;font-family:'Georgia',serif;font-style:italic;letter-spacing:0.3px;box-shadow:0 1px 3px rgba(0,0,0,0.08);"></h3>
                 <p class="connexion-intro">Votre accès est limité à une société définie par l'administrateur. Indiquez votre nom et votre code.</p>
                 <div class="input-group"><label>Votre nom</label><select id="technicienConnexion"><option value="">-- Sélectionner --</option></select></div>
                 <div class="input-group"><label>Code d'accès</label><input type="password" id="codeAccesConnexion" placeholder="Votre code" maxlength="20" autocomplete="off"></div>
@@ -1837,7 +1837,7 @@
             var dateStr = jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()];
             var heureStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
             var bar = document.getElementById('headerInfoBar');
-            if (bar) bar.textContent = (_meteoEmoji ? _meteoEmoji + ' ' : '') + dateStr + ' | ' + heureStr + (_meteoCache ? ' | ' + _meteoCache : '');
+            if (bar) bar.innerHTML = (_meteoEmoji ? '<span style="font-style:normal;font-size:1.3rem;">' + _meteoEmoji + '</span> ' : '') + dateStr + ' <span style="color:#a0aec0;font-size:0.9rem;">•</span> ' + heureStr + (_meteoCache ? ' <span style="color:#a0aec0;font-size:0.9rem;">•</span> ' + _meteoCache : '');
             // Mettre à jour l'emoji du titre Bonjour
             var titre = document.getElementById('societeNom');
             if (titre && _meteoEmoji) {
