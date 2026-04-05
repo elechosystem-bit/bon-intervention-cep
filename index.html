@@ -28,7 +28,7 @@
         body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; }
         .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 30px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; position: relative; }
-        .header-admin-link { position: absolute; top: 10px; left: 14px; font-size: 0.7rem; opacity: 0.85; }
+        .header-admin-link { position: absolute; top: 10px; left: 14px; right: 14px; font-size: 0.7rem; opacity: 0.85; display: flex; justify-content: space-between; }
         .logo-section h1 { font-size: 1.5rem; font-weight: 700; }
         .logo-section p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
         .bon-number { background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 10px; text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
@@ -321,7 +321,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="header-admin-link" style="display:flex;justify-content:space-between;width:100%;">
+            <div class="header-admin-link">
                 <button type="button" class="btn-admin-toggle" onclick="toggleAdmin()" title="Accès administrateur">Admin</button>
                 <button type="button" class="btn-admin-toggle" onclick="location.reload()" title="Actualiser la page">Actualiser</button>
             </div>
