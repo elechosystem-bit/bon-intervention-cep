@@ -349,12 +349,10 @@
             </div>
         </div>
 
-        <div id="headerInfoBar" style="text-align:center;padding:10px 16px;font-size:1rem;font-weight:600;color:var(--primary);background:rgba(26,54,93,0.06);border-radius:10px;margin:8px 0;"></div>
-
         <!-- Connexion technicien : société imposée par l'admin (nom + code) -->
         <div id="connexionTechnicien" class="connexion-technicien" style="display: none;">
             <div class="connexion-inner">
-                <h3>BONJOUR TOUT LE MONDE ☀️</h3>
+                <h3 id="headerInfoBar" style="font-size:1.1rem;color:var(--primary);"></h3>
                 <p class="connexion-intro">Votre accès est limité à une société définie par l'administrateur. Indiquez votre nom et votre code.</p>
                 <div class="input-group"><label>Votre nom</label><select id="technicienConnexion"><option value="">-- Sélectionner --</option></select></div>
                 <div class="input-group"><label>Code d'accès</label><input type="password" id="codeAccesConnexion" placeholder="Votre code" maxlength="20" autocomplete="off"></div>
