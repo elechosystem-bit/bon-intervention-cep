@@ -1,7 +1,10 @@
 # Variables d'environnement
 .env
-.env.local
-.env.production
+.env.*
+**/.env
+telegram-bot/.env
+telegram-bot-elecho/.env
+telegram-bot-planning/.env
 
 # Node modules
 node_modules/
