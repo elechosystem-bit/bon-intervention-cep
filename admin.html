@@ -1531,7 +1531,7 @@
             try {
                 await db.collection(getCollectionPath('planning')).doc(docId).delete();
                 showToast('RDV supprimé');
-                renderAgenda();
+                await renderAgenda();
                 if (agendaSelectedDay) openDayAgenda(agendaSelectedDay);
             } catch (e) {
                 console.error(e);
