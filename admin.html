@@ -1528,11 +1528,12 @@
 
         async function supprimerRdvPlanning(docId) {
             if (!confirm('Supprimer ce RDV ?')) return;
+            var savedDay = agendaSelectedDay;
             try {
                 await db.collection(getCollectionPath('planning')).doc(docId).delete();
                 showToast('RDV supprimé');
                 await renderAgenda();
-                if (agendaSelectedDay) openDayAgenda(agendaSelectedDay);
+                if (savedDay) openDayAgenda(savedDay);
             } catch (e) {
                 console.error(e);
                 showToast('Erreur suppression', true);

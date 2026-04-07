@@ -1,0 +1,3 @@
+max.cep75.fr {
+    reverse_proxy localhost:8090
+}

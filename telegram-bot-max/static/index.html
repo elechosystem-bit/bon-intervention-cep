@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Max">
+<title>Max</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.title { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+.subtitle { font-size: 0.9rem; opacity: 0.6; margin-bottom: 40px; text-align: center; padding: 0 20px; }
+.mic-btn {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #38a169, #2f855a);
+    color: white;
+    font-size: 3.5rem;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(56, 161, 105, 0.4);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mic-btn:active { transform: scale(0.95); }
+.mic-btn.active {
+    background: linear-gradient(135deg, #3182ce, #2b6cb0);
+    box-shadow: 0 8px 32px rgba(49, 130, 206, 0.6);
+}
+.mic-btn.listening {
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    box-shadow: 0 8px 32px rgba(229, 62, 62, 0.6);
+    animation: pulse 1.5s infinite;
+}
+.mic-btn.thinking {
+    background: linear-gradient(135deg, #d69e2e, #b7791f);
+    box-shadow: 0 8px 32px rgba(214, 158, 46, 0.6);
+}
+.mic-btn.speaking {
+    background: linear-gradient(135deg, #805ad5, #6b46c1);
+    box-shadow: 0 8px 32px rgba(128, 90, 213, 0.6);
+    animation: pulse 1s infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+.status {
+    margin-top: 30px;
+    font-size: 1.1rem;
+    opacity: 0.9;
+    text-align: center;
+    min-height: 80px;
+    max-width: 90%;
+    line-height: 1.5;
+    padding: 0 20px;
+}
+.dots { display: inline-block; }
+.dots::after { content: ''; animation: dots 1.5s infinite; }
+@keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+}
+</style>
+</head>
+<body>
+
+<div class="title">Max</div>
+<div class="subtitle">Appuyez pour demarrer</div>
+
+<button class="mic-btn" id="micBtn" onclick="toggle()">🎤</button>
+
+<div class="status" id="status"></div>
+
+<script>
+const API_BASE = window.location.origin;
+let active = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let silenceTimer = null;
+let audioContext = null;
+let analyser = null;
+let stream = null;
+let audioPlayer = new Audio();
+let checkSilenceInterval = null;
+
+function toggle() {
+    if (active) stop();
+    else start();
+}
+
+async function start() {
+    active = true;
+    document.getElementById('micBtn').classList.add('active');
+    document.getElementById('micBtn').textContent = '⏹';
+    document.querySelector('.subtitle').textContent = 'Appuyez pour arreter';
+
+    // Debloquer audio iOS
+    audioPlayer.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV////////////////////////////////////////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQAAAAAAAAAAAGw////+xAAAA==';
+    try { await audioPlayer.play(); } catch(e) {}
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512;
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        startRecording();
+    } catch(e) {
+        console.error(e);
+        document.getElementById('status').textContent = 'Autorisez le micro.';
+        stop();
+    }
+}
+
+function stop() {
+    active = false;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+    if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+    }
+    if (checkSilenceInterval) {
+        clearInterval(checkSilenceInterval);
+        checkSilenceInterval = null;
+    }
+    if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+    }
+    audioPlayer.pause();
+
+    document.getElementById('micBtn').className = 'mic-btn';
+    document.getElementById('micBtn').textContent = '🎤';
+    document.getElementById('status').textContent = '';
+    document.querySelector('.subtitle').textContent = 'Appuyez pour demarrer';
+}
+
+function startRecording() {
+    if (!active || !stream) return;
+
+    audioChunks = [];
+    let hasSound = false;
+
+    document.getElementById('micBtn').className = 'mic-btn listening';
+    document.getElementById('micBtn').textContent = '⏹';
+    document.getElementById('status').textContent = 'Je vous ecoute...';
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+
+    mediaRecorder.ondataavailable = function(e) {
+        if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = function() {
+        if (!active) return;
+        if (audioChunks.length > 0 && hasSound) {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            sendToMax(blob);
+        } else if (active) {
+            startRecording();
+        }
+    };
+
+    mediaRecorder.start(250);
+
+    // Detection de silence
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    let silenceStart = null;
+    let soundDetected = false;
+
+    if (checkSilenceInterval) clearInterval(checkSilenceInterval);
+
+    checkSilenceInterval = setInterval(function() {
+        if (!active || !analyser) {
+            clearInterval(checkSilenceInterval);
+            return;
+        }
+
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+
+        if (avg > 15) {
+            soundDetected = true;
+            hasSound = true;
+            silenceStart = null;
+        } else if (soundDetected) {
+            if (!silenceStart) silenceStart = Date.now();
+            // 1.5 secondes de silence apres avoir parle = fin
+            if (Date.now() - silenceStart > 1500) {
+                clearInterval(checkSilenceInterval);
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }
+        }
+    }, 100);
+}
+
+async function sendToMax(audioBlob) {
+    if (!active) return;
+
+    document.getElementById('micBtn').className = 'mic-btn thinking';
+    document.getElementById('micBtn').textContent = '⏹';
+    document.getElementById('status').innerHTML = 'Max reflechit<span class="dots"></span>';
+
+    try {
+        // Envoyer l'audio a Whisper via l'API
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'audio.webm');
+
+        const resp = await fetch(API_BASE + '/voice-chat', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!active) return;
+
+        const data = await resp.json();
+        const reply = data.reply || 'Desole, je n\'ai pas compris.';
+        const transcription = data.transcription || '';
+
+        document.getElementById('status').textContent = reply;
+
+        // Jouer la reponse vocale
+        if (data.audio_url) {
+            document.getElementById('micBtn').className = 'mic-btn speaking';
+            document.getElementById('micBtn').textContent = '⏹';
+
+            const audioResp = await fetch(API_BASE + data.audio_url);
+            if (audioResp.ok && active) {
+                const blob = await audioResp.blob();
+                audioPlayer.src = URL.createObjectURL(blob);
+                audioPlayer.onended = function() {
+                    if (active) startRecording();
+                };
+                await audioPlayer.play();
+                return;
+            }
+        }
+
+        // Fallback: voix navigateur
+        if (active) {
+            const utt = new SpeechSynthesisUtterance(reply);
+            utt.lang = 'fr-FR';
+            utt.onend = function() { if (active) startRecording(); };
+            speechSynthesis.speak(utt);
+        }
+
+    } catch(e) {
+        console.error(e);
+        if (active) {
+            document.getElementById('status').textContent = 'Erreur. Je reecoute...';
+            setTimeout(function() { if (active) startRecording(); }, 2000);
+        }
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    container_name: max-telegram-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
+    environment:
+      - FIREBASE_CREDENTIALS=/app/firebase-credentials.json
+      - MAX_API_SECRET=max-cep-elecho-2026
