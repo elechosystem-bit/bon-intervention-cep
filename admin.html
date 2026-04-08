@@ -615,6 +615,9 @@
             <div class="section">
                 <h3 class="section-title">Historique des bons enregistrés</h3>
                 <div style="margin-bottom:10px;">
+                    <button id="btnFusionnerSelection" onclick="fusionnerBonsSelectionnes()" style="padding:8px 16px; background:#3182ce; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; display:none; margin-right:8px;" disabled>
+                        🔗 Fusionner la sélection (<span id="nbFusionnes">0</span>)
+                    </button>
                     <button id="btnSupprimerSelection" onclick="supprimerBonsSelectionnes()" style="padding:8px 16px; background:#e53e3e; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; display:none;" disabled>
                         Supprimer la sélection (<span id="nbSelectionnes">0</span>)
                     </button>
@@ -4058,12 +4061,17 @@
             const checkboxes = document.querySelectorAll('.bon-checkbox:checked');
             const count = checkboxes.length;
             const btnSupprimer = document.getElementById('btnSupprimerSelection');
+            const btnFusionner = document.getElementById('btnFusionnerSelection');
             const nbSelectionnes = document.getElementById('nbSelectionnes');
-            
+            const nbFusionnes = document.getElementById('nbFusionnes');
+
             if (nbSelectionnes) {
                 nbSelectionnes.textContent = count;
             }
-            
+            if (nbFusionnes) {
+                nbFusionnes.textContent = count;
+            }
+
             if (btnSupprimer) {
                 if (count > 0) {
                     btnSupprimer.style.display = 'inline-block';
@@ -4071,6 +4079,15 @@
                 } else {
                     btnSupprimer.style.display = 'none';
                     btnSupprimer.disabled = true;
+                }
+            }
+            if (btnFusionner) {
+                if (count >= 2) {
+                    btnFusionner.style.display = 'inline-block';
+                    btnFusionner.disabled = false;
+                } else {
+                    btnFusionner.style.display = 'none';
+                    btnFusionner.disabled = true;
                 }
             }
             
@@ -4144,6 +4161,185 @@
             
             // Recharger l'historique
             await renderHistorique();
+        }
+
+        async function fusionnerBonsSelectionnes() {
+            const checkboxes = document.querySelectorAll('.bon-checkbox:checked');
+            if (checkboxes.length < 2) {
+                showToast("Sélectionnez au moins 2 bons à fusionner", true);
+                return;
+            }
+
+            // Charger les bons sélectionnés depuis Firestore
+            const bonsAFusionner = [];
+            for (const checkbox of checkboxes) {
+                const id = checkbox.getAttribute('data-bon-id');
+                try {
+                    const doc = await db.collection(getCollectionPath('bons')).doc(id).get();
+                    if (doc.exists) bonsAFusionner.push({ id: doc.id, ...doc.data() });
+                } catch (e) {
+                    console.error('Erreur chargement bon ' + id, e);
+                }
+            }
+
+            if (bonsAFusionner.length < 2) {
+                showToast("Impossible de charger les bons sélectionnés", true);
+                return;
+            }
+
+            // Vérifier que tous les bons ont le même client
+            const clients = [...new Set(bonsAFusionner.map(b => (b.client || '').trim().toLowerCase()))];
+            if (clients.length > 1) {
+                alert("Impossible de fusionner : les bons sélectionnés n'ont pas le même client.\n\nClients trouvés :\n" + bonsAFusionner.map(b => '• ' + b.numero + ' → ' + b.client).join('\n'));
+                return;
+            }
+
+            // Trier par date
+            bonsAFusionner.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+            // Construire le récap des numéros
+            const numeros = bonsAFusionner.map(b => b.numero || b.id);
+            const recapTitre = 'RECAP BON N°' + numeros.join(', N°');
+
+            // Fusionner les descriptions avec date
+            const descriptionFusionnee = bonsAFusionner.map(b => {
+                const dateStr = b.date || '?';
+                const desc = (b.description || '').trim();
+                return dateStr + ' : ' + (desc || '(pas de description)');
+            }).join('\n\n');
+
+            // Fusionner les heures (additionner les demi-heures de MO)
+            let totalMinutesMO = 0;
+            bonsAFusionner.forEach(b => {
+                const duree = b.moDuree || '0h00';
+                const match = duree.match(/(\d+)h(\d+)/);
+                if (match) totalMinutesMO += parseInt(match[1]) * 60 + parseInt(match[2]);
+            });
+            const moHeures = Math.floor(totalMinutesMO / 60);
+            const moMinutes = totalMinutesMO % 60;
+            const moDuree = moHeures + 'h' + String(moMinutes).padStart(2, '0');
+            const moDemiHeures = Math.ceil(totalMinutesMO / 30) + ' demi-heures';
+
+            // Fusionner les déplacements (additionner)
+            let totalDepl = 0;
+            bonsAFusionner.forEach(b => {
+                totalDepl += parseInt(b.deplNombre || '0') || 0;
+            });
+
+            // Fusionner les produits
+            const produitsMap = new Map();
+            bonsAFusionner.forEach(b => {
+                (b.produits || []).forEach(p => {
+                    const key = (p.name || p.nom || '') + '|' + (p.prixUnitaire || p.prix || 0);
+                    if (produitsMap.has(key)) {
+                        produitsMap.get(key).qty += (p.qty || p.quantite || 1);
+                    } else {
+                        produitsMap.set(key, { ...p, qty: p.qty || p.quantite || 1 });
+                    }
+                });
+            });
+            const produitsFusionnes = Array.from(produitsMap.values());
+
+            // Fusionner les photos
+            let photosFusionnees = [];
+            bonsAFusionner.forEach(b => {
+                (b.photos || []).forEach(p => photosFusionnees.push(p));
+            });
+
+            // Tarifs (prendre du premier bon)
+            const moTarif = bonsAFusionner[0].moTarif || '35';
+            const deplTarif = bonsAFusionner[0].deplTarif || '70';
+            const tva = bonsAFusionner[0].tva || '20';
+
+            // Calculer les totaux
+            const subtotalMO = (Math.ceil(totalMinutesMO / 30) * parseFloat(moTarif)).toFixed(2);
+            const subtotalDepl = (totalDepl * parseFloat(deplTarif)).toFixed(2);
+            let subtotalProduits = 0;
+            produitsFusionnes.forEach(p => {
+                subtotalProduits += (p.qty || 0) * (p.prixUnitaire || p.prix || 0);
+            });
+            subtotalProduits = subtotalProduits.toFixed(2);
+            const totalHT = (parseFloat(subtotalMO) + parseFloat(subtotalDepl) + parseFloat(subtotalProduits)).toFixed(2);
+            const totalTVA = (parseFloat(totalHT) * parseFloat(tva) / 100).toFixed(2);
+            const totalTTC = (parseFloat(totalHT) + parseFloat(totalTVA)).toFixed(2);
+
+            // Confirmation
+            const msg = 'Fusionner ' + bonsAFusionner.length + ' bons pour le client "' + bonsAFusionner[0].client + '" ?\n\n' +
+                        recapTitre + '\n\n' +
+                        'MO totale : ' + moDuree + '\n' +
+                        'Déplacements : ' + totalDepl + '\n' +
+                        'Total HT : ' + totalHT + '€\n\n' +
+                        'Les bons originaux seront archivés.';
+            if (!confirm(msg)) return;
+
+            try {
+                // Générer un nouveau numéro via le compteur Firestore
+                const compteurRef = getCompteurRef();
+                const annee = new Date().getFullYear();
+                let numero;
+                await db.runTransaction(async function(transaction) {
+                    const compteurDoc = await transaction.get(compteurRef);
+                    if (compteurDoc.exists && compteurDoc.data().annee === annee) {
+                        numero = compteurDoc.data().dernierNumero + 1;
+                    } else {
+                        numero = 1;
+                    }
+                    transaction.set(compteurRef, { annee: annee, dernierNumero: numero });
+                });
+                const numeroDefinitif = annee.toString() + String(numero).padStart(4, '0');
+
+                // Créer le bon fusionné
+                const bonFusionne = {
+                    numero: numeroDefinitif,
+                    date: new Date().toISOString().slice(0, 10),
+                    client: bonsAFusionner[0].client || '',
+                    phone: bonsAFusionner[0].phone || '',
+                    email: bonsAFusionner[0].email || '',
+                    address: bonsAFusionner[0].address || '',
+                    technicien: bonsAFusionner[0].technicien || '',
+                    description: recapTitre + '\n\n' + descriptionFusionnee,
+                    heureArrivee: '',
+                    heureDepart: '',
+                    pauseDe: '',
+                    pauseA: '',
+                    moDuree: moDuree,
+                    moDemiHeures: moDemiHeures,
+                    moTarif: moTarif,
+                    deplNombre: String(totalDepl),
+                    deplTarif: deplTarif,
+                    tva: tva,
+                    subtotalProduits: subtotalProduits + '€',
+                    subtotalMO: subtotalMO + '€',
+                    subtotalDepl: subtotalDepl + '€',
+                    totalHT: totalHT + 'EUR',
+                    totalTVA: totalTVA + 'EUR',
+                    totalTTC: totalTTC + 'EUR',
+                    statut: 'en_attente',
+                    societe: societeActive ? societeActive.id : 'cep',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    produits: produitsFusionnes,
+                    photos: photosFusionnees,
+                    fusion: true,
+                    bonsOrigine: numeros
+                };
+
+                await db.collection(getCollectionPath('bons')).doc(numeroDefinitif).set(bonFusionne);
+
+                // Archiver les bons originaux
+                for (const bon of bonsAFusionner) {
+                    await db.collection(getCollectionPath('bons')).doc(bon.id).update({
+                        statut: 'archivé',
+                        archivedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        fusionneDans: numeroDefinitif
+                    });
+                }
+
+                showToast('Bons fusionnés → N°' + numeroDefinitif);
+                await renderHistorique();
+            } catch (e) {
+                console.error('Erreur fusion:', e);
+                showToast("Erreur lors de la fusion : " + (e.message || ''), true);
+            }
         }
 
         function openPhotoLightbox(url) {
