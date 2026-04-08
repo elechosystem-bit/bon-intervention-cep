@@ -613,7 +613,9 @@
 
             <!-- Historique des bons -->
             <div class="section">
-                <h3 class="section-title">Historique des bons enregistrés</h3>
+                <h3 class="section-title">Historique des bons enregistrés
+                    <button onclick="accederBonsArchives()" style="float:right; padding:6px 14px; background:#718096; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem;">📦 Bons archivés</button>
+                </h3>
                 <div style="margin-bottom:10px;">
                     <button id="btnFusionnerSelection" onclick="fusionnerBonsSelectionnes()" style="padding:8px 16px; background:#3182ce; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; display:none; margin-right:8px;" disabled>
                         🔗 Fusionner la sélection (<span id="nbFusionnes">0</span>)
@@ -639,6 +641,31 @@
                         </thead>
                         <tbody id="bonsTableBody">
                             <!-- rempli en JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bons archivés (masqué par défaut) -->
+            <div id="sectionBonsArchives" class="section" style="display:none;">
+                <h3 class="section-title">📦 Bons archivés
+                    <button onclick="fermerBonsArchives()" style="float:right; padding:6px 14px; background:#e53e3e; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem;">✕ Fermer</button>
+                </h3>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                        <thead>
+                            <tr style="background:#edf2f7;">
+                                <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Date</th>
+                                <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">N° Bon</th>
+                                <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Client</th>
+                                <th style="text-align:left; padding:8px; border-bottom:1px solid var(--border);">Technicien</th>
+                                <th style="text-align:right; padding:8px; border-bottom:1px solid var(--border);">Total TTC</th>
+                                <th style="text-align:center; padding:8px; border-bottom:1px solid var(--border);">Raison</th>
+                                <th style="text-align:center; padding:8px; border-bottom:1px solid var(--border); width:100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bonsArchivesTableBody">
+                            <tr><td colspan="7" style="padding:8px; text-align:center; color:var(--text-light);">Chargement...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1748,7 +1775,8 @@
             // Activer l'édition des tarifs et la suppression de lignes produits en mode admin
             initialiserEditionPrixProduitsAdmin();
             
-            // Recharger les bons de la société sélectionnée
+            // Auto-archiver les bons validés > 5 jours puis recharger
+            await archiverBonsExpires();
             renderHistorique();
             // Rafraîchir l'agenda si on est sur l'onglet Agenda (interventions de la société en cours uniquement)
             if (document.getElementById('vueAgenda') && document.getElementById('vueAgenda').classList.contains('active')) {
@@ -4161,6 +4189,127 @@
             
             // Recharger l'historique
             await renderHistorique();
+        }
+
+        // ============================================
+        // AUTO-ARCHIVAGE DES BONS VALIDÉS > 5 JOURS
+        // ============================================
+        async function archiverBonsExpires() {
+            if (!societeActive) return;
+            try {
+                const snap = await db.collection(getCollectionPath('bons')).get();
+                const maintenant = new Date();
+                let count = 0;
+                for (const doc of snap.docs) {
+                    const data = doc.data();
+                    const statut = data.statut || '';
+                    if (statut !== 'validé' && statut !== 'valide') continue;
+                    // Calculer l'âge du bon depuis sa date ou updatedAt
+                    let dateBon = null;
+                    if (data.updatedAt && data.updatedAt.seconds) {
+                        dateBon = new Date(data.updatedAt.seconds * 1000);
+                    } else if (data.date) {
+                        dateBon = new Date(data.date);
+                    }
+                    if (!dateBon) continue;
+                    const diffJours = (maintenant - dateBon) / (1000 * 60 * 60 * 24);
+                    if (diffJours >= 5) {
+                        await db.collection(getCollectionPath('bons')).doc(doc.id).update({
+                            statut: 'archivé',
+                            archivedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            archiveRaison: 'auto-5j'
+                        });
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    console.log(count + ' bon(s) validé(s) archivé(s) automatiquement (>5 jours)');
+                }
+            } catch (e) {
+                console.error('Erreur auto-archivage:', e);
+            }
+        }
+
+        // ============================================
+        // BONS ARCHIVÉS (consultation avec code admin)
+        // ============================================
+        function accederBonsArchives() {
+            const code = prompt("Entrez le code admin pour accéder aux bons archivés :");
+            if (code !== 'CEP2024') {
+                alert("Code incorrect.");
+                return;
+            }
+            document.getElementById('sectionBonsArchives').style.display = 'block';
+            renderBonsArchives();
+        }
+
+        function fermerBonsArchives() {
+            document.getElementById('sectionBonsArchives').style.display = 'none';
+        }
+
+        async function renderBonsArchives() {
+            const tbody = document.getElementById('bonsArchivesTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:8px; text-align:center; color:var(--text-light);">Chargement...</td></tr>';
+            try {
+                const snap = await db.collection(getCollectionPath('bons')).get();
+                const bons = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.statut !== 'archivé') return;
+                    bons.push({ id: doc.id, ...data });
+                });
+                bons.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+                if (bons.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="padding:8px; text-align:center; color:var(--text-light);">Aucun bon archivé.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                bons.forEach(bon => {
+                    const tr = document.createElement('tr');
+                    let raison = '';
+                    if (bon.archiveRaison === 'auto-5j') raison = '<span style="background:#805ad5;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;">Auto 5j</span>';
+                    else if (bon.fusionneDans) raison = '<span style="background:#3182ce;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;">Fusionné → ' + bon.fusionneDans + '</span>';
+                    else raison = '<span style="background:#718096;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;">Manuel</span>';
+
+                    tr.innerHTML = `
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.date || ''}</td>
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border); font-family:'Space Mono', monospace;">${bon.numero || ''}</td>
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.client || ''}</td>
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border);">${bon.technicien || ''}</td>
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:right;">${bon.totalTTC || ''}</td>
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">${raison}</td>
+                        <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">
+                            <button style="padding:4px 8px; font-size:0.75rem;" onclick="chargerBon('${bon.id}')">Consulter</button>
+                            <button style="padding:4px 8px; font-size:0.75rem; background:#48bb78; color:#fff; border:none; border-radius:4px; margin-left:4px;" onclick="restaurerBon('${bon.id}')">Restaurer</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:8px; text-align:center; color:var(--text-light);">Erreur de chargement.</td></tr>';
+            }
+        }
+
+        async function restaurerBon(id) {
+            if (!confirm("Restaurer ce bon dans l'historique actif ?")) return;
+            try {
+                await db.collection(getCollectionPath('bons')).doc(id).update({
+                    statut: 'en_attente',
+                    archivedAt: firebase.firestore.FieldValue.delete(),
+                    archiveRaison: firebase.firestore.FieldValue.delete(),
+                    fusionneDans: firebase.firestore.FieldValue.delete()
+                });
+                showToast('Bon restauré');
+                renderBonsArchives();
+                renderHistorique();
+            } catch (e) {
+                console.error(e);
+                showToast("Erreur lors de la restauration", true);
+            }
         }
 
         async function fusionnerBonsSelectionnes() {
