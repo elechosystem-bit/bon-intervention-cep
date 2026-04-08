@@ -565,13 +565,15 @@
                     <label>🔧 Main d'œuvre</label>
                     <input type="text" id="moDuree" value="0h00" readonly style="background:#f0f0f0; cursor:not-allowed;" placeholder="Durée">
                     <input type="text" id="moDemiHeures" value="0 demi-heures" readonly style="background:#f0f0f0; cursor:not-allowed; text-align:center; display:none;" placeholder="Demi-heures">
-                    <input type="number" id="moTarif" value="35" min="0" placeholder="€/demi-h" style="display:none;">
+                    <input type="number" id="moTarif" value="35" min="0" placeholder="€/demi-h" onchange="calculerMainOeuvre()" style="width:80px;">
+                    <span style="font-size:0.8rem;color:#718096;">€/demi-h</span>
                     <div class="product-total" id="moTotal">0.00€</div>
                 </div>
                 <div class="service-row">
-                    <label>🚗 Déplacement (70€/déplacement)</label>
+                    <label>🚗 Déplacement</label>
                     <input type="number" id="deplNombre" value="0" min="0" max="10" placeholder="0, 1, 2..." onchange="updateDepl()">
-                    <input type="number" id="deplTarif" value="70" min="0" style="display:none;">
+                    <input type="number" id="deplTarif" value="70" min="0" placeholder="€/dépl" onchange="updateDepl()" style="width:80px;">
+                    <span style="font-size:0.8rem;color:#718096;">€/dépl</span>
                     <div class="product-total" id="deplTotal">0.00€</div>
                 </div>
             </div>
