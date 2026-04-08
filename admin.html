@@ -4204,14 +4204,13 @@
                     const data = doc.data();
                     const statut = data.statut || '';
                     if (statut !== 'validé' && statut !== 'valide') continue;
-                    // Calculer l'âge du bon depuis sa date ou updatedAt
-                    let dateBon = null;
+                    // Calculer l'âge depuis la validation (updatedAt = moment de la validation)
+                    let dateValidation = null;
                     if (data.updatedAt && data.updatedAt.seconds) {
-                        dateBon = new Date(data.updatedAt.seconds * 1000);
-                    } else if (data.date) {
-                        dateBon = new Date(data.date);
+                        dateValidation = new Date(data.updatedAt.seconds * 1000);
                     }
-                    if (!dateBon) continue;
+                    if (!dateValidation) continue;
+                    const dateBon = dateValidation;
                     const diffJours = (maintenant - dateBon) / (1000 * 60 * 60 * 24);
                     if (diffJours >= 5) {
                         await db.collection(getCollectionPath('bons')).doc(doc.id).update({
