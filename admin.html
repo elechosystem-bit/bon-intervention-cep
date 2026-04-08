@@ -286,6 +286,7 @@
             <div style="display: flex; flex-direction: column; gap: 2px; margin-left: auto;">
                 <label class="samedi-check"><input type="checkbox" id="adminCheckSamedi" onchange="calculerMainOeuvre(); updateDepl();"> samedi</label>
                 <label class="samedi-check"><input type="checkbox" id="adminCheckContrat" onchange="updateDepl();"> contrat</label>
+                <label class="samedi-check"><input type="checkbox" id="adminCheckStephcousin" onchange="applyStephcousin();"> stephcousin</label>
             </div>
         </div>
 
@@ -2125,8 +2126,8 @@
             const demiHeures = Math.ceil(dureeMinutes / 30);
             document.getElementById('moDemiHeures').value = demiHeures + ' demi-heure' + (demiHeures > 1 ? 's' : '');
             
-            // Calculer le total : nombre de demi-heures × 35€ (× 1.5 si samedi)
-            const tarifDemiHeure = 35;
+            // Calculer le total : nombre de demi-heures × tarif (× 1.5 si samedi)
+            const tarifDemiHeure = parseFloat(document.getElementById('moTarif').value) || 35;
             let totalMO = demiHeures * tarifDemiHeure;
             const samediCoeff = document.getElementById('adminCheckSamedi')?.checked ? 1.5 : 1;
             totalMO = totalMO * samediCoeff;
@@ -2142,7 +2143,7 @@
 
         function updateDepl() {
             const nombre = parseFloat(document.getElementById('deplNombre').value) || 0;
-            const tarifForfait = 70; // 70€ par déplacement
+            const tarifForfait = parseFloat(document.getElementById('deplTarif').value) || 70;
             let total = nombre * tarifForfait;
             const samediCoeff = document.getElementById('adminCheckSamedi')?.checked ? 1.5 : 1;
             total = total * samediCoeff;
@@ -2150,6 +2151,19 @@
             if (isContrat) total = total / 2;
             document.getElementById('deplTotal').textContent = total.toFixed(2) + '€';
             calculateTotals();
+        }
+
+        function applyStephcousin() {
+            const checked = document.getElementById('adminCheckStephcousin').checked;
+            if (checked) {
+                document.getElementById('moTarif').value = 30;
+                document.getElementById('deplTarif').value = 60;
+            } else {
+                document.getElementById('moTarif').value = 35;
+                document.getElementById('deplTarif').value = 70;
+            }
+            calculerMainOeuvre();
+            updateDepl();
         }
 
         function calculateTotals() {
