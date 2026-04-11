@@ -2258,11 +2258,25 @@
             const fsCanvas = document.getElementById('fullscreenSignatureCanvas');
             const source = document.getElementById(_fsSourceCanvasId);
 
-            // Copy fullscreen signature back to original canvas
             if (source && fsCanvas) {
-                const ctx = source.getContext('2d');
-                ctx.clearRect(0, 0, source.width, source.height);
-                ctx.drawImage(fsCanvas, 0, 0, source.width, source.height);
+                // Sauvegarder l'image haute résolution
+                var hiResData = fsCanvas.toDataURL('image/png');
+                source.dataset.hiresSignature = hiResData;
+
+                // Afficher un aperçu sur le petit canvas
+                var img = new Image();
+                img.onload = function() {
+                    var ctx = source.getContext('2d');
+                    ctx.clearRect(0, 0, source.width, source.height);
+                    ctx.drawImage(img, 0, 0, source.width, source.height);
+                };
+                img.src = hiResData;
+
+                // Remplacer toDataURL du canvas source pour que le PDF utilise la version haute résolution
+                source._originalToDataURL = source.toDataURL;
+                source.toDataURL = function(type) {
+                    return this.dataset.hiresSignature || this._originalToDataURL.call(this, type);
+                };
             }
 
             document.getElementById('fullscreenSignatureOverlay').style.display = 'none';
