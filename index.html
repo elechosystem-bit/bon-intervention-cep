@@ -2128,19 +2128,23 @@
                 console.error('Canvas non trouvé:', id);
                 return;
             }
-            
+
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width || 300;
-            canvas.height = rect.height || 200;
-            
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = (rect.width || 300) * dpr;
+            canvas.height = (rect.height || 200) * dpr;
+            canvas.style.width = (rect.width || 300) + 'px';
+            canvas.style.height = (rect.height || 200) + 'px';
+
             const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
             ctx.strokeStyle = '#1a365d';
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            
+
             let drawing = false;
-            
+
             function getPos(e) {
                 const r = canvas.getBoundingClientRect();
                 let clientX, clientY;
@@ -2194,7 +2198,11 @@
 
         function clearSignature(id) {
             const c = document.getElementById(id);
-            c.getContext('2d').clearRect(0, 0, c.width, c.height);
+            const ctx = c.getContext('2d');
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.restore();
         }
 
         // -- Signature plein écran --
@@ -2263,12 +2271,15 @@
                 var hiResData = fsCanvas.toDataURL('image/png');
                 source.dataset.hiresSignature = hiResData;
 
-                // Copier la signature vers le petit canvas (aperçu)
+                // Copier la signature vers le petit canvas (aperçu haute résolution)
                 var img = new Image();
                 img.onload = function() {
                     var ctx = source.getContext('2d');
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.clearRect(0, 0, source.width, source.height);
                     ctx.drawImage(img, 0, 0, source.width, source.height);
+                    ctx.restore();
                 };
                 img.src = hiResData;
 
