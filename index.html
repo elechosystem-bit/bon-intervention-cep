@@ -2130,13 +2130,8 @@
             }
             
             const rect = canvas.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 2;
-            canvas.width = (rect.width || 300) * dpr;
-            canvas.height = (rect.height || 200) * dpr;
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            const ctx0 = canvas.getContext('2d');
-            ctx0.scale(dpr, dpr);
+            canvas.width = rect.width || 300;
+            canvas.height = rect.height || 200;
             
             const ctx = canvas.getContext('2d');
             ctx.strokeStyle = '#1a365d';
