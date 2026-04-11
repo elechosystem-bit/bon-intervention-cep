@@ -2214,11 +2214,10 @@
                 fsCanvas.width = fsCanvas.offsetWidth;
                 fsCanvas.height = fsCanvas.offsetHeight;
 
-                // Copy existing signature to fullscreen canvas
+                // Effacer le canvas source et le plein écran (on recommence la signature en grand)
                 const source = document.getElementById(canvasId);
                 if (source) {
-                    const ctx = fsCanvas.getContext('2d');
-                    ctx.drawImage(source, 0, 0, fsCanvas.width, fsCanvas.height);
+                    source.getContext('2d').clearRect(0, 0, source.width, source.height);
                 }
 
                 // Init drawing on fullscreen canvas
