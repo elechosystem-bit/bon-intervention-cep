@@ -2223,7 +2223,7 @@
                 // Init drawing on fullscreen canvas
                 const ctx = fsCanvas.getContext('2d');
                 ctx.strokeStyle = '#1a365d';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
 
@@ -2263,16 +2263,14 @@
                 var hiResData = fsCanvas.toDataURL('image/png');
                 source.dataset.hiresSignature = hiResData;
 
-                // Afficher "Signature OK" sur le petit canvas
-                var ctx = source.getContext('2d');
-                ctx.clearRect(0, 0, source.width, source.height);
-                ctx.fillStyle = '#f0fff4';
-                ctx.fillRect(0, 0, source.width, source.height);
-                ctx.fillStyle = '#38a169';
-                ctx.font = 'bold 18px -apple-system, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Signature enregistree', source.width / 2, source.height / 2);
+                // Copier la signature vers le petit canvas (aperçu)
+                var img = new Image();
+                img.onload = function() {
+                    var ctx = source.getContext('2d');
+                    ctx.clearRect(0, 0, source.width, source.height);
+                    ctx.drawImage(img, 0, 0, source.width, source.height);
+                };
+                img.src = hiResData;
 
                 // Remplacer toDataURL pour que le PDF utilise la version haute résolution
                 if (!source._originalToDataURL) {
