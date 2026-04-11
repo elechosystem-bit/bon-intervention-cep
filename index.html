@@ -2263,19 +2263,23 @@
                 var hiResData = fsCanvas.toDataURL('image/png');
                 source.dataset.hiresSignature = hiResData;
 
-                // Afficher un aperçu sur le petit canvas
-                var img = new Image();
-                img.onload = function() {
-                    var ctx = source.getContext('2d');
-                    ctx.clearRect(0, 0, source.width, source.height);
-                    ctx.drawImage(img, 0, 0, source.width, source.height);
-                };
-                img.src = hiResData;
+                // Afficher "Signature OK" sur le petit canvas
+                var ctx = source.getContext('2d');
+                ctx.clearRect(0, 0, source.width, source.height);
+                ctx.fillStyle = '#f0fff4';
+                ctx.fillRect(0, 0, source.width, source.height);
+                ctx.fillStyle = '#38a169';
+                ctx.font = 'bold 18px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Signature enregistree', source.width / 2, source.height / 2);
 
-                // Remplacer toDataURL du canvas source pour que le PDF utilise la version haute résolution
-                source._originalToDataURL = source.toDataURL;
+                // Remplacer toDataURL pour que le PDF utilise la version haute résolution
+                if (!source._originalToDataURL) {
+                    source._originalToDataURL = source.toDataURL.bind(source);
+                }
                 source.toDataURL = function(type) {
-                    return this.dataset.hiresSignature || this._originalToDataURL.call(this, type);
+                    return this.dataset.hiresSignature || this._originalToDataURL(type);
                 };
             }
 
