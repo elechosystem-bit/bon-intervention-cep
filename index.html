@@ -1020,12 +1020,13 @@
         function remplirSelectConnexion() {
             const sel = document.getElementById('technicienConnexion');
             if (!sel) return;
-            const noms = listeTechniciensToutesSocietes.map(e => e.nom);
-            const doublons = noms.filter((n, i) => noms.indexOf(n) !== i);
+            // Dedupliquer par nom (un seul nom dans la liste, le code determinera la societe)
+            const nomsVus = new Set();
             sel.innerHTML = '<option value="">-- Sélectionner votre nom --</option>';
-            listeTechniciensToutesSocietes.forEach((entry, index) => {
-                const libelle = doublons.includes(entry.nom) ? entry.nom + ' (' + entry.societe.nom + ')' : entry.nom;
-                sel.innerHTML += '<option value="' + index + '">' + libelle.replace(/</g, '&lt;').replace(/"/g, '&quot;') + '</option>';
+            listeTechniciensToutesSocietes.forEach((entry) => {
+                if (nomsVus.has(entry.nom)) return;
+                nomsVus.add(entry.nom);
+                sel.innerHTML += '<option value="' + entry.nom.replace(/"/g, '&quot;') + '">' + entry.nom.replace(/</g, '&lt;') + '</option>';
             });
         }
         
@@ -1056,14 +1057,24 @@
             const sel = document.getElementById('technicienConnexion');
             const codeSaisi = (document.getElementById('codeAccesConnexion').value || '').trim();
             const msgEl = document.getElementById('messageConnexionTechnicien');
-            const index = sel && sel.value !== '' ? parseInt(sel.value, 10) : -1;
-            if (index < 0 || index >= listeTechniciensToutesSocietes.length) {
+            const nomChoisi = sel ? sel.value : '';
+            if (!nomChoisi) {
                 if (msgEl) { msgEl.textContent = 'Sélectionnez votre nom.'; msgEl.style.color = '#e53e3e'; }
                 return;
             }
-            const entry = listeTechniciensToutesSocietes[index];
-            const codeAttendu = entry.code || '';
-            if (codeAttendu.length > 0 && codeSaisi !== codeAttendu) {
+            // Chercher l'entree qui correspond au nom + code (la societe est determinee par le code)
+            const entries = listeTechniciensToutesSocietes.filter(e => e.nom === nomChoisi);
+            if (entries.length === 0) {
+                if (msgEl) { msgEl.textContent = 'Technicien introuvable.'; msgEl.style.color = '#e53e3e'; }
+                return;
+            }
+            // Trouver l'entree dont le code correspond
+            let entry = entries.find(e => (e.code || '') === codeSaisi);
+            if (!entry) {
+                // Si aucun code ne correspond, prendre la premiere si pas de code requis
+                entry = entries.find(e => !e.code || e.code.length === 0);
+            }
+            if (!entry) {
                 if (msgEl) { msgEl.textContent = 'Code incorrect.'; msgEl.style.color = '#e53e3e'; }
                 return;
             }
