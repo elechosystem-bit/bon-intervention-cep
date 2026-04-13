@@ -2578,17 +2578,38 @@
                 if (name && qty > 0) produits.push({ nom: name, reference: '', quantite: qty });
             });
             
-            // Récupérer les signatures
+            // Récupérer les signatures (et les compresser pour le PDF)
             const signatureTech = document.getElementById('signatureTech');
             const signatureClient = document.getElementById('signatureClient');
             let sigTechData = null;
             let sigClientData = null;
+
+            function compressSignature(srcDataUrl) {
+                return new Promise(function(resolve) {
+                    var img = new Image();
+                    img.onload = function() {
+                        var maxW = 600;
+                        var ratio = Math.min(1, maxW / img.width);
+                        var c = document.createElement('canvas');
+                        c.width = img.width * ratio;
+                        c.height = img.height * ratio;
+                        var ctx = c.getContext('2d');
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, c.width, c.height);
+                        ctx.drawImage(img, 0, 0, c.width, c.height);
+                        resolve(c.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.onerror = function() { resolve(srcDataUrl); };
+                    img.src = srcDataUrl;
+                });
+            }
+
             try {
                 if (signatureTech && signatureTech.toDataURL) {
-                    sigTechData = signatureTech.toDataURL('image/png');
+                    sigTechData = await compressSignature(signatureTech.toDataURL('image/png'));
                 }
                 if (signatureClient && signatureClient.toDataURL) {
-                    sigClientData = signatureClient.toDataURL('image/png');
+                    sigClientData = await compressSignature(signatureClient.toDataURL('image/png'));
                 }
             } catch(e) {
                 console.error('Erreur récupération signatures:', e);
@@ -2848,7 +2869,7 @@
                     doc.text('Signature Intervenant :', 20, yPos);
                     yPos += 5;
                     try {
-                        doc.addImage(sigTechData, 'PNG', 20, yPos, sigWidth, sigHeight);
+                        doc.addImage(sigTechData, 'JPEG', 20, yPos, sigWidth, sigHeight);
                     } catch(e) {
                         console.error('Erreur ajout signature technicien:', e);
                     }
@@ -2862,7 +2883,7 @@
                     doc.text('Signature Client :', 120, yPos - 5);
                     if (!sigTechData) yPos += 5;
                     try {
-                        doc.addImage(sigClientData, 'PNG', 120, yPos, sigWidth, sigHeight);
+                        doc.addImage(sigClientData, 'JPEG', 120, yPos, sigWidth, sigHeight);
                     } catch(e) {
                         console.error('Erreur ajout signature client:', e);
                     }
