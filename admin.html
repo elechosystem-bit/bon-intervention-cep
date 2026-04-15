@@ -3023,7 +3023,16 @@
                 const boutonSupprimer = estValide
                     ? '<button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon(\'' + bon.id + '\', \'' + statut + '\')" title="Supprimer (code admin requis)">Supprimer (admin)</button>'
                     : '<button style="padding:4px 8px; font-size:0.75rem; background:#e53e3e; color:#fff; border:none; border-radius:4px;" onclick="supprimerBon(\'' + bon.id + '\', \'' + statut + '\')">Supprimer</button>';
-                
+
+                // Badge "Fusionné" + bouton Défusionner pour les bons fusionnés
+                const estFusionne = bon.fusion === true;
+                const badgeFusion = estFusionne
+                    ? '<span style="background:#3182ce;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;" title="Fusionne depuis : ' + (bon.bonsOrigine || []).join(', ') + '">🔗 Fusionné</span>'
+                    : '';
+                const boutonDefusionner = estFusionne
+                    ? '<button style="margin-right:6px; padding:4px 8px; font-size:0.75rem; background:#3182ce; color:#fff; border:none; border-radius:4px;" onclick="defusionnerBon(\'' + bon.id + '\')" title="Restaurer les bons originaux et archiver celui-ci">Défusionner</button>'
+                    : '';
+
                 tr.innerHTML = `
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">
                         <input type="checkbox" class="bon-checkbox" data-bon-id="${bon.id}" data-statut="${statut}" onchange="updateSelectionCount()" style="cursor:pointer;">
@@ -3035,7 +3044,9 @@
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:right;">${bon.totalTTC}</td>
                     <td style="padding:6px 8px; border-bottom:1px solid var(--border); text-align:center;">
                         ${badgeStatut}
+                        ${badgeFusion}
                         <button style="margin-right:6px; padding:4px 8px; font-size:0.75rem;" onclick="chargerBon('${bon.id}')">Charger</button>
+                        ${boutonDefusionner}
                         ${boutonSupprimer}
                     </td>
                 `;
@@ -4487,6 +4498,58 @@
             } catch (e) {
                 console.error('Erreur fusion:', e);
                 showToast("Erreur lors de la fusion : " + (e.message || ''), true);
+            }
+        }
+
+        async function defusionnerBon(bonId) {
+            try {
+                const doc = await db.collection(getCollectionPath('bons')).doc(bonId).get();
+                if (!doc.exists) {
+                    showToast('Bon introuvable', true);
+                    return;
+                }
+                const bon = doc.data();
+                if (bon.fusion !== true) {
+                    showToast("Ce bon n'est pas un bon fusionné", true);
+                    return;
+                }
+                const numeroFusion = bon.numero;
+                const bonsOrigine = bon.bonsOrigine || [];
+
+                const msg = 'Défusionner le bon N°' + numeroFusion + ' ?\n\n' +
+                            'Les ' + bonsOrigine.length + ' bon(s) d\'origine seront restaurés :\n' +
+                            '• ' + bonsOrigine.join('\n• ') + '\n\n' +
+                            'Le bon fusionné sera archivé.';
+                if (!confirm(msg)) return;
+
+                // Chercher tous les bons avec fusionneDans = numeroFusion et les restaurer
+                const snap = await db.collection(getCollectionPath('bons'))
+                    .where('fusionneDans', '==', numeroFusion)
+                    .get();
+
+                let restaures = 0;
+                for (const d of snap.docs) {
+                    await db.collection(getCollectionPath('bons')).doc(d.id).update({
+                        statut: 'en_attente',
+                        archivedAt: firebase.firestore.FieldValue.delete(),
+                        archiveRaison: firebase.firestore.FieldValue.delete(),
+                        fusionneDans: firebase.firestore.FieldValue.delete()
+                    });
+                    restaures++;
+                }
+
+                // Archiver le bon fusionné
+                await db.collection(getCollectionPath('bons')).doc(bonId).update({
+                    statut: 'archivé',
+                    archivedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    archiveRaison: 'defusion'
+                });
+
+                showToast('Défusionné : ' + restaures + ' bon(s) restauré(s)');
+                await renderHistorique();
+            } catch (e) {
+                console.error('Erreur défusion:', e);
+                showToast("Erreur lors de la défusion : " + (e.message || ''), true);
             }
         }
 
