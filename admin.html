@@ -4368,24 +4368,31 @@
             }).join('\n\n');
 
             // Fusionner les heures (additionner les demi-heures de MO)
-            // Priorité à moDemiHeures (plus fiable), fallback sur moDuree
+            // On calcule depuis moDemiHeures ET moDuree, on prend le max (pour etre robuste)
             let totalDemiHeures = 0;
             bonsAFusionner.forEach(b => {
-                // Essayer moDemiHeures d'abord : "X demi-heures" ou "X demi-heure"
+                let dhFromField = 0;
+                let dhFromDuree = 0;
+
+                // moDemiHeures : "X demi-heures" ou "X demi-heure"
                 const mdh = String(b.moDemiHeures || '');
                 const matchDH = mdh.match(/(\d+)\s*demi/);
-                if (matchDH) {
-                    totalDemiHeures += parseInt(matchDH[1], 10) || 0;
-                    return;
-                }
-                // Fallback : moDuree format "XhYY" ou "XhY"
+                if (matchDH) dhFromField = parseInt(matchDH[1], 10) || 0;
+
+                // moDuree : "XhYY" (ex: 1h30, 0h30)
                 const duree = String(b.moDuree || '0h00');
-                const match = duree.match(/(\d+)h(\d+)/);
-                if (match) {
-                    const minutes = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-                    totalDemiHeures += Math.ceil(minutes / 30);
+                const matchDuree = duree.match(/(\d+)h(\d+)/);
+                if (matchDuree) {
+                    const minutes = parseInt(matchDuree[1], 10) * 60 + parseInt(matchDuree[2], 10);
+                    if (minutes > 0) dhFromDuree = Math.ceil(minutes / 30);
                 }
+
+                // Prendre le max : si un champ est 0 mais pas l'autre, on prend le non-zéro
+                const dhBon = Math.max(dhFromField, dhFromDuree);
+                console.log('[Fusion] Bon ' + (b.numero || b.id) + ' : moDemiHeures="' + mdh + '" (' + dhFromField + ') | moDuree="' + duree + '" (' + dhFromDuree + ') => ' + dhBon + ' demi-h');
+                totalDemiHeures += dhBon;
             });
+            console.log('[Fusion] Total demi-heures : ' + totalDemiHeures);
             const totalMinutesMO = totalDemiHeures * 30;
             const moHeures = Math.floor(totalMinutesMO / 60);
             const moMinutes = totalMinutesMO % 60;
