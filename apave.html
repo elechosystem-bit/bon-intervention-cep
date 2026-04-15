@@ -119,14 +119,6 @@
     </div>
 
     <div class="body">
-        <div class="societe-selector">
-            <label>Société :</label>
-            <select id="societeSelect" onchange="changerSociete()">
-                <option value="cep">CEP</option>
-                <option value="elechosystem">Elechosystem</option>
-            </select>
-        </div>
-
         <div class="stats" id="stats"></div>
 
         <div class="toolbar">
@@ -144,7 +136,7 @@
                     <th>Contact</th>
                     <th>Dernier rapport</th>
                     <th>Prochaine échéance</th>
-                    <th>Notes</th>
+                    <th>PDFs</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
@@ -192,6 +184,12 @@
             <label>Notes</label>
             <textarea id="formNotes" rows="2"></textarea>
         </div>
+        <div class="form-group" id="pdfSection" style="display:none;">
+            <label>Rapports PDF</label>
+            <div id="pdfList" style="margin-bottom:8px;"></div>
+            <input type="file" id="formPdf" accept="application/pdf" multiple onchange="uploerPdfs()">
+            <small style="color:var(--text-light);">Sélectionnez un ou plusieurs PDF à ajouter</small>
+        </div>
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="fermerModal()">Annuler</button>
             <button class="btn btn-primary" onclick="sauvegarderClient()">Enregistrer</button>
@@ -205,6 +203,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script>
     // Config Firebase (identique aux autres pages du projet)
     const firebaseConfig = {
@@ -219,17 +218,12 @@
     firebase.auth().signInAnonymously().catch(err => console.error('Auth:', err));
     const db = firebase.firestore();
 
-    let societeActive = 'cep';
+    const SOCIETE_ID = 'cep'; // Apave : uniquement CEP
     let tousLesClients = [];
     let filtreStatut = 'tous';
 
     function getCollectionRef() {
-        return db.collection('societes').doc(societeActive).collection('apave');
-    }
-
-    function changerSociete() {
-        societeActive = document.getElementById('societeSelect').value;
-        charger();
+        return db.collection('societes').doc(SOCIETE_ID).collection('apave');
     }
 
     function calculerStatut(client) {
@@ -311,13 +305,17 @@
             const btnFait = c.status === 'fait'
                 ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="marquerNonFait(\'' + c.id + '\')">Annuler</button>'
                 : '<button class="btn btn-success" style="padding:4px 10px;font-size:0.8rem;" onclick="marquerFait(\'' + c.id + '\')">✓ Fait</button>';
+            const nbPdfs = (c.pdfs || []).length;
+            const pdfCell = nbPdfs > 0
+                ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="voirPdfs(\'' + c.id + '\')">📎 ' + nbPdfs + '</button>'
+                : '<small style="color:var(--text-light);">-</small>';
             return `
                 <tr>
                     <td><strong>${c.name || '-'}</strong></td>
                     <td><small>${c.contact || '-'}</small></td>
                     <td>${formaterDate(c.lastClientReport)}</td>
                     <td>${moisNom(c.dueMonth)} ${c.dueYear || ''}</td>
-                    <td><small>${(c.notes || '').replace(/</g,'&lt;')}</small></td>
+                    <td>${pdfCell}</td>
                     <td>${badge}${completed}</td>
                     <td style="white-space:nowrap;">
                         ${btnFait}
@@ -339,6 +337,8 @@
         document.getElementById('formDueMonth').value = (now.getMonth() + 1);
         document.getElementById('formDueYear').value = now.getFullYear() + 1;
         document.getElementById('formNotes').value = '';
+        // Masquer la section PDF : il faut d'abord enregistrer le client
+        document.getElementById('pdfSection').style.display = 'none';
         document.getElementById('modalForm').classList.add('show');
     }
 
@@ -353,7 +353,93 @@
         document.getElementById('formDueMonth').value = c.dueMonth || 1;
         document.getElementById('formDueYear').value = c.dueYear || new Date().getFullYear() + 1;
         document.getElementById('formNotes').value = c.notes || '';
+        document.getElementById('pdfSection').style.display = 'block';
+        afficherListePdfs(c.pdfs || []);
         document.getElementById('modalForm').classList.add('show');
+    }
+
+    function afficherListePdfs(pdfs) {
+        const container = document.getElementById('pdfList');
+        if (!pdfs.length) {
+            container.innerHTML = '<small style="color:var(--text-light);">Aucun PDF uploadé</small>';
+            return;
+        }
+        container.innerHTML = pdfs.map((p, i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:4px;gap:8px;">
+                <a href="${p.url}" target="_blank" style="color:var(--primary);text-decoration:none;flex:1;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📄 ${p.name || 'PDF'}</a>
+                <button class="btn btn-danger" style="padding:3px 8px;font-size:0.75rem;flex-shrink:0;" onclick="supprimerPdf(${i})">✕</button>
+            </div>
+        `).join('');
+    }
+
+    async function uploerPdfs() {
+        const id = document.getElementById('formId').value;
+        if (!id) {
+            toast('Enregistrez d\'abord le client avant d\'ajouter des PDFs', true);
+            document.getElementById('formPdf').value = '';
+            return;
+        }
+        const files = document.getElementById('formPdf').files;
+        if (!files.length) return;
+
+        const clientRef = getCollectionRef().doc(id);
+        const c = tousLesClients.find(x => x.id === id) || {};
+        const pdfs = Array.isArray(c.pdfs) ? [...c.pdfs] : [];
+
+        toast('Upload en cours...');
+        try {
+            const storage = firebase.storage();
+            for (const file of files) {
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const path = 'apave/' + SOCIETE_ID + '/' + id + '/' + Date.now() + '_' + safeName;
+                const ref = storage.ref(path);
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+                pdfs.push({
+                    name: file.name,
+                    url: url,
+                    path: path,
+                    uploadedAt: new Date().toISOString(),
+                });
+            }
+            await clientRef.update({ pdfs: pdfs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            const idx = tousLesClients.findIndex(x => x.id === id);
+            if (idx >= 0) tousLesClients[idx].pdfs = pdfs;
+            afficherListePdfs(pdfs);
+            document.getElementById('formPdf').value = '';
+            toast(files.length + ' PDF(s) ajouté(s)');
+        } catch (e) {
+            console.error(e);
+            toast('Erreur upload : ' + (e.message || ''), true);
+        }
+    }
+
+    async function supprimerPdf(index) {
+        const id = document.getElementById('formId').value;
+        const c = tousLesClients.find(x => x.id === id);
+        if (!c || !c.pdfs || !c.pdfs[index]) return;
+        if (!confirm('Supprimer ce PDF ?')) return;
+        const pdf = c.pdfs[index];
+        try {
+            if (pdf.path) {
+                try { await firebase.storage().ref(pdf.path).delete(); }
+                catch (e) { console.warn('Suppression storage échouée:', e); }
+            }
+            const nouveauxPdfs = c.pdfs.filter((_, i) => i !== index);
+            await getCollectionRef().doc(id).update({
+                pdfs: nouveauxPdfs,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            c.pdfs = nouveauxPdfs;
+            afficherListePdfs(nouveauxPdfs);
+            toast('PDF supprimé');
+        } catch (e) {
+            toast('Erreur : ' + e.message, true);
+        }
+    }
+
+    function voirPdfs(id) {
+        editer(id);
     }
 
     function fermerModal() {
@@ -369,7 +455,7 @@
             dueMonth: parseInt(document.getElementById('formDueMonth').value, 10),
             dueYear: parseInt(document.getElementById('formDueYear').value, 10),
             notes: document.getElementById('formNotes').value.trim(),
-            societe: societeActive,
+            societe: SOCIETE_ID,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         };
         if (!data.name) { toast('Le nom du client est obligatoire', true); return; }
