@@ -4361,6 +4361,16 @@
       "rue": "16, terrasse de l'Arche"
     },
     {
+      "id": 277479035,
+      "nom": "Jules Jo",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
+    },
+    {
       "id": 248733314,
       "nom": "KAVERI",
       "email": "nguptakaveri@gmail.com",
@@ -7159,6 +7169,16 @@
       "ville": "Paris",
       "codePostal": "75004",
       "rue": "30, boulevard Sébastopol"
+    },
+    {
+      "id": 277479276,
+      "nom": "Le Parc Clichy",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
     },
     {
       "id": 255248681,
@@ -11971,6 +11991,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1197,
-  "syncDate": "2026-04-14T04:55:56Z"
+  "total": 1199,
+  "syncDate": "2026-04-15T04:56:05Z"
 }
