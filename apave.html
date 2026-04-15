@@ -219,8 +219,19 @@
     const db = firebase.firestore();
 
     const SOCIETE_ID = 'cep'; // Apave : uniquement CEP
+    const ADMIN_CODE = 'CEP2024'; // Code pour actions sensibles (annuler/supprimer)
     let tousLesClients = [];
     let filtreStatut = 'tous';
+
+    function demanderCodeAdmin() {
+        const code = prompt('Code administrateur requis :');
+        if (code === null) return false; // Annulé
+        if (code !== ADMIN_CODE) {
+            toast('Code incorrect', true);
+            return false;
+        }
+        return true;
+    }
 
     function getCollectionRef() {
         return db.collection('societes').doc(SOCIETE_ID).collection('apave');
@@ -302,9 +313,10 @@
                         : statut === 'en_retard' ? '<span class="status-badge status-retard">⚠ Retard</span>'
                         : '<span class="status-badge status-a-faire">À faire</span>';
             const completed = c.status === 'fait' && c.completedDate ? '<br><small style="color:var(--text-light);">le ' + formaterDate(c.completedDate) + '</small>' : '';
+            const btnStyle = 'padding:6px 12px;font-size:0.8rem;min-width:70px;';
             const btnFait = c.status === 'fait'
-                ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="marquerNonFait(\'' + c.id + '\')">Annuler</button>'
-                : '<button class="btn btn-success" style="padding:4px 10px;font-size:0.8rem;" onclick="marquerFait(\'' + c.id + '\')">✓ Fait</button>';
+                ? '<button class="btn btn-secondary" style="' + btnStyle + '" onclick="marquerNonFait(\'' + c.id + '\')">Annuler</button>'
+                : '<button class="btn btn-success" style="' + btnStyle + '" onclick="marquerFait(\'' + c.id + '\')">✓ Fait</button>';
             const nbPdfs = (c.pdfs || []).length;
             const pdfCell = nbPdfs > 0
                 ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="voirPdfs(\'' + c.id + '\')">📎 ' + nbPdfs + '</button>'
@@ -317,10 +329,10 @@
                     <td>${moisNom(c.dueMonth)} ${c.dueYear || ''}</td>
                     <td>${pdfCell}</td>
                     <td>${badge}${completed}</td>
-                    <td style="white-space:nowrap;">
+                    <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;">
                         ${btnFait}
-                        <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="editer('${c.id}')">✎</button>
-                        <button class="btn btn-danger" style="padding:4px 10px;font-size:0.8rem;" onclick="supprimer('${c.id}')">✕</button>
+                        <button class="btn btn-secondary" style="${btnStyle}" onclick="editer('${c.id}')">✎ Modifier</button>
+                        <button class="btn btn-danger" style="${btnStyle}" onclick="supprimer('${c.id}')">✕ Suppr.</button>
                     </td>
                 </tr>
             `;
@@ -419,6 +431,7 @@
         const c = tousLesClients.find(x => x.id === id);
         if (!c || !c.pdfs || !c.pdfs[index]) return;
         if (!confirm('Supprimer ce PDF ?')) return;
+        if (!demanderCodeAdmin()) return;
         const pdf = c.pdfs[index];
         try {
             if (pdf.path) {
@@ -492,6 +505,7 @@
     }
 
     async function marquerNonFait(id) {
+        if (!demanderCodeAdmin()) return;
         try {
             await getCollectionRef().doc(id).update({
                 status: 'a_faire',
@@ -508,6 +522,7 @@
     async function supprimer(id) {
         const c = tousLesClients.find(x => x.id === id);
         if (!confirm('Supprimer ' + (c?.name || 'ce client') + ' ?')) return;
+        if (!demanderCodeAdmin()) return;
         try {
             await getCollectionRef().doc(id).delete();
             toast('Supprimé');
