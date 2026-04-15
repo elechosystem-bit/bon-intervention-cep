@@ -4442,11 +4442,18 @@
             const totalTVA = (parseFloat(totalHT) * parseFloat(tva) / 100).toFixed(2);
             const totalTTC = (parseFloat(totalHT) + parseFloat(totalTVA)).toFixed(2);
 
-            // Confirmation
+            // Confirmation avec détails par bon (pour diagnostic)
+            const detailsParBon = bonsAFusionner.map(b => {
+                return '• N°' + (b.numero || b.id) + ' : moDuree="' + (b.moDuree || '-') + '" | moDemiHeures="' + (b.moDemiHeures || '-') + '" | depl=' + (b.deplNombre || '0');
+            }).join('\n');
             const msg = 'Fusionner ' + bonsAFusionner.length + ' bons pour le client "' + bonsAFusionner[0].client + '" ?\n\n' +
                         recapTitre + '\n\n' +
-                        'MO totale : ' + moDuree + '\n' +
+                        'DETAILS PAR BON :\n' + detailsParBon + '\n\n' +
+                        'TOTAUX CALCULES :\n' +
+                        'Total demi-heures : ' + totalDemiHeures + '\n' +
+                        'MO totale : ' + moDuree + ' (' + moDemiHeures + ')\n' +
                         'Déplacements : ' + totalDepl + '\n' +
+                        'Sous-total MO : ' + subtotalMO + '€\n' +
                         'Total HT : ' + totalHT + '€\n\n' +
                         'Les bons originaux seront archivés.';
             if (!confirm(msg)) return;
