@@ -4353,14 +4353,14 @@
                 return;
             }
 
-            // Trier par date
-            bonsAFusionner.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            // Garder l'ordre de sélection des bons (DOM order = ordre coché dans le tableau)
+            // Pas de tri par date : l'utilisateur veut l'ordre dans lequel il a coché
 
             // Construire le récap des numéros
             const numeros = bonsAFusionner.map(b => b.numero || b.id);
             const recapTitre = 'RECAP BON N°' + numeros.join(', N°');
 
-            // Fusionner les descriptions avec date
+            // Fusionner les descriptions avec date (dans l'ordre de sélection)
             const descriptionFusionnee = bonsAFusionner.map(b => {
                 const dateStr = b.date || '?';
                 const desc = (b.description || '').trim();
@@ -4368,16 +4368,29 @@
             }).join('\n\n');
 
             // Fusionner les heures (additionner les demi-heures de MO)
-            let totalMinutesMO = 0;
+            // Priorité à moDemiHeures (plus fiable), fallback sur moDuree
+            let totalDemiHeures = 0;
             bonsAFusionner.forEach(b => {
-                const duree = b.moDuree || '0h00';
+                // Essayer moDemiHeures d'abord : "X demi-heures" ou "X demi-heure"
+                const mdh = String(b.moDemiHeures || '');
+                const matchDH = mdh.match(/(\d+)\s*demi/);
+                if (matchDH) {
+                    totalDemiHeures += parseInt(matchDH[1], 10) || 0;
+                    return;
+                }
+                // Fallback : moDuree format "XhYY" ou "XhY"
+                const duree = String(b.moDuree || '0h00');
                 const match = duree.match(/(\d+)h(\d+)/);
-                if (match) totalMinutesMO += parseInt(match[1]) * 60 + parseInt(match[2]);
+                if (match) {
+                    const minutes = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+                    totalDemiHeures += Math.ceil(minutes / 30);
+                }
             });
+            const totalMinutesMO = totalDemiHeures * 30;
             const moHeures = Math.floor(totalMinutesMO / 60);
             const moMinutes = totalMinutesMO % 60;
             const moDuree = moHeures + 'h' + String(moMinutes).padStart(2, '0');
-            const moDemiHeures = Math.ceil(totalMinutesMO / 30) + ' demi-heures';
+            const moDemiHeures = totalDemiHeures + ' demi-heure' + (totalDemiHeures > 1 ? 's' : '');
 
             // Fusionner les déplacements (additionner)
             let totalDepl = 0;
@@ -4411,7 +4424,7 @@
             const tva = bonsAFusionner[0].tva || '20';
 
             // Calculer les totaux
-            const subtotalMO = (Math.ceil(totalMinutesMO / 30) * parseFloat(moTarif)).toFixed(2);
+            const subtotalMO = (totalDemiHeures * parseFloat(moTarif)).toFixed(2);
             const subtotalDepl = (totalDepl * parseFloat(deplTarif)).toFixed(2);
             let subtotalProduits = 0;
             produitsFusionnes.forEach(p => {
