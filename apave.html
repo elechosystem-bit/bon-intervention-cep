@@ -68,6 +68,8 @@
         .btn-secondary { background: var(--border); color: var(--text); }
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
+        .btn-filter { background: var(--border); color: var(--text); border: 2px solid transparent; transition: all 0.15s; }
+        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 6px rgba(26,54,93,0.3); }
 
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
@@ -123,10 +125,10 @@
 
         <div class="toolbar">
             <button class="btn btn-primary" onclick="ouvrirModalAjout()">➕ Ajouter un client</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('tous')">Tous</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('en_retard')">⚠ En retard</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('a_faire')">À faire bientôt</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('fait')">✓ À jour</button>
+            <button class="btn btn-filter active" data-filtre="tous" onclick="filtrerClients('tous')">Tous</button>
+            <button class="btn btn-filter" data-filtre="en_retard" onclick="filtrerClients('en_retard')">⚠ En retard</button>
+            <button class="btn btn-filter" data-filtre="a_faire" onclick="filtrerClients('a_faire')">🕒 En cours</button>
+            <button class="btn btn-filter" data-filtre="fait" onclick="filtrerClients('fait')">✓ À jour</button>
         </div>
 
         <table id="tableClients">
@@ -283,6 +285,10 @@
 
     function filtrerClients(statut) {
         filtreStatut = statut;
+        // Mettre à jour l'état visuel des boutons
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-filtre') === statut);
+        });
         afficher();
     }
 
@@ -299,7 +305,7 @@
         document.getElementById('stats').innerHTML = `
             <div class="stat-card"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total clients</div></div>
             <div class="stat-card success"><div class="stat-num">${nbFait}</div><div class="stat-label">À jour</div></div>
-            <div class="stat-card warn"><div class="stat-num">${nbAfaire}</div><div class="stat-label">À faire bientôt</div></div>
+            <div class="stat-card warn"><div class="stat-num">${nbAfaire}</div><div class="stat-label">En cours</div></div>
             <div class="stat-card danger"><div class="stat-num">${nbRetard}</div><div class="stat-label">En retard</div></div>
         `;
 
@@ -318,7 +324,7 @@
             const statut = calculerStatut(c);
             const badge = statut === 'fait' ? '<span class="status-badge status-fait">✓ À jour</span>'
                         : statut === 'en_retard' ? '<span class="status-badge status-retard">⚠ En retard</span>'
-                        : '<span class="status-badge status-a-faire">À faire bientôt</span>';
+                        : '<span class="status-badge status-a-faire">🕒 En cours</span>';
             const dernierRapport = c.lastClientReport ? '<br><small style="color:var(--text-light);">reçu le ' + formaterDate(c.lastClientReport) + '</small>' : '';
             const btnStyle = 'padding:6px 12px;font-size:0.8rem;min-width:70px;';
             // Toujours proposer le bouton "Rapport reçu" (utile chaque année)
