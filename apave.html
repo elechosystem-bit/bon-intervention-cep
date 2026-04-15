@@ -81,6 +81,26 @@
         .status-a-faire { background: var(--warn); }
         .status-retard { background: var(--danger); }
 
+        /* Suivi des étapes */
+        .etapes { display: flex; gap: 4px; flex-wrap: wrap; }
+        .etape {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid var(--border);
+            background: white;
+            color: var(--text-light);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .etape.done { background: var(--success); color: white; border-color: var(--success); }
+        .etape:not(.done):hover { background: #ebf8ff; border-color: var(--primary); color: var(--primary); }
+        .etape .date { opacity: 0.85; font-weight: 400; font-size: 0.65rem; }
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
         .modal-overlay.show { display: flex; }
         .modal { background: white; border-radius: 12px; max-width: 500px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto; }
@@ -127,8 +147,15 @@
             <button class="btn btn-primary" onclick="ouvrirModalAjout()">➕ Ajouter un client</button>
             <button class="btn btn-filter active" data-filtre="tous" onclick="filtrerClients('tous')">Tous</button>
             <button class="btn btn-filter" data-filtre="en_retard" onclick="filtrerClients('en_retard')">⚠ En retard</button>
-            <button class="btn btn-filter" data-filtre="a_faire" onclick="filtrerClients('a_faire')">🕒 En cours</button>
-            <button class="btn btn-filter" data-filtre="fait" onclick="filtrerClients('fait')">✓ À jour</button>
+            <button class="btn btn-filter" data-filtre="en_cours" onclick="filtrerClients('en_cours')">🕒 En cours</button>
+            <button class="btn btn-filter" data-filtre="a_jour" onclick="filtrerClients('a_jour')">✓ À jour</button>
+        </div>
+        <div class="toolbar">
+            <span style="font-size:0.85rem;color:var(--text-light);align-self:center;margin-right:4px;">Par étape en attente :</span>
+            <button class="btn btn-filter" data-filtre="rapportRecuDate" onclick="filtrerClients('rapportRecuDate')">📥 Rapport</button>
+            <button class="btn btn-filter" data-filtre="devisFaitDate" onclick="filtrerClients('devisFaitDate')">📝 Devis</button>
+            <button class="btn btn-filter" data-filtre="devisValideDate" onclick="filtrerClients('devisValideDate')">✅ Validation</button>
+            <button class="btn btn-filter" data-filtre="travauxFaitsDate" onclick="filtrerClients('travauxFaitsDate')">🔧 Travaux</button>
         </div>
 
         <table id="tableClients">
@@ -136,8 +163,8 @@
                 <tr>
                     <th>Client</th>
                     <th>Contact</th>
-                    <th>Dernier rapport</th>
-                    <th>Prochaine échéance</th>
+                    <th>Étapes</th>
+                    <th>Prochain rappel</th>
                     <th>PDFs</th>
                     <th>Statut</th>
                     <th>Actions</th>
@@ -239,20 +266,42 @@
         return db.collection('societes').doc(SOCIETE_ID).collection('apave');
     }
 
+    // Étapes du workflow Apave (ordre important)
+    const ETAPES = [
+        { key: 'rapportRecuDate',   label: 'Rapport reçu',      icon: '📥' },
+        { key: 'devisFaitDate',     label: 'Devis fait',        icon: '📝' },
+        { key: 'devisValideDate',   label: 'Devis validé',      icon: '✅' },
+        { key: 'travauxFaitsDate',  label: 'Travaux faits',     icon: '🔧' },
+    ];
+
+    function etapeEnCours(client) {
+        // Retourne la première étape non validée (ou 'termine' si toutes faites)
+        for (const e of ETAPES) {
+            if (!client[e.key]) return e.key;
+        }
+        return 'termine';
+    }
+
     function calculerStatut(client) {
-        // Statut calculé dynamiquement selon les dates
-        // - En retard : échéance passée (fin du mois cible < aujourd'hui)
-        // - À faire : échéance dans les 30 prochains jours
-        // - Fait : tout va bien, prochaine échéance > 30 jours
+        // Si tout est fait, c'est "a_jour" jusqu'à la prochaine échéance
         const now = new Date();
         const dueMonth = client.dueMonth || 1;
         const dueYear = client.dueYear || now.getFullYear();
-        const lastDayOfDueMonth = new Date(dueYear, dueMonth, 0); // dernier jour du mois
+        const lastDayOfDueMonth = new Date(dueYear, dueMonth, 0);
         const daysUntilDue = Math.floor((lastDayOfDueMonth - now) / (1000 * 60 * 60 * 24));
 
-        if (daysUntilDue < 0) return 'en_retard';
-        if (daysUntilDue <= 30) return 'a_faire';
-        return 'fait';
+        const termine = ETAPES.every(e => client[e.key]);
+
+        // En retard : échéance passée ET pas terminé pour cette année
+        if (daysUntilDue < 0 && !termine) return 'en_retard';
+        // En cours : au moins une étape commencée et pas toutes finies
+        const enCours = ETAPES.some(e => client[e.key]) && !termine;
+        if (enCours) return 'en_cours';
+        // Terminé et échéance encore loin : à jour
+        if (termine && daysUntilDue > 30) return 'a_jour';
+        // À faire bientôt : échéance proche mais rien commencé
+        if (daysUntilDue <= 30 && !termine) return 'en_cours';
+        return termine ? 'a_jour' : 'en_cours';
     }
 
     function formaterDate(dateStr) {
@@ -294,25 +343,44 @@
 
     function afficher() {
         const tbody = document.getElementById('tbodyClients');
-        // Calculer stats
-        let nbFait = 0, nbAfaire = 0, nbRetard = 0;
+        // Stats par statut global
+        let nbAjour = 0, nbEnCours = 0, nbRetard = 0;
+        // Stats par étape (en cours sur cette étape)
+        let nbRapport = 0, nbDevis = 0, nbValide = 0, nbTravaux = 0;
         tousLesClients.forEach(c => {
             const s = calculerStatut(c);
-            if (s === 'fait') nbFait++;
-            else if (s === 'a_faire') nbAfaire++;
+            if (s === 'a_jour') nbAjour++;
+            else if (s === 'en_cours') nbEnCours++;
             else if (s === 'en_retard') nbRetard++;
+
+            const enCoursSur = etapeEnCours(c);
+            if (enCoursSur === 'rapportRecuDate') nbRapport++;
+            else if (enCoursSur === 'devisFaitDate') nbDevis++;
+            else if (enCoursSur === 'devisValideDate') nbValide++;
+            else if (enCoursSur === 'travauxFaitsDate') nbTravaux++;
         });
         document.getElementById('stats').innerHTML = `
-            <div class="stat-card"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total clients</div></div>
-            <div class="stat-card success"><div class="stat-num">${nbFait}</div><div class="stat-label">À jour</div></div>
-            <div class="stat-card warn"><div class="stat-num">${nbAfaire}</div><div class="stat-label">En cours</div></div>
-            <div class="stat-card danger"><div class="stat-num">${nbRetard}</div><div class="stat-label">En retard</div></div>
+            <div class="stat-card"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total</div></div>
+            <div class="stat-card success"><div class="stat-num">${nbAjour}</div><div class="stat-label">✓ À jour</div></div>
+            <div class="stat-card warn"><div class="stat-num">${nbEnCours}</div><div class="stat-label">🕒 En cours</div></div>
+            <div class="stat-card danger"><div class="stat-num">${nbRetard}</div><div class="stat-label">⚠ En retard</div></div>
+            <div class="stat-card"><div class="stat-num">${nbRapport}</div><div class="stat-label">📥 Attente rapport</div></div>
+            <div class="stat-card"><div class="stat-num">${nbDevis}</div><div class="stat-label">📝 Devis à faire</div></div>
+            <div class="stat-card"><div class="stat-num">${nbValide}</div><div class="stat-label">✅ Attente validation</div></div>
+            <div class="stat-card"><div class="stat-num">${nbTravaux}</div><div class="stat-label">🔧 Travaux à faire</div></div>
         `;
 
-        // Filtrer
+        // Filtrer (par statut global OU par étape en cours)
         let liste = tousLesClients;
         if (filtreStatut !== 'tous') {
-            liste = liste.filter(c => calculerStatut(c) === filtreStatut);
+            liste = liste.filter(c => {
+                const s = calculerStatut(c);
+                if (filtreStatut === 'a_jour') return s === 'a_jour';
+                if (filtreStatut === 'en_cours') return s === 'en_cours';
+                if (filtreStatut === 'en_retard') return s === 'en_retard';
+                // Filtres par étape
+                return etapeEnCours(c) === filtreStatut;
+            });
         }
 
         if (liste.length === 0) {
@@ -322,27 +390,39 @@
 
         tbody.innerHTML = liste.map(c => {
             const statut = calculerStatut(c);
-            const badge = statut === 'fait' ? '<span class="status-badge status-fait">✓ À jour</span>'
+            const badge = statut === 'a_jour' ? '<span class="status-badge status-fait">✓ À jour</span>'
                         : statut === 'en_retard' ? '<span class="status-badge status-retard">⚠ En retard</span>'
                         : '<span class="status-badge status-a-faire">🕒 En cours</span>';
-            const dernierRapport = c.lastClientReport ? '<br><small style="color:var(--text-light);">reçu le ' + formaterDate(c.lastClientReport) + '</small>' : '';
             const btnStyle = 'padding:6px 12px;font-size:0.8rem;min-width:70px;';
-            // Toujours proposer le bouton "Rapport reçu" (utile chaque année)
-            const btnFait = '<button class="btn btn-success" style="' + btnStyle + '" onclick="marquerFait(\'' + c.id + '\')">✓ Reçu</button>';
+
+            // Afficher les 4 étapes du workflow
+            const etapesHtml = ETAPES.map(e => {
+                const done = !!c[e.key];
+                const dateStr = done ? '<span class="date">' + formaterDate(c[e.key]) + '</span>' : '';
+                return '<span class="etape ' + (done ? 'done' : '') + '" onclick="toggleEtape(\'' + c.id + '\',\'' + e.key + '\')" title="' + e.label + '">' + e.icon + ' ' + e.label + ' ' + dateStr + '</span>';
+            }).join('');
+
+            // Bouton "Renouveler" si toutes les étapes sont faites : avance l'échéance d'un an et reset les étapes
+            const termine = ETAPES.every(e => c[e.key]);
+            const btnRenouveler = termine
+                ? '<button class="btn btn-success" style="' + btnStyle + '" onclick="renouvelerAnnee(\'' + c.id + '\')">🔄 Nouvelle année</button>'
+                : '';
+
             const nbPdfs = (c.pdfs || []).length;
             const pdfCell = nbPdfs > 0
                 ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="voirPdfs(\'' + c.id + '\')">📎 ' + nbPdfs + '</button>'
                 : '<small style="color:var(--text-light);">-</small>';
+
             return `
                 <tr>
-                    <td><strong>${c.name || '-'}</strong>${dernierRapport}</td>
+                    <td><strong>${c.name || '-'}</strong></td>
                     <td><small>${c.contact || '-'}</small></td>
-                    <td>${formaterDate(c.lastClientReport)}</td>
+                    <td><div class="etapes">${etapesHtml}</div></td>
                     <td><strong>${moisNom(c.dueMonth)} ${c.dueYear || ''}</strong></td>
                     <td>${pdfCell}</td>
                     <td>${badge}</td>
                     <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;">
-                        ${btnFait}
+                        ${btnRenouveler}
                         <button class="btn btn-secondary" style="${btnStyle}" onclick="editer('${c.id}')">✎ Modifier</button>
                         <button class="btn btn-danger" style="${btnStyle}" onclick="supprimer('${c.id}')">✕ Suppr.</button>
                     </td>
@@ -502,42 +582,66 @@
         }
     }
 
-    async function marquerFait(id) {
-        const c = tousLesClients.find(x => x.id === id);
+    async function toggleEtape(clientId, etapeKey) {
+        const c = tousLesClients.find(x => x.id === clientId);
         if (!c) return;
-        // Demander la date du rapport reçu (défaut = aujourd'hui)
-        const defautDate = new Date().toISOString().slice(0, 10);
-        const dateSaisie = prompt('Date de réception du rapport :\n(format YYYY-MM-DD, laisser par défaut pour aujourd\'hui)', defautDate);
-        if (dateSaisie === null) return; // Annulé
-        const dateRapport = (dateSaisie || '').trim() || defautDate;
+        const dejaFait = !!c[etapeKey];
 
-        // Avancer l'échéance d'un an (même mois, année +1)
-        const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
+        if (dejaFait) {
+            // Décocher : demander code admin
+            if (!demanderCodeAdmin()) return;
+            try {
+                await getCollectionRef().doc(clientId).update({
+                    [etapeKey]: firebase.firestore.FieldValue.delete(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                toast('Étape décochée');
+                charger();
+            } catch (e) {
+                toast('Erreur : ' + e.message, true);
+            }
+            return;
+        }
+
+        // Cocher : demander la date
+        const defautDate = new Date().toISOString().slice(0, 10);
+        const etape = ETAPES.find(e => e.key === etapeKey);
+        const dateSaisie = prompt('Date — ' + (etape?.label || etapeKey) + ' :\n(format YYYY-MM-DD)', defautDate);
+        if (dateSaisie === null) return;
+        const date = (dateSaisie || '').trim() || defautDate;
+
+        const update = {
+            [etapeKey]: date,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        // Si c'est le rapport reçu, on enregistre aussi lastClientReport
+        if (etapeKey === 'rapportRecuDate') update.lastClientReport = date;
+
         try {
-            await getCollectionRef().doc(id).update({
-                lastClientReport: dateRapport,
-                completedDate: dateRapport,
-                dueYear: prochaineAnnee,
-                // status reste pour garder l'historique, mais calculerStatut utilise les dates
-                status: 'fait',
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            });
-            toast('Rapport enregistré. Prochaine échéance : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
+            await getCollectionRef().doc(clientId).update(update);
+            toast((etape?.label || etapeKey) + ' — OK');
             charger();
         } catch (e) {
             toast('Erreur : ' + e.message, true);
         }
     }
 
-    async function marquerNonFait(id) {
-        if (!demanderCodeAdmin()) return;
+    async function renouvelerAnnee(clientId) {
+        const c = tousLesClients.find(x => x.id === clientId);
+        if (!c) return;
+        if (!confirm('Démarrer un nouveau cycle annuel pour ' + (c.name || '') + ' ?\n\nCela avance l\'échéance de +1 an et remet les étapes à zéro.')) return;
+        const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
+        const update = {
+            dueYear: prochaineAnnee,
+            rapportRecuDate: firebase.firestore.FieldValue.delete(),
+            devisFaitDate: firebase.firestore.FieldValue.delete(),
+            devisValideDate: firebase.firestore.FieldValue.delete(),
+            travauxFaitsDate: firebase.firestore.FieldValue.delete(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
         try {
-            await getCollectionRef().doc(id).update({
-                status: 'a_faire',
-                completedDate: firebase.firestore.FieldValue.delete(),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            });
-            toast('Rapport remis à faire');
+            await getCollectionRef().doc(clientId).update(update);
+            toast('Nouveau cycle — échéance : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
             charger();
         } catch (e) {
             toast('Erreur : ' + e.message, true);
