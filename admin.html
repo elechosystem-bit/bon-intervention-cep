@@ -3236,6 +3236,14 @@
             // Recalculer la main d'œuvre si les heures sont présentes
             if (bon.heureArrivee && bon.heureDepart) {
                 calculerMainOeuvre();
+            } else {
+                // Bon fusionné ou sans horaires : calculer le montant MO à partir de moDemiHeures × moTarif
+                const mdhMatch = String(bon.moDemiHeures || '').match(/(\d+)\s*demi/);
+                const demiHeures = mdhMatch ? parseInt(mdhMatch[1], 10) : 0;
+                const tarif = parseFloat(bon.moTarif || '35') || 35;
+                const samediCoeff = document.getElementById('adminCheckSamedi')?.checked ? 1.5 : 1;
+                const moTotal = demiHeures * tarif * samediCoeff;
+                document.getElementById('moTotal').textContent = moTotal.toFixed(2) + '€';
             }
             document.getElementById('deplNombre').value = bon.deplNombre || bon.deplKm || '0';
             document.getElementById('deplTarif').value = '70';
