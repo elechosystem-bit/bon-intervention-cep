@@ -124,9 +124,9 @@
         <div class="toolbar">
             <button class="btn btn-primary" onclick="ouvrirModalAjout()">➕ Ajouter un client</button>
             <button class="btn btn-secondary" onclick="filtrerClients('tous')">Tous</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('a_faire')">À faire</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('en_retard')">En retard</button>
-            <button class="btn btn-secondary" onclick="filtrerClients('fait')">Faits</button>
+            <button class="btn btn-secondary" onclick="filtrerClients('en_retard')">⚠ En retard</button>
+            <button class="btn btn-secondary" onclick="filtrerClients('a_faire')">À faire bientôt</button>
+            <button class="btn btn-secondary" onclick="filtrerClients('fait')">✓ À jour</button>
         </div>
 
         <table id="tableClients">
@@ -238,12 +238,19 @@
     }
 
     function calculerStatut(client) {
-        if (client.status === 'fait') return 'fait';
+        // Statut calculé dynamiquement selon les dates
+        // - En retard : échéance passée (fin du mois cible < aujourd'hui)
+        // - À faire : échéance dans les 30 prochains jours
+        // - Fait : tout va bien, prochaine échéance > 30 jours
         const now = new Date();
-        const dueDate = new Date(client.dueYear, (client.dueMonth || 1) - 1, 1);
-        const lastDay = new Date(client.dueYear, (client.dueMonth || 1), 0);
-        if (lastDay < now) return 'en_retard';
-        return 'a_faire';
+        const dueMonth = client.dueMonth || 1;
+        const dueYear = client.dueYear || now.getFullYear();
+        const lastDayOfDueMonth = new Date(dueYear, dueMonth, 0); // dernier jour du mois
+        const daysUntilDue = Math.floor((lastDayOfDueMonth - now) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilDue < 0) return 'en_retard';
+        if (daysUntilDue <= 30) return 'a_faire';
+        return 'fait';
     }
 
     function formaterDate(dateStr) {
@@ -291,8 +298,8 @@
         });
         document.getElementById('stats').innerHTML = `
             <div class="stat-card"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total clients</div></div>
-            <div class="stat-card success"><div class="stat-num">${nbFait}</div><div class="stat-label">Rapports faits</div></div>
-            <div class="stat-card warn"><div class="stat-num">${nbAfaire}</div><div class="stat-label">À faire</div></div>
+            <div class="stat-card success"><div class="stat-num">${nbFait}</div><div class="stat-label">À jour</div></div>
+            <div class="stat-card warn"><div class="stat-num">${nbAfaire}</div><div class="stat-label">À faire bientôt</div></div>
             <div class="stat-card danger"><div class="stat-num">${nbRetard}</div><div class="stat-label">En retard</div></div>
         `;
 
@@ -309,26 +316,25 @@
 
         tbody.innerHTML = liste.map(c => {
             const statut = calculerStatut(c);
-            const badge = statut === 'fait' ? '<span class="status-badge status-fait">✓ Fait</span>'
-                        : statut === 'en_retard' ? '<span class="status-badge status-retard">⚠ Retard</span>'
-                        : '<span class="status-badge status-a-faire">À faire</span>';
-            const completed = c.status === 'fait' && c.completedDate ? '<br><small style="color:var(--text-light);">le ' + formaterDate(c.completedDate) + '</small>' : '';
+            const badge = statut === 'fait' ? '<span class="status-badge status-fait">✓ À jour</span>'
+                        : statut === 'en_retard' ? '<span class="status-badge status-retard">⚠ En retard</span>'
+                        : '<span class="status-badge status-a-faire">À faire bientôt</span>';
+            const dernierRapport = c.lastClientReport ? '<br><small style="color:var(--text-light);">reçu le ' + formaterDate(c.lastClientReport) + '</small>' : '';
             const btnStyle = 'padding:6px 12px;font-size:0.8rem;min-width:70px;';
-            const btnFait = c.status === 'fait'
-                ? '<button class="btn btn-secondary" style="' + btnStyle + '" onclick="marquerNonFait(\'' + c.id + '\')">Annuler</button>'
-                : '<button class="btn btn-success" style="' + btnStyle + '" onclick="marquerFait(\'' + c.id + '\')">✓ Fait</button>';
+            // Toujours proposer le bouton "Rapport reçu" (utile chaque année)
+            const btnFait = '<button class="btn btn-success" style="' + btnStyle + '" onclick="marquerFait(\'' + c.id + '\')">✓ Reçu</button>';
             const nbPdfs = (c.pdfs || []).length;
             const pdfCell = nbPdfs > 0
                 ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="voirPdfs(\'' + c.id + '\')">📎 ' + nbPdfs + '</button>'
                 : '<small style="color:var(--text-light);">-</small>';
             return `
                 <tr>
-                    <td><strong>${c.name || '-'}</strong></td>
+                    <td><strong>${c.name || '-'}</strong>${dernierRapport}</td>
                     <td><small>${c.contact || '-'}</small></td>
                     <td>${formaterDate(c.lastClientReport)}</td>
-                    <td>${moisNom(c.dueMonth)} ${c.dueYear || ''}</td>
+                    <td><strong>${moisNom(c.dueMonth)} ${c.dueYear || ''}</strong></td>
                     <td>${pdfCell}</td>
-                    <td>${badge}${completed}</td>
+                    <td>${badge}</td>
                     <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;">
                         ${btnFait}
                         <button class="btn btn-secondary" style="${btnStyle}" onclick="editer('${c.id}')">✎ Modifier</button>
@@ -491,13 +497,26 @@
     }
 
     async function marquerFait(id) {
+        const c = tousLesClients.find(x => x.id === id);
+        if (!c) return;
+        // Demander la date du rapport reçu (défaut = aujourd'hui)
+        const defautDate = new Date().toISOString().slice(0, 10);
+        const dateSaisie = prompt('Date de réception du rapport :\n(format YYYY-MM-DD, laisser par défaut pour aujourd\'hui)', defautDate);
+        if (dateSaisie === null) return; // Annulé
+        const dateRapport = (dateSaisie || '').trim() || defautDate;
+
+        // Avancer l'échéance d'un an (même mois, année +1)
+        const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
         try {
             await getCollectionRef().doc(id).update({
+                lastClientReport: dateRapport,
+                completedDate: dateRapport,
+                dueYear: prochaineAnnee,
+                // status reste pour garder l'historique, mais calculerStatut utilise les dates
                 status: 'fait',
-                completedDate: new Date().toISOString().slice(0, 10),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
-            toast('Rapport marqué comme fait');
+            toast('Rapport enregistré. Prochaine échéance : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
             charger();
         } catch (e) {
             toast('Erreur : ' + e.message, true);
