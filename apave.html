@@ -183,12 +183,34 @@
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 16px;
-            border-left: 5px solid var(--border);
+            border-left: 6px solid var(--border);
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s;
         }
-        .client-card.complet { border-left-color: var(--success); }
-        .client-card.encours { border-left-color: var(--warn); }
-        .client-card.retard { border-left-color: var(--danger); }
+        .client-card.complet {
+            border-left-color: var(--success);
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+        }
+        .client-card.encours {
+            border-left-color: var(--warn);
+            border-color: #fcd34d;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+        }
+        .client-card.retard {
+            border-left-color: var(--danger);
+            border-color: #fca5a5;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
+            animation: pulse-alert 2.5s ease-in-out infinite;
+        }
+        @keyframes pulse-alert {
+            0%, 100% { box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
+        }
 
         .client-top {
             display: flex;
