@@ -4332,8 +4332,8 @@
     },
     {
       "id": 256831854,
-      "nom": "JULES JO",
-      "email": "",
+      "nom": "JULES JO - LE CAFE DE LA PLACE",
+      "email": "frederick.pagau@elechosystem.com",
       "telephone": "",
       "adresse": "28 Rue Hermel, 75018 Paris, 75018, Paris",
       "ville": "Paris",
@@ -4359,16 +4359,6 @@
       "ville": "Nanterre",
       "codePostal": "92000",
       "rue": "16, terrasse de l'Arche"
-    },
-    {
-      "id": 277479035,
-      "nom": "Jules Jo",
-      "email": "",
-      "telephone": "",
-      "adresse": "75000, Paris",
-      "ville": "Paris",
-      "codePostal": "75000",
-      "rue": ""
     },
     {
       "id": 248733314,
@@ -6021,16 +6011,6 @@
       "rue": "A compléter"
     },
     {
-      "id": 248733267,
-      "nom": "LE JULES JO (CAFE DE LA PLACE)",
-      "email": "julesjo.paris@gmail.com",
-      "telephone": "",
-      "adresse": "28, rue Hermel, 75018, Paris",
-      "ville": "Paris",
-      "codePostal": "75018",
-      "rue": "28, rue Hermel"
-    },
-    {
       "id": 248733016,
       "nom": "LE LONDRESS",
       "email": "direction.onlyyou@gmail.com",
@@ -6115,10 +6095,10 @@
       "nom": "LE NID / LA BARCA",
       "email": "travert.alexandre@gmail.com",
       "telephone": "",
-      "adresse": "15, quai de l'Oise, 95290, L'Isle-Adam",
+      "adresse": "17, rue du Pâtis, 95290, L'Isle-Adam",
       "ville": "L'Isle-Adam",
       "codePostal": "95290",
-      "rue": "15, quai de l'Oise"
+      "rue": "17, rue du Pâtis"
     },
     {
       "id": 248733124,
@@ -6161,12 +6141,12 @@
       "rue": "76, rue Saint Martin"
     },
     {
-      "id": 248733620,
+      "id": 277479276,
       "nom": "LE PARC",
-      "email": "gallicquentin@gmail.com",
-      "telephone": "0756814498",
-      "adresse": "61, boulevard du Général Leclerc, 92110, Clichy",
-      "ville": "Clichy",
+      "email": "frederick.pagau@elechosystem.com",
+      "telephone": "",
+      "adresse": "61, boulevard du Général Leclerc, 92110, CLICHY",
+      "ville": "CLICHY",
       "codePostal": "92110",
       "rue": "61, boulevard du Général Leclerc"
     },
@@ -7169,16 +7149,6 @@
       "ville": "Paris",
       "codePostal": "75004",
       "rue": "30, boulevard Sébastopol"
-    },
-    {
-      "id": 277479276,
-      "nom": "Le Parc Clichy",
-      "email": "",
-      "telephone": "",
-      "adresse": "75000, Paris",
-      "ville": "Paris",
-      "codePostal": "75000",
-      "rue": ""
     },
     {
       "id": 255248681,
@@ -8421,6 +8391,16 @@
       "rue": "122, grande rue"
     },
     {
+      "id": 262097163,
+      "nom": "MC DONALD'S SEVRES - COSERES",
+      "email": "do.schr@gmail.com",
+      "telephone": "",
+      "adresse": "Grande Rue, 92310 Sèvres, 92310, Sèvres",
+      "ville": "Sèvres",
+      "codePostal": "92310",
+      "rue": "Grande Rue, 92310 Sèvres"
+    },
+    {
       "id": 248733413,
       "nom": "MC DONALD'S ST WITZ",
       "email": "",
@@ -8889,16 +8869,6 @@
       "ville": "Paris",
       "codePostal": "75016",
       "rue": "106, avenue Mozart"
-    },
-    {
-      "id": 262097163,
-      "nom": "Mc donalds Sevres",
-      "email": "",
-      "telephone": "",
-      "adresse": "Grande Rue, 92310 Sèvres, 92310, Sèvres",
-      "ville": "Sèvres",
-      "codePostal": "92310",
-      "rue": "Grande Rue, 92310 Sèvres"
     },
     {
       "id": 248732740,
@@ -11991,6 +11961,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1199,
-  "syncDate": "2026-04-15T04:56:05Z"
+  "total": 1196,
+  "syncDate": "2026-04-16T04:59:58Z"
 }
