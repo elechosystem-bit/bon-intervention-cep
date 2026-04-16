@@ -3,178 +3,455 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Apave - CEP</title>
+    <title>Gestion Apave — CEP</title>
     <style>
         :root {
-            --primary: #1a365d;
-            --primary-light: #2c5282;
-            --bg: #f7fafc;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --navy: #1e293b;
+            --navy-light: #334155;
+            --bg: #f8fafc;
+            --card: #ffffff;
             --border: #e2e8f0;
-            --text: #2d3748;
-            --text-light: #718096;
-            --success: #38a169;
-            --warn: #d69e2e;
-            --danger: #e53e3e;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warn: #f59e0b;
+            --warn-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --blue: #3b82f6;
+            --blue-light: #dbeafe;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg);
             color: var(--text);
-            padding: 20px;
+            padding: 16px;
             min-height: 100vh;
         }
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* HEADER */
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
             color: white;
-            padding: 20px 24px;
-            border-radius: 12px 12px 0 0;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 16px;
             flex-wrap: wrap;
-            gap: 12px;
         }
-        .header h1 { font-size: 1.4rem; }
+        .header-left { display: flex; gap: 16px; align-items: center; }
+        .header-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 700; }
+        .header p { font-size: 0.9rem; opacity: 0.8; margin-top: 2px; }
         .header-actions { display: flex; gap: 8px; }
-        .header-btn {
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.4);
-            background: rgba(0,0,0,0.15);
+        .btn-new {
+            padding: 12px 20px;
+            background: var(--primary);
             color: white;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .body { background: white; padding: 24px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-
-        .societe-selector { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .societe-selector label { font-weight: 600; }
-        .societe-selector select { padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border); font-size: 0.9rem; }
-
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
-        .stat-card { background: var(--bg); padding: 14px; border-radius: 10px; border-left: 4px solid var(--primary); }
-        .stat-card.warn { border-left-color: var(--warn); }
-        .stat-card.danger { border-left-color: var(--danger); }
-        .stat-card.success { border-left-color: var(--success); }
-        .stat-num { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
-        .stat-label { font-size: 0.8rem; color: var(--text-light); }
-
-        .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: var(--border); color: var(--text); }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-filter { background: var(--border); color: var(--text); border: 2px solid transparent; transition: all 0.15s; }
-        .btn-filter.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 6px rgba(26,54,93,0.3); }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-        th { background: var(--bg); font-weight: 600; color: var(--text); }
-        tr:hover { background: var(--bg); }
-
-        .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; color: white; display: inline-block; }
-        .status-fait { background: var(--success); }
-        .status-a-faire { background: var(--warn); }
-        .status-retard { background: var(--danger); }
-
-        /* Suivi des étapes */
-        .etapes { display: flex; gap: 4px; flex-wrap: wrap; }
-        .etape {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.7rem;
+            border: none;
+            border-radius: 10px;
             font-weight: 600;
             cursor: pointer;
-            border: 2px solid var(--border);
-            background: white;
-            color: var(--text-light);
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+            transition: all 0.15s;
+        }
+        .btn-new:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-back {
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            white-space: nowrap;
         }
-        .etape.done { background: var(--success); color: white; border-color: var(--success); }
-        .etape:not(.done):hover { background: #ebf8ff; border-color: var(--primary); color: var(--primary); }
-        .etape .date { opacity: 0.85; font-weight: 400; font-size: 0.65rem; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        /* STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+        }
+        .stat-card.total { background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-color: #c7d2fe; }
+        .stat-card.complets { background: linear-gradient(135deg, #d1fae5, #a7f3d0); border-color: #6ee7b7; }
+        .stat-card.encours { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #fcd34d; }
+        .stat-card.retard { background: linear-gradient(135deg, #fee2e2, #fecaca); border-color: #fca5a5; }
+        .stat-num {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+            font-family: Georgia, serif;
+        }
+        .stat-card.total .stat-num { color: var(--primary); }
+        .stat-card.complets .stat-num { color: var(--success); }
+        .stat-card.encours .stat-num { color: var(--warn); }
+        .stat-card.retard .stat-num { color: var(--danger); }
+        .stat-label { font-size: 0.85rem; color: var(--text-light); margin-top: 6px; font-weight: 500; }
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .stat-num { font-size: 1.8rem; }
+        }
+
+        /* BARRE RECHERCHE + FILTRES */
+        .filters-card {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+        }
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .search-box::before { content: '🔍'; margin-right: 10px; opacity: 0.5; }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .filter-row:last-child { margin-bottom: 0; }
+        .filter-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-right: 4px;
+        }
+        .chip {
+            padding: 7px 16px;
+            border-radius: 999px;
+            background: var(--bg);
+            border: 2px solid transparent;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text);
+        }
+        .chip:hover { background: var(--border); }
+        .chip.active-statut { background: var(--primary); color: white; }
+        .chip.active-etape { background: var(--navy); color: white; }
+
+        /* CLIENT CARD */
+        .client-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 5px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .client-card.complet { border-left-color: var(--success); }
+        .client-card.encours { border-left-color: var(--warn); }
+        .client-card.retard { border-left-color: var(--danger); }
+
+        .client-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .client-info h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+        .client-info .contact { font-size: 0.9rem; color: var(--text-light); }
+        .client-info .notes { font-size: 0.85rem; color: var(--text); margin-top: 6px; display: flex; gap: 4px; align-items: flex-start; }
+
+        .client-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .badge.complet { background: var(--success-light); color: var(--success); }
+        .badge.encours { background: var(--warn-light); color: #b45309; }
+        .badge.retard { background: var(--danger-light); color: var(--danger); }
+        .badge-annuel {
+            padding: 5px 12px;
+            border-radius: 999px;
+            background: var(--blue-light);
+            color: var(--blue);
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* PIPELINE */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            cursor: pointer;
+            width: 80px;
+        }
+        .step-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            background: var(--border);
+            color: var(--text-light);
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .step.done .step-circle { background: var(--success); color: white; }
+        .step.current .step-circle { background: white; color: var(--primary); border-color: var(--primary); font-weight: 700; font-family: Georgia, serif; }
+        .step.pending .step-circle { background: #f1f5f9; color: #94a3b8; font-weight: 700; font-family: Georgia, serif; }
+        .step-label { font-size: 0.8rem; font-weight: 600; text-align: center; }
+        .step.done .step-label { color: var(--text); }
+        .step.current .step-label { color: var(--primary); font-weight: 700; }
+        .step.pending .step-label { color: var(--text-light); }
+        .step-line {
+            flex: 1;
+            height: 3px;
+            background: var(--border);
+            margin: 0 4px;
+            align-self: flex-start;
+            margin-top: 26px;
+        }
+        .step-line.done { background: var(--success); }
+
+        .dates-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .date-chip {
+            padding: 6px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text);
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .btn-validate {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 16px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+            transition: all 0.15s;
+        }
+        .btn-validate:hover { background: #059669; transform: translateY(-1px); }
+        .btn-renew {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+        }
+        .btn-icon {
+            padding: 14px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .btn-icon.danger { background: var(--danger-light); color: var(--danger); border-color: #fca5a5; }
+        .btn-icon:hover { background: var(--border); }
+        .btn-icon.danger:hover { background: #fca5a5; color: white; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(4px); }
         .modal-overlay.show { display: flex; }
-        .modal { background: white; border-radius: 12px; max-width: 500px; width: 100%; padding: 24px; max-height: 90vh; overflow-y: auto; }
-        .modal h2 { margin-bottom: 16px; color: var(--primary); }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+        .modal {
+            background: white;
+            border-radius: 20px;
+            max-width: 520px;
+            width: 100%;
+            padding: 28px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h2 { margin-bottom: 20px; color: var(--text); font-size: 1.3rem; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
-            padding: 8px 12px;
+            padding: 10px 14px;
             border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: white;
         }
-        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .btn-cancel { padding: 10px 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-weight: 500; }
+        .btn-save { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
 
-        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; background: var(--primary); color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 200; display: none; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 14px 22px;
+            background: var(--navy);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 200;
+            display: none;
+            font-weight: 500;
+        }
         .toast.show { display: block; }
         .toast.error { background: var(--danger); }
 
-        @media (max-width: 640px) {
-            th:nth-child(3), td:nth-child(3) { display: none; }
-            th:nth-child(5), td:nth-child(5) { display: none; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+
+        @media (max-width: 720px) {
+            .pipeline { gap: 2px; }
+            .step { width: 60px; }
+            .step-circle { width: 44px; height: 44px; font-size: 1.1rem; }
+            .step-label { font-size: 0.7rem; }
+            .step-line { margin-top: 22px; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+
     <div class="header">
-        <div>
-            <h1>🛡️ Gestion Apave</h1>
-            <p style="font-size:0.8rem;opacity:0.9;">Suivi des rapports Apave clients CHR</p>
+        <div class="header-left">
+            <div class="header-icon">⚡</div>
+            <div>
+                <h1>Gestion Apave — CEP</h1>
+                <p>Suivi des contrôles électriques CHR</p>
+            </div>
         </div>
         <div class="header-actions">
-            <button class="header-btn" onclick="location.reload()">Actualiser</button>
-            <a class="header-btn" href="admin.html">← Retour admin</a>
+            <a class="btn-back" href="admin.html">← Retour</a>
+            <button class="btn-new" onclick="ouvrirModalAjout()">+ Nouveau client</button>
         </div>
     </div>
 
-    <div class="body">
-        <div class="stats" id="stats"></div>
+    <div class="stats-grid" id="stats"></div>
 
-        <div class="toolbar">
-            <button class="btn btn-primary" onclick="ouvrirModalAjout()">➕ Ajouter un client</button>
-            <button class="btn btn-filter active" data-filtre="tous" onclick="filtrerClients('tous')">Tous</button>
-            <button class="btn btn-filter" data-filtre="en_retard" onclick="filtrerClients('en_retard')">⚠ En retard</button>
-            <button class="btn btn-filter" data-filtre="en_cours" onclick="filtrerClients('en_cours')">🕒 En cours</button>
-            <button class="btn btn-filter" data-filtre="a_jour" onclick="filtrerClients('a_jour')">✓ À jour</button>
+    <div class="filters-card">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Rechercher un client..." oninput="afficher()">
         </div>
-        <div class="toolbar">
-            <span style="font-size:0.85rem;color:var(--text-light);align-self:center;margin-right:4px;">Par étape en attente :</span>
-            <button class="btn btn-filter" data-filtre="rapportRecuDate" onclick="filtrerClients('rapportRecuDate')">📥 Rapport</button>
-            <button class="btn btn-filter" data-filtre="devisFaitDate" onclick="filtrerClients('devisFaitDate')">📝 Devis</button>
-            <button class="btn btn-filter" data-filtre="devisValideDate" onclick="filtrerClients('devisValideDate')">✅ Validation</button>
-            <button class="btn btn-filter" data-filtre="travauxFaitsDate" onclick="filtrerClients('travauxFaitsDate')">🔧 Travaux</button>
+        <div class="filter-row">
+            <span class="filter-label">Statut :</span>
+            <button class="chip active-statut" data-statut="tous" onclick="setFiltreStatut('tous')">Tous</button>
+            <button class="chip" data-statut="complet" onclick="setFiltreStatut('complet')">Complets</button>
+            <button class="chip" data-statut="encours" onclick="setFiltreStatut('encours')">En cours</button>
+            <button class="chip" data-statut="retard" onclick="setFiltreStatut('retard')">En retard</button>
         </div>
-
-        <table id="tableClients">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Contact</th>
-                    <th>Étapes</th>
-                    <th>Prochain rappel</th>
-                    <th>PDFs</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="tbodyClients">
-                <tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px;">Chargement...</td></tr>
-            </tbody>
-        </table>
+        <div class="filter-row">
+            <span class="filter-label">Étape :</span>
+            <button class="chip active-etape" data-etape="toutes" onclick="setFiltreEtape('toutes')">Toutes</button>
+            <button class="chip" data-etape="rapportRecuDate" onclick="setFiltreEtape('rapportRecuDate')">📥 Rapport reçu</button>
+            <button class="chip" data-etape="devisFaitDate" onclick="setFiltreEtape('devisFaitDate')">📝 Devis fait</button>
+            <button class="chip" data-etape="devisValideDate" onclick="setFiltreEtape('devisValideDate')">✅ Devis validé</button>
+            <button class="chip" data-etape="travauxFaitsDate" onclick="setFiltreEtape('travauxFaitsDate')">🔧 Travaux faits</button>
+        </div>
     </div>
+
+    <div id="clientsList">
+        <div class="empty-state"><div class="emoji">⏳</div>Chargement...</div>
+    </div>
+
 </div>
 
 <!-- Modal Ajout / Edition -->
@@ -184,18 +461,14 @@
         <input type="hidden" id="formId">
         <div class="form-group">
             <label>Nom du client *</label>
-            <input type="text" id="formName" placeholder="Ex : Café du Marché">
+            <input type="text" id="formName" placeholder="Ex : Le Bistrot de Paul">
         </div>
         <div class="form-group">
             <label>Contact email</label>
             <input type="email" id="formContact" placeholder="contact@client.fr">
         </div>
         <div class="form-group">
-            <label>Date du dernier rapport reçu</label>
-            <input type="date" id="formLastReport">
-        </div>
-        <div class="form-group">
-            <label>Mois cible du prochain rapport</label>
+            <label>Mois du rappel annuel</label>
             <select id="formDueMonth">
                 <option value="1">Janvier</option><option value="2">Février</option>
                 <option value="3">Mars</option><option value="4">Avril</option>
@@ -210,8 +483,8 @@
             <input type="number" id="formDueYear" min="2024" max="2100">
         </div>
         <div class="form-group">
-            <label>Notes</label>
-            <textarea id="formNotes" rows="2"></textarea>
+            <label>Notes (tableau électrique, infos d'accès, etc.)</label>
+            <textarea id="formNotes" rows="2" placeholder="Ex : Tableau électrique RDC"></textarea>
         </div>
         <div class="form-group" id="pdfSection" style="display:none;">
             <label>Rapports PDF</label>
@@ -220,8 +493,8 @@
             <small style="color:var(--text-light);">Sélectionnez un ou plusieurs PDF à ajouter</small>
         </div>
         <div class="modal-actions">
-            <button class="btn btn-secondary" onclick="fermerModal()">Annuler</button>
-            <button class="btn btn-primary" onclick="sauvegarderClient()">Enregistrer</button>
+            <button class="btn-cancel" onclick="fermerModal()">Annuler</button>
+            <button class="btn-save" onclick="sauvegarderClient()">Enregistrer</button>
         </div>
     </div>
 </div>
@@ -234,7 +507,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 <script>
-    // Config Firebase (identique aux autres pages du projet)
     const firebaseConfig = {
         apiKey: "AIzaSyAuX2gsGiRGqVbsk93y0wmwJOsT-RuEkE4",
         authDomain: "bon-d-intervention-cep.firebaseapp.com",
@@ -247,65 +519,59 @@
     firebase.auth().signInAnonymously().catch(err => console.error('Auth:', err));
     const db = firebase.firestore();
 
-    const SOCIETE_ID = 'cep'; // Apave : uniquement CEP
-    const ADMIN_CODE = 'CEP2024'; // Code pour actions sensibles (annuler/supprimer)
+    const SOCIETE_ID = 'cep';
+    const ADMIN_CODE = 'CEP2024';
+
+    const ETAPES = [
+        { key: 'rapportRecuDate',   label: 'Rapport reçu',   icon: '📥' },
+        { key: 'devisFaitDate',     label: 'Devis fait',     icon: '📝' },
+        { key: 'devisValideDate',   label: 'Devis validé',   icon: '✅' },
+        { key: 'travauxFaitsDate',  label: 'Travaux faits',  icon: '🔧' },
+    ];
+
     let tousLesClients = [];
     let filtreStatut = 'tous';
-
-    function demanderCodeAdmin() {
-        const code = prompt('Code administrateur requis :');
-        if (code === null) return false; // Annulé
-        if (code !== ADMIN_CODE) {
-            toast('Code incorrect', true);
-            return false;
-        }
-        return true;
-    }
+    let filtreEtape = 'toutes';
 
     function getCollectionRef() {
         return db.collection('societes').doc(SOCIETE_ID).collection('apave');
     }
 
-    // Étapes du workflow Apave (ordre important)
-    const ETAPES = [
-        { key: 'rapportRecuDate',   label: 'Rapport reçu',      icon: '📥' },
-        { key: 'devisFaitDate',     label: 'Devis fait',        icon: '📝' },
-        { key: 'devisValideDate',   label: 'Devis validé',      icon: '✅' },
-        { key: 'travauxFaitsDate',  label: 'Travaux faits',     icon: '🔧' },
-    ];
+    function demanderCodeAdmin() {
+        const code = prompt('Code administrateur requis :');
+        if (code === null) return false;
+        if (code !== ADMIN_CODE) { toast('Code incorrect', true); return false; }
+        return true;
+    }
 
     function etapeEnCours(client) {
-        // Retourne la première étape non validée (ou 'termine' si toutes faites)
-        for (const e of ETAPES) {
-            if (!client[e.key]) return e.key;
-        }
+        for (const e of ETAPES) if (!client[e.key]) return e.key;
         return 'termine';
     }
 
     function calculerStatut(client) {
-        // Si tout est fait, c'est "a_jour" jusqu'à la prochaine échéance
         const now = new Date();
         const dueMonth = client.dueMonth || 1;
         const dueYear = client.dueYear || now.getFullYear();
-        const lastDayOfDueMonth = new Date(dueYear, dueMonth, 0);
-        const daysUntilDue = Math.floor((lastDayOfDueMonth - now) / (1000 * 60 * 60 * 24));
-
+        const lastDay = new Date(dueYear, dueMonth, 0);
+        const daysUntilDue = Math.floor((lastDay - now) / (1000 * 60 * 60 * 24));
         const termine = ETAPES.every(e => client[e.key]);
+        if (termine) return 'complet';
+        if (daysUntilDue < 0) return 'retard';
+        return 'encours';
+    }
 
-        // En retard : échéance passée ET pas terminé pour cette année
-        if (daysUntilDue < 0 && !termine) return 'en_retard';
-        // En cours : au moins une étape commencée et pas toutes finies
-        const enCours = ETAPES.some(e => client[e.key]) && !termine;
-        if (enCours) return 'en_cours';
-        // Terminé et échéance encore loin : à jour
-        if (termine && daysUntilDue > 30) return 'a_jour';
-        // À faire bientôt : échéance proche mais rien commencé
-        if (daysUntilDue <= 30 && !termine) return 'en_cours';
-        return termine ? 'a_jour' : 'en_cours';
+    function formaterDateCourt(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            const mois = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+            return d.getDate() + ' ' + mois[d.getMonth()];
+        } catch { return dateStr; }
     }
 
     function formaterDate(dateStr) {
-        if (!dateStr) return '-';
+        if (!dateStr) return '';
         try {
             const d = new Date(dateStr);
             return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -313,13 +579,11 @@
     }
 
     function moisNom(mois) {
-        const noms = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+        const noms = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
         return noms[(mois || 1) - 1];
     }
 
     async function charger() {
-        const tbody = document.getElementById('tbodyClients');
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px;">Chargement...</td></tr>';
         try {
             const snap = await getCollectionRef().get();
             tousLesClients = [];
@@ -328,120 +592,148 @@
             afficher();
         } catch (e) {
             console.error(e);
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:20px;">Erreur de chargement</td></tr>';
+            document.getElementById('clientsList').innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div>Erreur de chargement</div>';
         }
     }
 
-    function filtrerClients(statut) {
-        filtreStatut = statut;
-        // Mettre à jour l'état visuel des boutons
-        document.querySelectorAll('.btn-filter').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-filtre') === statut);
+    function setFiltreStatut(s) {
+        filtreStatut = s;
+        document.querySelectorAll('[data-statut]').forEach(btn => {
+            btn.classList.toggle('active-statut', btn.getAttribute('data-statut') === s);
+        });
+        afficher();
+    }
+    function setFiltreEtape(e) {
+        filtreEtape = e;
+        document.querySelectorAll('[data-etape]').forEach(btn => {
+            btn.classList.toggle('active-etape', btn.getAttribute('data-etape') === e);
         });
         afficher();
     }
 
     function afficher() {
-        const tbody = document.getElementById('tbodyClients');
-        // Stats par statut global
-        let nbAjour = 0, nbEnCours = 0, nbRetard = 0;
-        // Stats par étape (en cours sur cette étape)
-        let nbRapport = 0, nbDevis = 0, nbValide = 0, nbTravaux = 0;
+        // STATS
+        let nbComplet = 0, nbEncours = 0, nbRetard = 0;
         tousLesClients.forEach(c => {
             const s = calculerStatut(c);
-            if (s === 'a_jour') nbAjour++;
-            else if (s === 'en_cours') nbEnCours++;
-            else if (s === 'en_retard') nbRetard++;
-
-            const enCoursSur = etapeEnCours(c);
-            if (enCoursSur === 'rapportRecuDate') nbRapport++;
-            else if (enCoursSur === 'devisFaitDate') nbDevis++;
-            else if (enCoursSur === 'devisValideDate') nbValide++;
-            else if (enCoursSur === 'travauxFaitsDate') nbTravaux++;
+            if (s === 'complet') nbComplet++;
+            else if (s === 'encours') nbEncours++;
+            else if (s === 'retard') nbRetard++;
         });
         document.getElementById('stats').innerHTML = `
-            <div class="stat-card"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total</div></div>
-            <div class="stat-card success"><div class="stat-num">${nbAjour}</div><div class="stat-label">✓ À jour</div></div>
-            <div class="stat-card warn"><div class="stat-num">${nbEnCours}</div><div class="stat-label">🕒 En cours</div></div>
-            <div class="stat-card danger"><div class="stat-num">${nbRetard}</div><div class="stat-label">⚠ En retard</div></div>
-            <div class="stat-card"><div class="stat-num">${nbRapport}</div><div class="stat-label">📥 Attente rapport</div></div>
-            <div class="stat-card"><div class="stat-num">${nbDevis}</div><div class="stat-label">📝 Devis à faire</div></div>
-            <div class="stat-card"><div class="stat-num">${nbValide}</div><div class="stat-label">✅ Attente validation</div></div>
-            <div class="stat-card"><div class="stat-num">${nbTravaux}</div><div class="stat-label">🔧 Travaux à faire</div></div>
+            <div class="stat-card total"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total</div></div>
+            <div class="stat-card complets"><div class="stat-num">${nbComplet}</div><div class="stat-label">Complets</div></div>
+            <div class="stat-card encours"><div class="stat-num">${nbEncours}</div><div class="stat-label">En cours</div></div>
+            <div class="stat-card retard"><div class="stat-num">${nbRetard}</div><div class="stat-label">En retard</div></div>
         `;
 
-        // Filtrer (par statut global OU par étape en cours)
-        let liste = tousLesClients;
-        if (filtreStatut !== 'tous') {
-            liste = liste.filter(c => {
-                const s = calculerStatut(c);
-                if (filtreStatut === 'a_jour') return s === 'a_jour';
-                if (filtreStatut === 'en_cours') return s === 'en_cours';
-                if (filtreStatut === 'en_retard') return s === 'en_retard';
-                // Filtres par étape
-                return etapeEnCours(c) === filtreStatut;
-            });
-        }
+        // FILTRE + RECHERCHE
+        const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+        let liste = tousLesClients.filter(c => {
+            if (search && !(c.name || '').toLowerCase().includes(search) && !(c.contact || '').toLowerCase().includes(search)) return false;
+            const s = calculerStatut(c);
+            if (filtreStatut !== 'tous' && s !== filtreStatut) return false;
+            if (filtreEtape !== 'toutes' && etapeEnCours(c) !== filtreEtape) return false;
+            return true;
+        });
 
+        const container = document.getElementById('clientsList');
         if (liste.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px;">Aucun client</td></tr>';
+            container.innerHTML = '<div class="empty-state"><div class="emoji">📋</div>Aucun client ne correspond</div>';
             return;
         }
 
-        tbody.innerHTML = liste.map(c => {
-            const statut = calculerStatut(c);
-            const badge = statut === 'a_jour' ? '<span class="status-badge status-fait">✓ À jour</span>'
-                        : statut === 'en_retard' ? '<span class="status-badge status-retard">⚠ En retard</span>'
-                        : '<span class="status-badge status-a-faire">🕒 En cours</span>';
-            const btnStyle = 'padding:6px 12px;font-size:0.8rem;min-width:70px;';
+        container.innerHTML = liste.map(c => renderClientCard(c)).join('');
+    }
 
-            // Afficher les 4 étapes du workflow
-            const etapesHtml = ETAPES.map(e => {
-                const done = !!c[e.key];
-                const dateStr = done ? '<span class="date">' + formaterDate(c[e.key]) + '</span>' : '';
-                return '<span class="etape ' + (done ? 'done' : '') + '" onclick="toggleEtape(\'' + c.id + '\',\'' + e.key + '\')" title="' + e.label + '">' + e.icon + ' ' + e.label + ' ' + dateStr + '</span>';
-            }).join('');
+    function renderClientCard(c) {
+        const statut = calculerStatut(c);
+        const termine = ETAPES.every(e => c[e.key]);
+        const etape = etapeEnCours(c);
 
-            // Bouton "Renouveler" si toutes les étapes sont faites : avance l'échéance d'un an et reset les étapes
-            const termine = ETAPES.every(e => c[e.key]);
-            const btnRenouveler = termine
-                ? '<button class="btn btn-success" style="' + btnStyle + '" onclick="renouvelerAnnee(\'' + c.id + '\')">🔄 Nouvelle année</button>'
-                : '';
+        // Badge statut
+        const badge = statut === 'complet' ? '<span class="badge complet">Complet</span>'
+                    : statut === 'retard' ? '<span class="badge retard">En retard</span>'
+                    : '<span class="badge encours">En cours</span>';
 
-            const nbPdfs = (c.pdfs || []).length;
-            const pdfCell = nbPdfs > 0
-                ? '<button class="btn btn-secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="voirPdfs(\'' + c.id + '\')">📎 ' + nbPdfs + '</button>'
-                : '<small style="color:var(--text-light);">-</small>';
+        // Badge rappel annuel (visible uniquement si complet)
+        const rappelAnnuel = termine ? '<span class="badge-annuel">🔄 Rappel annuel : ' + moisNom(c.dueMonth) + ' ' + (c.dueYear || '') + '</span>' : '';
 
-            return `
-                <tr>
-                    <td><strong>${c.name || '-'}</strong></td>
-                    <td><small>${c.contact || '-'}</small></td>
-                    <td><div class="etapes">${etapesHtml}</div></td>
-                    <td><strong>${moisNom(c.dueMonth)} ${c.dueYear || ''}</strong></td>
-                    <td>${pdfCell}</td>
-                    <td>${badge}</td>
-                    <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;">
-                        ${btnRenouveler}
-                        <button class="btn btn-secondary" style="${btnStyle}" onclick="editer('${c.id}')">✎ Modifier</button>
-                        <button class="btn btn-danger" style="${btnStyle}" onclick="supprimer('${c.id}')">✕ Suppr.</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        // Pipeline (4 étapes)
+        let pipelineHtml = '';
+        ETAPES.forEach((e, i) => {
+            const done = !!c[e.key];
+            const current = !done && e.key === etape;
+            let cls = done ? 'done' : (current ? 'current' : 'pending');
+            const circleContent = done ? e.icon : (i + 1);
+            pipelineHtml += `<div class="step ${cls}" onclick="toggleEtape('${c.id}','${e.key}')">
+                <div class="step-circle">${circleContent}</div>
+                <div class="step-label">${e.label}</div>
+            </div>`;
+            if (i < ETAPES.length - 1) {
+                const lineDone = !!c[ETAPES[i+1].key] || done;
+                pipelineHtml += `<div class="step-line ${done ? 'done' : ''}"></div>`;
+            }
+        });
+
+        // Dates sous le pipeline
+        const datesHtml = ETAPES.filter(e => c[e.key]).map(e =>
+            `<span class="date-chip">${e.icon} ${formaterDateCourt(c[e.key])}</span>`
+        ).join('');
+
+        // Bouton d'action principal
+        let mainAction = '';
+        if (termine) {
+            mainAction = `<button class="btn-renew" onclick="renouvelerAnnee('${c.id}')">🔄 Nouvelle année</button>`;
+        } else {
+            const prochaineEtape = ETAPES.find(e => !c[e.key]);
+            if (prochaineEtape) {
+                mainAction = `<button class="btn-validate" onclick="toggleEtape('${c.id}','${prochaineEtape.key}')">✓ Valider : ${prochaineEtape.label}</button>`;
+            }
+        }
+
+        // PDFs
+        const nbPdfs = (c.pdfs || []).length;
+        const btnPdfs = nbPdfs > 0
+            ? `<button class="btn-icon" onclick="editer('${c.id}')" title="Voir les PDFs">📎 ${nbPdfs}</button>`
+            : '';
+
+        const notesHtml = c.notes ? `<div class="notes">📌 ${(c.notes || '').replace(/</g,'&lt;')}</div>` : '';
+
+        return `
+            <div class="client-card ${statut}">
+                <div class="client-top">
+                    <div class="client-info">
+                        <h3>${(c.name || '-').replace(/</g,'&lt;')}</h3>
+                        <div class="contact">${(c.contact || '-').replace(/</g,'&lt;')}</div>
+                        ${notesHtml}
+                    </div>
+                    <div class="client-badges">
+                        ${badge}
+                        ${rappelAnnuel}
+                    </div>
+                </div>
+                <div class="pipeline">${pipelineHtml}</div>
+                <div class="dates-row">${datesHtml}</div>
+                <div class="actions-row">
+                    ${mainAction}
+                    ${btnPdfs}
+                    <button class="btn-icon" onclick="editer('${c.id}')">✎ Modifier</button>
+                    <button class="btn-icon danger" onclick="supprimer('${c.id}')">🗑</button>
+                </div>
+            </div>
+        `;
     }
 
     function ouvrirModalAjout() {
-        document.getElementById('modalTitre').textContent = 'Ajouter un client';
+        document.getElementById('modalTitre').textContent = 'Nouveau client';
         document.getElementById('formId').value = '';
         document.getElementById('formName').value = '';
         document.getElementById('formContact').value = '';
-        document.getElementById('formLastReport').value = '';
         const now = new Date();
         document.getElementById('formDueMonth').value = (now.getMonth() + 1);
         document.getElementById('formDueYear').value = now.getFullYear() + 1;
         document.getElementById('formNotes').value = '';
-        // Masquer la section PDF : il faut d'abord enregistrer le client
         document.getElementById('pdfSection').style.display = 'none';
         document.getElementById('modalForm').classList.add('show');
     }
@@ -453,7 +745,6 @@
         document.getElementById('formId').value = id;
         document.getElementById('formName').value = c.name || '';
         document.getElementById('formContact').value = c.contact || '';
-        document.getElementById('formLastReport').value = c.lastClientReport || '';
         document.getElementById('formDueMonth').value = c.dueMonth || 1;
         document.getElementById('formDueYear').value = c.dueYear || new Date().getFullYear() + 1;
         document.getElementById('formNotes').value = c.notes || '';
@@ -462,6 +753,106 @@
         document.getElementById('modalForm').classList.add('show');
     }
 
+    function fermerModal() {
+        document.getElementById('modalForm').classList.remove('show');
+    }
+
+    async function sauvegarderClient() {
+        const id = document.getElementById('formId').value;
+        const data = {
+            name: document.getElementById('formName').value.trim(),
+            contact: document.getElementById('formContact').value.trim(),
+            dueMonth: parseInt(document.getElementById('formDueMonth').value, 10),
+            dueYear: parseInt(document.getElementById('formDueYear').value, 10),
+            notes: document.getElementById('formNotes').value.trim(),
+            societe: SOCIETE_ID,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        if (!data.name) { toast('Le nom du client est obligatoire', true); return; }
+        try {
+            if (id) {
+                await getCollectionRef().doc(id).update(data);
+                toast('Modifié');
+            } else {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await getCollectionRef().add(data);
+                toast('Ajouté');
+            }
+            fermerModal();
+            charger();
+        } catch (e) {
+            toast('Erreur : ' + e.message, true);
+        }
+    }
+
+    async function toggleEtape(clientId, etapeKey) {
+        const c = tousLesClients.find(x => x.id === clientId);
+        if (!c) return;
+        const dejaFait = !!c[etapeKey];
+
+        if (dejaFait) {
+            if (!demanderCodeAdmin()) return;
+            try {
+                await getCollectionRef().doc(clientId).update({
+                    [etapeKey]: firebase.firestore.FieldValue.delete(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                toast('Étape décochée');
+                charger();
+            } catch (e) { toast('Erreur : ' + e.message, true); }
+            return;
+        }
+
+        const defautDate = new Date().toISOString().slice(0, 10);
+        const etape = ETAPES.find(e => e.key === etapeKey);
+        const dateSaisie = prompt('Date — ' + (etape?.label || etapeKey) + ' :\n(format YYYY-MM-DD)', defautDate);
+        if (dateSaisie === null) return;
+        const date = (dateSaisie || '').trim() || defautDate;
+
+        const update = {
+            [etapeKey]: date,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        if (etapeKey === 'rapportRecuDate') update.lastClientReport = date;
+
+        try {
+            await getCollectionRef().doc(clientId).update(update);
+            toast((etape?.label || etapeKey) + ' — OK');
+            charger();
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    async function renouvelerAnnee(clientId) {
+        const c = tousLesClients.find(x => x.id === clientId);
+        if (!c) return;
+        if (!confirm('Démarrer un nouveau cycle annuel pour ' + (c.name || '') + ' ?\n\nCela avance l\'échéance de +1 an et remet les étapes à zéro.')) return;
+        const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
+        try {
+            await getCollectionRef().doc(clientId).update({
+                dueYear: prochaineAnnee,
+                rapportRecuDate: firebase.firestore.FieldValue.delete(),
+                devisFaitDate: firebase.firestore.FieldValue.delete(),
+                devisValideDate: firebase.firestore.FieldValue.delete(),
+                travauxFaitsDate: firebase.firestore.FieldValue.delete(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            toast('Nouveau cycle : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
+            charger();
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    async function supprimer(id) {
+        const c = tousLesClients.find(x => x.id === id);
+        if (!confirm('Supprimer ' + (c?.name || 'ce client') + ' ?')) return;
+        if (!demanderCodeAdmin()) return;
+        try {
+            await getCollectionRef().doc(id).delete();
+            toast('Supprimé');
+            charger();
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    // PDFs
     function afficherListePdfs(pdfs) {
         const container = document.getElementById('pdfList');
         if (!pdfs.length) {
@@ -469,20 +860,16 @@
             return;
         }
         container.innerHTML = pdfs.map((p, i) => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:4px;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:10px;margin-bottom:6px;gap:8px;">
                 <a href="${p.url}" target="_blank" style="color:var(--primary);text-decoration:none;flex:1;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📄 ${p.name || 'PDF'}</a>
-                <button class="btn btn-danger" style="padding:3px 8px;font-size:0.75rem;flex-shrink:0;" onclick="supprimerPdf(${i})">✕</button>
+                <button class="btn-icon danger" style="padding:6px 10px;font-size:0.75rem;" onclick="supprimerPdf(${i})">✕</button>
             </div>
         `).join('');
     }
 
     async function uploerPdfs() {
         const id = document.getElementById('formId').value;
-        if (!id) {
-            toast('Enregistrez d\'abord le client avant d\'ajouter des PDFs', true);
-            document.getElementById('formPdf').value = '';
-            return;
-        }
+        if (!id) { toast('Enregistrez d\'abord le client', true); document.getElementById('formPdf').value = ''; return; }
         const files = document.getElementById('formPdf').files;
         if (!files.length) return;
 
@@ -499,14 +886,9 @@
                 const ref = storage.ref(path);
                 await ref.put(file);
                 const url = await ref.getDownloadURL();
-                pdfs.push({
-                    name: file.name,
-                    url: url,
-                    path: path,
-                    uploadedAt: new Date().toISOString(),
-                });
+                pdfs.push({ name: file.name, url, path, uploadedAt: new Date().toISOString() });
             }
-            await clientRef.update({ pdfs: pdfs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            await clientRef.update({ pdfs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
             const idx = tousLesClients.findIndex(x => x.id === id);
             if (idx >= 0) tousLesClients[idx].pdfs = pdfs;
             afficherListePdfs(pdfs);
@@ -527,138 +909,17 @@
         const pdf = c.pdfs[index];
         try {
             if (pdf.path) {
-                try { await firebase.storage().ref(pdf.path).delete(); }
-                catch (e) { console.warn('Suppression storage échouée:', e); }
+                try { await firebase.storage().ref(pdf.path).delete(); } catch (e) { console.warn(e); }
             }
-            const nouveauxPdfs = c.pdfs.filter((_, i) => i !== index);
+            const nouveaux = c.pdfs.filter((_, i) => i !== index);
             await getCollectionRef().doc(id).update({
-                pdfs: nouveauxPdfs,
+                pdfs: nouveaux,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
-            c.pdfs = nouveauxPdfs;
-            afficherListePdfs(nouveauxPdfs);
+            c.pdfs = nouveaux;
+            afficherListePdfs(nouveaux);
             toast('PDF supprimé');
-        } catch (e) {
-            toast('Erreur : ' + e.message, true);
-        }
-    }
-
-    function voirPdfs(id) {
-        editer(id);
-    }
-
-    function fermerModal() {
-        document.getElementById('modalForm').classList.remove('show');
-    }
-
-    async function sauvegarderClient() {
-        const id = document.getElementById('formId').value;
-        const data = {
-            name: document.getElementById('formName').value.trim(),
-            contact: document.getElementById('formContact').value.trim(),
-            lastClientReport: document.getElementById('formLastReport').value,
-            dueMonth: parseInt(document.getElementById('formDueMonth').value, 10),
-            dueYear: parseInt(document.getElementById('formDueYear').value, 10),
-            notes: document.getElementById('formNotes').value.trim(),
-            societe: SOCIETE_ID,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        };
-        if (!data.name) { toast('Le nom du client est obligatoire', true); return; }
-        try {
-            if (id) {
-                await getCollectionRef().doc(id).update(data);
-                toast('Modifié');
-            } else {
-                data.status = 'a_faire';
-                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                await getCollectionRef().add(data);
-                toast('Ajouté');
-            }
-            fermerModal();
-            charger();
-        } catch (e) {
-            console.error(e);
-            toast('Erreur : ' + e.message, true);
-        }
-    }
-
-    async function toggleEtape(clientId, etapeKey) {
-        const c = tousLesClients.find(x => x.id === clientId);
-        if (!c) return;
-        const dejaFait = !!c[etapeKey];
-
-        if (dejaFait) {
-            // Décocher : demander code admin
-            if (!demanderCodeAdmin()) return;
-            try {
-                await getCollectionRef().doc(clientId).update({
-                    [etapeKey]: firebase.firestore.FieldValue.delete(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                });
-                toast('Étape décochée');
-                charger();
-            } catch (e) {
-                toast('Erreur : ' + e.message, true);
-            }
-            return;
-        }
-
-        // Cocher : demander la date
-        const defautDate = new Date().toISOString().slice(0, 10);
-        const etape = ETAPES.find(e => e.key === etapeKey);
-        const dateSaisie = prompt('Date — ' + (etape?.label || etapeKey) + ' :\n(format YYYY-MM-DD)', defautDate);
-        if (dateSaisie === null) return;
-        const date = (dateSaisie || '').trim() || defautDate;
-
-        const update = {
-            [etapeKey]: date,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        };
-        // Si c'est le rapport reçu, on enregistre aussi lastClientReport
-        if (etapeKey === 'rapportRecuDate') update.lastClientReport = date;
-
-        try {
-            await getCollectionRef().doc(clientId).update(update);
-            toast((etape?.label || etapeKey) + ' — OK');
-            charger();
-        } catch (e) {
-            toast('Erreur : ' + e.message, true);
-        }
-    }
-
-    async function renouvelerAnnee(clientId) {
-        const c = tousLesClients.find(x => x.id === clientId);
-        if (!c) return;
-        if (!confirm('Démarrer un nouveau cycle annuel pour ' + (c.name || '') + ' ?\n\nCela avance l\'échéance de +1 an et remet les étapes à zéro.')) return;
-        const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
-        const update = {
-            dueYear: prochaineAnnee,
-            rapportRecuDate: firebase.firestore.FieldValue.delete(),
-            devisFaitDate: firebase.firestore.FieldValue.delete(),
-            devisValideDate: firebase.firestore.FieldValue.delete(),
-            travauxFaitsDate: firebase.firestore.FieldValue.delete(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        };
-        try {
-            await getCollectionRef().doc(clientId).update(update);
-            toast('Nouveau cycle — échéance : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
-            charger();
-        } catch (e) {
-            toast('Erreur : ' + e.message, true);
-        }
-    }
-
-    async function supprimer(id) {
-        const c = tousLesClients.find(x => x.id === id);
-        if (!confirm('Supprimer ' + (c?.name || 'ce client') + ' ?')) return;
-        if (!demanderCodeAdmin()) return;
-        try {
-            await getCollectionRef().doc(id).delete();
-            toast('Supprimé');
-            charger();
-        } catch (e) {
-            toast('Erreur : ' + e.message, true);
-        }
+        } catch (e) { toast('Erreur : ' + e.message, true); }
     }
 
     function toast(msg, isError) {
@@ -668,7 +929,6 @@
         setTimeout(() => el.classList.remove('show'), 3000);
     }
 
-    // Démarrage
     charger();
 </script>
 
