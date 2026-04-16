@@ -549,15 +549,37 @@
         return 'termine';
     }
 
-    function calculerStatut(client) {
-        const now = new Date();
+    function prochainRappelDate(client) {
+        // Si travaux faits, rappel = travauxFaitsDate + 1 an
+        if (client.travauxFaitsDate) {
+            const d = new Date(client.travauxFaitsDate);
+            d.setFullYear(d.getFullYear() + 1);
+            return d;
+        }
+        // Sinon, utiliser dueMonth/dueYear (fin du mois cible)
         const dueMonth = client.dueMonth || 1;
-        const dueYear = client.dueYear || now.getFullYear();
-        const lastDay = new Date(dueYear, dueMonth, 0);
-        const daysUntilDue = Math.floor((lastDay - now) / (1000 * 60 * 60 * 24));
+        const dueYear = client.dueYear || new Date().getFullYear();
+        return new Date(dueYear, dueMonth, 0);
+    }
+
+    function joursAvantRappel(client) {
+        const rappel = prochainRappelDate(client);
+        const now = new Date();
+        return Math.floor((rappel - now) / (1000 * 60 * 60 * 24));
+    }
+
+    function calculerStatut(client) {
         const termine = ETAPES.every(e => client[e.key]);
-        if (termine) return 'complet';
-        if (daysUntilDue < 0) return 'retard';
+        const jours = joursAvantRappel(client);
+
+        // Si cycle terminé (tous travaux faits)
+        if (termine) {
+            if (jours < 0) return 'retard';      // Rappel dépassé, nouveau cycle à démarrer
+            if (jours <= 30) return 'encours';   // Rappel imminent (30j avant)
+            return 'complet';                    // Tout va bien
+        }
+        // Cycle en cours (pas tout fait)
+        if (jours < 0) return 'retard';
         return 'encours';
     }
 
@@ -656,8 +678,18 @@
                     : statut === 'retard' ? '<span class="badge retard">En retard</span>'
                     : '<span class="badge encours">En cours</span>';
 
-        // Badge rappel annuel (visible uniquement si complet)
-        const rappelAnnuel = termine ? '<span class="badge-annuel">🔄 Rappel annuel : ' + moisNom(c.dueMonth) + ' ' + (c.dueYear || '') + '</span>' : '';
+        // Badge rappel annuel (visible si travaux faits) — calculé depuis travauxFaitsDate + 1 an
+        let rappelAnnuel = '';
+        if (c.travauxFaitsDate) {
+            const rappel = prochainRappelDate(c);
+            const jours = joursAvantRappel(c);
+            const rappelLabel = rappel.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+            let couleurRappel = '';
+            let icone = '🔄';
+            if (jours < 0) { couleurRappel = 'background:var(--danger-light);color:var(--danger);'; icone = '⚠'; }
+            else if (jours <= 30) { couleurRappel = 'background:var(--warn-light);color:#b45309;'; icone = '⏰'; }
+            rappelAnnuel = '<span class="badge-annuel" style="' + couleurRappel + '">' + icone + ' Rappel annuel : ' + rappelLabel + '</span>';
+        }
 
         // Pipeline (4 étapes)
         let pipelineHtml = '';
@@ -684,7 +716,13 @@
         // Bouton d'action principal
         let mainAction = '';
         if (termine) {
-            mainAction = `<button class="btn-renew" onclick="renouvelerAnnee('${c.id}')">🔄 Nouvelle année</button>`;
+            const jours = joursAvantRappel(c);
+            // Proposer "Nouvelle année" seulement quand le rappel approche ou est dépassé
+            if (jours <= 30) {
+                const libelle = jours < 0 ? '⚠ Rappel dépassé — Nouveau cycle' : '🔄 Nouveau cycle à démarrer';
+                mainAction = `<button class="btn-renew" onclick="renouvelerAnnee('${c.id}')">${libelle}</button>`;
+            }
+            // Sinon : pas de bouton principal (juste Complet affiché, on attend)
         } else {
             const prochaineEtape = ETAPES.find(e => !c[e.key]);
             if (prochaineEtape) {
