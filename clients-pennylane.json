@@ -4841,6 +4841,16 @@
       "rue": "73, rue Guy Moquet"
     },
     {
+      "id": 278193106,
+      "nom": "LA CHOPE CHAMPERRET - SARL FERO LA CHOPE",
+      "email": "rio95370@gmail.com",
+      "telephone": "",
+      "adresse": "143, avenue de Villiers, 75017, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75017",
+      "rue": "143, avenue de Villiers"
+    },
+    {
       "id": 125155872,
       "nom": "LA COMETE - SARL MCNG",
       "email": "nicolas.giro@gmail.com",
@@ -9701,6 +9711,16 @@
       "rue": "15, rue Saint Benoit"
     },
     {
+      "id": 278374912,
+      "nom": "PUCHI",
+      "email": "",
+      "telephone": "",
+      "adresse": "11 Rue Saint-Honoré, 78000, Versailles",
+      "ville": "Versailles",
+      "codePostal": "78000",
+      "rue": "11 Rue Saint-Honoré"
+    },
+    {
       "id": 248733539,
       "nom": "PURDEY",
       "email": "c.moissonnier@gmail.com",
@@ -11961,6 +11981,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1196,
-  "syncDate": "2026-04-16T04:59:58Z"
+  "total": 1198,
+  "syncDate": "2026-04-17T04:58:19Z"
 }
