@@ -711,6 +711,16 @@
       "rue": "1-3 rue des Grands Degrés"
     },
     {
+      "id": 279171211,
+      "nom": "BADDIES INC",
+      "email": "lebaddiesbar@gmail.com",
+      "telephone": "",
+      "adresse": "7-9 rue des Boulangers, 75005, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75005",
+      "rue": "7-9 rue des Boulangers"
+    },
+    {
       "id": 248732864,
       "nom": "BAKER'S PUB",
       "email": "fabrechristine@yahoo.fr",
@@ -11981,6 +11991,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1198,
-  "syncDate": "2026-04-17T04:58:19Z"
+  "total": 1199,
+  "syncDate": "2026-04-18T04:46:39Z"
 }
