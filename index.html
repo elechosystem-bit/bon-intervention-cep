@@ -34,12 +34,32 @@
         .bon-number { background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 10px; text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
         .bon-number span { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; }
         .bon-number p { font-size: 0.8rem; opacity: 0.8; }
-        .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; padding-bottom: 100px; }
+        .form-body {
+            background: var(--card);
+            padding: 0;
+            border: 1px solid var(--border);
+            border-top: none;
+            position: relative;
+            overflow: hidden;
+            height: calc(100vh - 80px);
+        }
         .section { margin-bottom: 30px; }
 
-        /* Pages du formulaire — une seule visible à la fois, plein écran */
-        .form-page { display: none; }
+        /* Pages du formulaire — plein écran, une seule visible */
+        .form-page {
+            display: none;
+            position: absolute;
+            inset: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 24px 20px 100px 20px;
+            background: var(--card);
+        }
         .form-page.active { display: block; }
+        .form-page.slide-up { animation: slideUp 0.2s ease-out; }
+        .form-page.slide-down { animation: slideDown 0.2s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
 
         .wizard-nav {
             position: fixed;
@@ -2310,19 +2330,25 @@
         let currentPage = 1;
         const TOTAL_PAGES = 5;
 
-        function goToPage(n) {
+        function goToPage(n, direction) {
             if (n < 1 || n > TOTAL_PAGES || n === currentPage) return;
+            var dir = direction || (n > currentPage ? 'up' : 'down');
             currentPage = n;
-            // Une seule page visible
+
             document.querySelectorAll('.form-page').forEach(p => {
-                p.classList.toggle('active', parseInt(p.getAttribute('data-page')) === n);
+                var pageNum = parseInt(p.getAttribute('data-page'));
+                p.classList.remove('active', 'slide-up', 'slide-down');
+                if (pageNum === n) {
+                    p.classList.add('active', dir === 'up' ? 'slide-up' : 'slide-down');
+                    p.scrollTop = 0;
+                }
             });
-            // Masquer le header (logo, numéro, etc.) sauf sur la page 1
+
+            // Masquer le header sauf page 1
             var header = document.querySelector('.header');
             if (header) header.style.display = (n === 1) ? '' : 'none';
-            var bonNumber = document.querySelector('.bon-number');
-            if (bonNumber) bonNumber.style.display = (n === 1) ? '' : 'none';
-            // Indicateurs wizard
+
+            // Indicateurs
             document.querySelectorAll('.wizard-step').forEach((s, i) => {
                 s.classList.remove('active', 'done');
                 if (i + 1 === n) s.classList.add('active');
@@ -2330,46 +2356,42 @@
             });
             document.getElementById('wizardLabel').textContent = n + '/' + TOTAL_PAGES + ' — ' + PAGE_LABELS[n];
             document.getElementById('wizardPrev').disabled = (n === 1);
-            var nextBtn = document.getElementById('wizardNext');
-            nextBtn.style.display = (n === TOTAL_PAGES) ? 'none' : '';
-            // Scroll en haut
-            window.scrollTo(0, 0);
+            document.getElementById('wizardNext').style.display = (n === TOTAL_PAGES) ? 'none' : '';
             updateWizardVisibility();
         }
 
-        function wizardNextPage() { goToPage(currentPage + 1); }
-        function wizardPrevPage() { goToPage(currentPage - 1); }
+        function wizardNextPage() { goToPage(currentPage + 1, 'up'); }
+        function wizardPrevPage() { goToPage(currentPage - 1, 'down'); }
 
-        // Swipe vertical libre (haut/bas) — fonctionne partout, pas besoin d'être en haut ou en bas
+        // Swipe vertical — très sensible, change de page instantanément
         (function() {
             var startY = 0;
-            var startTime = 0;
+            var active = false;
 
             document.addEventListener('touchstart', function(e) {
-                if (e.target.tagName === 'CANVAS' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-                startY = e.touches[0].clientY;
-                startTime = Date.now();
-            }, { passive: true });
-
-            document.addEventListener('touchend', function(e) {
-                if (!startTime) return;
-                var endY = e.changedTouches[0].clientY;
-                var diffY = endY - startY;
-                var elapsed = Date.now() - startTime;
-                startTime = 0;
-
-                // Swipe rapide (< 400ms) et assez long (> 50px)
-                if (elapsed > 400 || Math.abs(diffY) < 50) return;
-
-                // Vérifier qu'on est sur l'onglet Bon
+                if (e.target.closest('canvas, input, textarea, select, .signature-canvas')) return;
                 var vueBon = document.getElementById('vueBon');
                 if (!vueBon || !vueBon.classList.contains('active')) return;
+                startY = e.touches[0].clientY;
+                active = true;
+            }, { passive: true });
 
-                if (diffY < -50) {
+            document.addEventListener('touchmove', function(e) {
+                if (!active) return;
+                var diffY = e.touches[0].clientY - startY;
+
+                // Seuil très bas : 30px suffit pour changer de page
+                if (diffY < -30) {
+                    active = false;
                     wizardNextPage();
-                } else if (diffY > 50) {
+                } else if (diffY > 30) {
+                    active = false;
                     wizardPrevPage();
                 }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function() {
+                active = false;
             }, { passive: true });
         })();
 
