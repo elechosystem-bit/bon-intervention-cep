@@ -37,19 +37,9 @@
         .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; padding-bottom: 100px; }
         .section { margin-bottom: 30px; }
 
-        /* Pages/étapes du formulaire — scroll-snap style TikTok */
-        .form-body {
-            scroll-snap-type: y mandatory;
-            overflow-y: scroll;
-            height: calc(100vh - 80px);
-            padding-bottom: 80px !important;
-            -webkit-overflow-scrolling: touch;
-        }
-        .form-page {
-            scroll-snap-align: start;
-            min-height: calc(100vh - 80px);
-            padding-bottom: 20px;
-        }
+        /* Pages du formulaire — une seule visible à la fois, plein écran */
+        .form-page { display: none; }
+        .form-page.active { display: block; }
 
         .wizard-nav {
             position: fixed;
@@ -436,7 +426,7 @@
 
         <div id="vueBon" class="vue-content active">
         <div class="form-body">
-            <div class="form-page" data-page="1">
+            <div class="form-page active" data-page="1">
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
                 <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: flex-end;">
@@ -2321,53 +2311,66 @@
         const TOTAL_PAGES = 5;
 
         function goToPage(n) {
-            if (n < 1 || n > TOTAL_PAGES) return;
+            if (n < 1 || n > TOTAL_PAGES || n === currentPage) return;
             currentPage = n;
-            // Scroller vers la page dans le conteneur
-            var page = document.querySelector('.form-page[data-page="' + n + '"]');
-            if (page) page.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            updateWizardIndicators();
-        }
-
-        function updateWizardIndicators() {
+            // Une seule page visible
+            document.querySelectorAll('.form-page').forEach(p => {
+                p.classList.toggle('active', parseInt(p.getAttribute('data-page')) === n);
+            });
+            // Masquer le header (logo, numéro, etc.) sauf sur la page 1
+            var header = document.querySelector('.header');
+            if (header) header.style.display = (n === 1) ? '' : 'none';
+            var bonNumber = document.querySelector('.bon-number');
+            if (bonNumber) bonNumber.style.display = (n === 1) ? '' : 'none';
+            // Indicateurs wizard
             document.querySelectorAll('.wizard-step').forEach((s, i) => {
                 s.classList.remove('active', 'done');
-                if (i + 1 === currentPage) s.classList.add('active');
-                else if (i + 1 < currentPage) s.classList.add('done');
+                if (i + 1 === n) s.classList.add('active');
+                else if (i + 1 < n) s.classList.add('done');
             });
-            document.getElementById('wizardLabel').textContent = currentPage + '/' + TOTAL_PAGES + ' — ' + PAGE_LABELS[currentPage];
-            document.getElementById('wizardPrev').disabled = (currentPage === 1);
+            document.getElementById('wizardLabel').textContent = n + '/' + TOTAL_PAGES + ' — ' + PAGE_LABELS[n];
+            document.getElementById('wizardPrev').disabled = (n === 1);
             var nextBtn = document.getElementById('wizardNext');
-            if (currentPage === TOTAL_PAGES) {
-                nextBtn.style.display = 'none';
-            } else {
-                nextBtn.style.display = '';
-            }
+            nextBtn.style.display = (n === TOTAL_PAGES) ? 'none' : '';
+            // Scroll en haut
+            window.scrollTo(0, 0);
+            updateWizardVisibility();
         }
 
         function wizardNextPage() { goToPage(currentPage + 1); }
         function wizardPrevPage() { goToPage(currentPage - 1); }
 
-        // Détecter la page visible via IntersectionObserver (mise à jour automatique du wizard)
+        // Swipe vertical libre (haut/bas) — fonctionne partout, pas besoin d'être en haut ou en bas
         (function() {
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                        var n = parseInt(entry.target.getAttribute('data-page'));
-                        if (n && n !== currentPage) {
-                            currentPage = n;
-                            updateWizardIndicators();
-                        }
-                    }
-                });
-            }, { threshold: 0.5 });
+            var startY = 0;
+            var startTime = 0;
 
-            // Observer après le chargement du DOM
-            setTimeout(function() {
-                document.querySelectorAll('.form-page').forEach(function(p) {
-                    observer.observe(p);
-                });
-            }, 500);
+            document.addEventListener('touchstart', function(e) {
+                if (e.target.tagName === 'CANVAS' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+                startY = e.touches[0].clientY;
+                startTime = Date.now();
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                if (!startTime) return;
+                var endY = e.changedTouches[0].clientY;
+                var diffY = endY - startY;
+                var elapsed = Date.now() - startTime;
+                startTime = 0;
+
+                // Swipe rapide (< 400ms) et assez long (> 50px)
+                if (elapsed > 400 || Math.abs(diffY) < 50) return;
+
+                // Vérifier qu'on est sur l'onglet Bon
+                var vueBon = document.getElementById('vueBon');
+                if (!vueBon || !vueBon.classList.contains('active')) return;
+
+                if (diffY < -50) {
+                    wizardNextPage();
+                } else if (diffY > 50) {
+                    wizardPrevPage();
+                }
+            }, { passive: true });
         })();
 
         function updateWizardVisibility() {
