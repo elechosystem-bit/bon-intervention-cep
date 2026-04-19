@@ -38,8 +38,20 @@
         .section { margin-bottom: 30px; }
 
         /* Pages/étapes du formulaire */
-        .form-page { display: none; }
+        .form-pages-wrapper {
+            overflow: hidden;
+            position: relative;
+        }
+        .form-page {
+            display: none;
+            animation-duration: 0.25s;
+            animation-fill-mode: both;
+        }
         .form-page.active { display: block; }
+        .form-page.slide-in-right { animation-name: slideInRight; }
+        .form-page.slide-in-left { animation-name: slideInLeft; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         .wizard-nav {
             position: fixed;
@@ -2310,12 +2322,18 @@
         let currentPage = 1;
         const TOTAL_PAGES = 5;
 
-        function goToPage(n) {
-            if (n < 1 || n > TOTAL_PAGES) return;
+        function goToPage(n, direction) {
+            if (n < 1 || n > TOTAL_PAGES || n === currentPage) return;
+            if (!direction) direction = n > currentPage ? 'right' : 'left';
             currentPage = n;
-            // Afficher/masquer les pages
+            // Afficher/masquer les pages avec animation
             document.querySelectorAll('.form-page').forEach(p => {
-                p.classList.toggle('active', parseInt(p.getAttribute('data-page')) === n);
+                var pageNum = parseInt(p.getAttribute('data-page'));
+                p.classList.remove('active', 'slide-in-right', 'slide-in-left');
+                if (pageNum === n) {
+                    p.classList.add('active');
+                    p.classList.add(direction === 'right' ? 'slide-in-right' : 'slide-in-left');
+                }
             });
             // Mettre à jour les indicateurs
             document.querySelectorAll('.wizard-step').forEach((s, i) => {
@@ -2336,12 +2354,50 @@
             }
             // Scroller en haut
             window.scrollTo(0, 0);
-            // Masquer le wizard si on est pas sur l'onglet Bon
             updateWizardVisibility();
         }
 
-        function wizardNextPage() { goToPage(currentPage + 1); }
-        function wizardPrevPage() { goToPage(currentPage - 1); }
+        function wizardNextPage() { goToPage(currentPage + 1, 'right'); }
+        function wizardPrevPage() { goToPage(currentPage - 1, 'left'); }
+
+        // -- Swipe gauche/droite pour slider entre les pages --
+        (function() {
+            var touchStartX = 0;
+            var touchStartY = 0;
+            var swiping = false;
+
+            document.addEventListener('touchstart', function(e) {
+                // Ne pas interférer avec les canvas de signature
+                if (e.target.tagName === 'CANVAS') return;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                swiping = true;
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                if (!swiping) return;
+                swiping = false;
+                var touchEndX = e.changedTouches[0].clientX;
+                var touchEndY = e.changedTouches[0].clientY;
+                var diffX = touchEndX - touchStartX;
+                var diffY = touchEndY - touchStartY;
+
+                // Vérifier que c'est un swipe horizontal (pas vertical comme le scroll)
+                if (Math.abs(diffX) < 60 || Math.abs(diffX) < Math.abs(diffY)) return;
+
+                // Vérifier qu'on est sur l'onglet Bon
+                var vueBon = document.getElementById('vueBon');
+                if (!vueBon || !vueBon.classList.contains('active')) return;
+
+                if (diffX < -60) {
+                    // Swipe gauche → page suivante
+                    wizardNextPage();
+                } else if (diffX > 60) {
+                    // Swipe droite → page précédente
+                    wizardPrevPage();
+                }
+            }, { passive: true });
+        })();
 
         function updateWizardVisibility() {
             var wizardNav = document.getElementById('wizardNav');
