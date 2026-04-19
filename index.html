@@ -50,8 +50,8 @@
         .form-page.active { display: block; }
         .form-page.slide-in-right { animation-name: slideInRight; }
         .form-page.slide-in-left { animation-name: slideInLeft; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideInLeft { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .wizard-nav {
             position: fixed;
@@ -2382,18 +2382,22 @@
                 var diffX = touchEndX - touchStartX;
                 var diffY = touchEndY - touchStartY;
 
-                // Vérifier que c'est un swipe horizontal (pas vertical comme le scroll)
-                if (Math.abs(diffX) < 60 || Math.abs(diffX) < Math.abs(diffY)) return;
+                // Swipe vertical (comme TikTok) : vérifier que c'est bien vertical
+                if (Math.abs(diffY) < 80 || Math.abs(diffY) < Math.abs(diffX)) return;
+
+                // Seulement si on est en haut ou en bas de la page (pas en train de scroller du contenu)
+                var atTop = window.scrollY < 10;
+                var atBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 30);
 
                 // Vérifier qu'on est sur l'onglet Bon
                 var vueBon = document.getElementById('vueBon');
                 if (!vueBon || !vueBon.classList.contains('active')) return;
 
-                if (diffX < -60) {
-                    // Swipe gauche → page suivante
+                if (diffY < -80 && atBottom) {
+                    // Swipe vers le haut (en bas de page) → page suivante
                     wizardNextPage();
-                } else if (diffX > 60) {
-                    // Swipe droite → page précédente
+                } else if (diffY > 80 && atTop) {
+                    // Swipe vers le bas (en haut de page) → page précédente
                     wizardPrevPage();
                 }
             }, { passive: true });
