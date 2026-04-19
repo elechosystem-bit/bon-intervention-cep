@@ -34,84 +34,9 @@
         .bon-number { background: rgba(255,255,255,0.15); padding: 12px 20px; border-radius: 10px; text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
         .bon-number span { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; }
         .bon-number p { font-size: 0.8rem; opacity: 0.8; }
-        .form-body {
-            background: var(--card);
-            padding: 0;
-            border: 1px solid var(--border);
-            border-top: none;
-            position: relative;
-            overflow: hidden;
-            height: calc(100vh - 80px);
-        }
+        .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; }
         .section { margin-bottom: 30px; }
 
-        /* Pages du formulaire — plein écran, une seule visible */
-        .form-page {
-            display: none;
-            position: absolute;
-            inset: 0;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 24px 20px 100px 20px;
-            background: var(--card);
-        }
-        .form-page.active { display: block; }
-        .form-page.slide-up { animation: slideUp 0.35s cubic-bezier(0.25, 0.1, 0.25, 1); }
-        .form-page.slide-down { animation: slideDown 0.35s cubic-bezier(0.25, 0.1, 0.25, 1); }
-        @keyframes slideUp { from { transform: translateY(60%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideDown { from { transform: translateY(-60%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
-
-        .wizard-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 2px solid var(--border);
-            padding: 10px 16px;
-            z-index: 50;
-            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
-        }
-        .wizard-steps {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-bottom: 10px;
-        }
-        .wizard-step {
-            width: 40px;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--border);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .wizard-step.active { background: var(--primary); width: 60px; }
-        .wizard-step.done { background: #38a169; }
-        .wizard-buttons {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-        }
-        .wizard-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
-        .wizard-btn.prev { background: var(--border); color: var(--text); }
-        .wizard-btn.next { background: var(--primary); color: white; }
-        .wizard-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .wizard-label {
-            text-align: center;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-light);
-            margin-bottom: 6px;
-        }
         .section-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 10px; }
         .section-title::before { content: ''; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
         .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
@@ -446,7 +371,7 @@
 
         <div id="vueBon" class="vue-content active">
         <div class="form-body">
-            <div class="form-page active" data-page="1">
+
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
                 <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: flex-end;">
@@ -472,9 +397,7 @@
                 </div>
             </div>
 
-            </div><!-- /form-page 1 -->
 
-            <div class="form-page" data-page="2">
             <div class="section">
                 <h3 class="section-title">Détails de l'Intervention</h3>
                 <div class="input-grid">
@@ -517,9 +440,7 @@
                 </div>
             </div>
 
-            </div><!-- /form-page 2 -->
 
-            <div class="form-page" data-page="3">
             <div class="section">
                 <h3 class="section-title">Produits Utilisés</h3>
                 
@@ -727,9 +648,7 @@
                 </div>
             </div>
 
-            </div><!-- /form-page 3 -->
 
-            <div class="form-page" data-page="4">
             <div class="section">
                 <h3 class="section-title">Main d'Œuvre & Déplacement</h3>
                 <div class="service-row">
@@ -757,9 +676,7 @@
                 <div class="total-row grand-total"><span>TOTAL TTC</span><span id="totalTTC">0.00€</span></div>
             </div>
 
-            </div><!-- /form-page 4 -->
 
-            <div class="form-page" data-page="5">
             <div class="signature-section">
                 <div class="signature-box">
                     <h4>Signature Technicien</h4>
@@ -790,23 +707,7 @@
                 <button class="btn btn-primary" id="btnSaveBonTech" type="button" onclick="if(this.disabled)return;this.disabled=true;saveBonTech();">💾 Enregistrer le bon et envoyer au client</button>
             </div>
             <div id="saveMessage" class="save-message">Bon enregistré.</div>
-            </div><!-- /form-page 5 -->
 
-            <!-- Barre de navigation wizard -->
-            <div class="wizard-nav" id="wizardNav">
-                <div class="wizard-label" id="wizardLabel">1/5 — Client</div>
-                <div class="wizard-steps">
-                    <div class="wizard-step active" onclick="goToPage(1)"></div>
-                    <div class="wizard-step" onclick="goToPage(2)"></div>
-                    <div class="wizard-step" onclick="goToPage(3)"></div>
-                    <div class="wizard-step" onclick="goToPage(4)"></div>
-                    <div class="wizard-step" onclick="goToPage(5)"></div>
-                </div>
-                <div class="wizard-buttons">
-                    <button class="wizard-btn prev" id="wizardPrev" onclick="wizardPrevPage()" disabled>← Précédent</button>
-                    <button class="wizard-btn next" id="wizardNext" onclick="wizardNextPage()">Suivant →</button>
-                </div>
-            </div>
         </div>
         </div>
 
@@ -1294,9 +1195,6 @@
             document.getElementById('vuePlanning').classList.toggle('active', vue === 'planning');
             const vueAstreinteEl = document.getElementById('vueAstreinte');
             if (vueAstreinteEl) vueAstreinteEl.classList.toggle('active', vue === 'astreinte');
-            // Masquer/afficher le wizard selon l'onglet
-            var wizardNav = document.getElementById('wizardNav');
-            if (wizardNav) wizardNav.style.display = (vue === 'bon') ? 'block' : 'none';
             document.getElementById('tabBon').classList.toggle('active', vue === 'bon');
             document.getElementById('tabPlanning').classList.toggle('active', vue === 'planning');
             const tabAstreinteEl = document.getElementById('tabAstreinte');
@@ -2324,98 +2222,6 @@
             ctx.clearRect(0, 0, c.width, c.height);
             ctx.restore();
         }
-
-        // -- Navigation wizard (pages du formulaire) --
-        const PAGE_LABELS = ['', 'Client', 'Intervention', 'Matériel', 'MO & Totaux', 'Signatures'];
-        let currentPage = 1;
-        const TOTAL_PAGES = 5;
-
-        function goToPage(n, direction) {
-            if (n < 1 || n > TOTAL_PAGES || n === currentPage) return;
-            var dir = direction || (n > currentPage ? 'up' : 'down');
-            currentPage = n;
-
-            document.querySelectorAll('.form-page').forEach(p => {
-                var pageNum = parseInt(p.getAttribute('data-page'));
-                p.classList.remove('active', 'slide-up', 'slide-down');
-                if (pageNum === n) {
-                    p.classList.add('active', dir === 'up' ? 'slide-up' : 'slide-down');
-                    p.scrollTop = 0;
-                }
-            });
-
-            // Masquer le header et les onglets sauf page 1
-            var header = document.querySelector('.header');
-            if (header) header.style.display = (n === 1) ? '' : 'none';
-            var tabs = document.querySelector('.tabs-nav');
-            if (tabs) tabs.style.display = (n === 1) ? '' : 'none';
-            // Ajuster la hauteur du form-body quand le header est masqué
-            var formBody = document.querySelector('.form-body');
-            if (formBody) formBody.style.height = (n === 1) ? 'calc(100vh - 80px)' : '100vh';
-
-            // Indicateurs
-            document.querySelectorAll('.wizard-step').forEach((s, i) => {
-                s.classList.remove('active', 'done');
-                if (i + 1 === n) s.classList.add('active');
-                else if (i + 1 < n) s.classList.add('done');
-            });
-            document.getElementById('wizardLabel').textContent = n + '/' + TOTAL_PAGES + ' — ' + PAGE_LABELS[n];
-            document.getElementById('wizardPrev').disabled = (n === 1);
-            document.getElementById('wizardNext').style.display = (n === TOTAL_PAGES) ? 'none' : '';
-            updateWizardVisibility();
-        }
-
-        function wizardNextPage() { goToPage(currentPage + 1, 'up'); }
-        function wizardPrevPage() { goToPage(currentPage - 1, 'down'); }
-
-        // Swipe vertical — très sensible, change de page instantanément
-        (function() {
-            var startY = 0;
-            var active = false;
-
-            document.addEventListener('touchstart', function(e) {
-                if (e.target.closest('canvas, input, textarea, select, .signature-canvas')) return;
-                var vueBon = document.getElementById('vueBon');
-                if (!vueBon || !vueBon.classList.contains('active')) return;
-                startY = e.touches[0].clientY;
-                active = true;
-            }, { passive: true });
-
-            document.addEventListener('touchmove', function(e) {
-                if (!active) return;
-                var diffY = e.touches[0].clientY - startY;
-
-                // Seuil très bas : 30px suffit pour changer de page
-                if (diffY < -30) {
-                    active = false;
-                    wizardNextPage();
-                } else if (diffY > 30) {
-                    active = false;
-                    wizardPrevPage();
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchend', function() {
-                active = false;
-            }, { passive: true });
-        })();
-
-        function updateWizardVisibility() {
-            var wizardNav = document.getElementById('wizardNav');
-            if (!wizardNav) return;
-            var vueBon = document.getElementById('vueBon');
-            var isVisible = vueBon && vueBon.classList.contains('active');
-            wizardNav.style.display = isVisible ? 'block' : 'none';
-        }
-
-        // Masquer le wizard quand on est sur planning ou astreinte
-        var _origShowVue = null;
-        document.addEventListener('DOMContentLoaded', function() {
-            // Observer les changements d'onglet
-            var observer = new MutationObserver(updateWizardVisibility);
-            var vueBon = document.getElementById('vueBon');
-            if (vueBon) observer.observe(vueBon, { attributes: true, attributeFilter: ['class'] });
-        });
 
         // -- Signature plein écran --
         let _fsSourceCanvasId = null;
