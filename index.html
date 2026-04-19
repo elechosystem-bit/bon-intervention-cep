@@ -37,21 +37,19 @@
         .form-body { background: var(--card); padding: 30px; border: 1px solid var(--border); border-top: none; padding-bottom: 100px; }
         .section { margin-bottom: 30px; }
 
-        /* Pages/étapes du formulaire */
-        .form-pages-wrapper {
-            overflow: hidden;
-            position: relative;
+        /* Pages/étapes du formulaire — scroll-snap style TikTok */
+        .form-body {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: calc(100vh - 80px);
+            padding-bottom: 80px !important;
+            -webkit-overflow-scrolling: touch;
         }
         .form-page {
-            display: none;
-            animation-duration: 0.25s;
-            animation-fill-mode: both;
+            scroll-snap-align: start;
+            min-height: calc(100vh - 80px);
+            padding-bottom: 20px;
         }
-        .form-page.active { display: block; }
-        .form-page.slide-in-right { animation-name: slideInRight; }
-        .form-page.slide-in-left { animation-name: slideInLeft; }
-        @keyframes slideInRight { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideInLeft { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .wizard-nav {
             position: fixed;
@@ -438,7 +436,7 @@
 
         <div id="vueBon" class="vue-content active">
         <div class="form-body">
-            <div class="form-page active" data-page="1">
+            <div class="form-page" data-page="1">
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
                 <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: flex-end;">
@@ -2322,85 +2320,54 @@
         let currentPage = 1;
         const TOTAL_PAGES = 5;
 
-        function goToPage(n, direction) {
-            if (n < 1 || n > TOTAL_PAGES || n === currentPage) return;
-            if (!direction) direction = n > currentPage ? 'right' : 'left';
+        function goToPage(n) {
+            if (n < 1 || n > TOTAL_PAGES) return;
             currentPage = n;
-            // Afficher/masquer les pages avec animation
-            document.querySelectorAll('.form-page').forEach(p => {
-                var pageNum = parseInt(p.getAttribute('data-page'));
-                p.classList.remove('active', 'slide-in-right', 'slide-in-left');
-                if (pageNum === n) {
-                    p.classList.add('active');
-                    p.classList.add(direction === 'right' ? 'slide-in-right' : 'slide-in-left');
-                }
-            });
-            // Mettre à jour les indicateurs
+            // Scroller vers la page dans le conteneur
+            var page = document.querySelector('.form-page[data-page="' + n + '"]');
+            if (page) page.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            updateWizardIndicators();
+        }
+
+        function updateWizardIndicators() {
             document.querySelectorAll('.wizard-step').forEach((s, i) => {
                 s.classList.remove('active', 'done');
-                if (i + 1 === n) s.classList.add('active');
-                else if (i + 1 < n) s.classList.add('done');
+                if (i + 1 === currentPage) s.classList.add('active');
+                else if (i + 1 < currentPage) s.classList.add('done');
             });
-            // Label
-            document.getElementById('wizardLabel').textContent = n + '/' + TOTAL_PAGES + ' — ' + PAGE_LABELS[n];
-            // Boutons
-            document.getElementById('wizardPrev').disabled = (n === 1);
+            document.getElementById('wizardLabel').textContent = currentPage + '/' + TOTAL_PAGES + ' — ' + PAGE_LABELS[currentPage];
+            document.getElementById('wizardPrev').disabled = (currentPage === 1);
             var nextBtn = document.getElementById('wizardNext');
-            if (n === TOTAL_PAGES) {
+            if (currentPage === TOTAL_PAGES) {
                 nextBtn.style.display = 'none';
             } else {
                 nextBtn.style.display = '';
-                nextBtn.textContent = 'Suivant →';
             }
-            // Scroller en haut
-            window.scrollTo(0, 0);
-            updateWizardVisibility();
         }
 
-        function wizardNextPage() { goToPage(currentPage + 1, 'right'); }
-        function wizardPrevPage() { goToPage(currentPage - 1, 'left'); }
+        function wizardNextPage() { goToPage(currentPage + 1); }
+        function wizardPrevPage() { goToPage(currentPage - 1); }
 
-        // -- Swipe gauche/droite pour slider entre les pages --
+        // Détecter la page visible via IntersectionObserver (mise à jour automatique du wizard)
         (function() {
-            var touchStartX = 0;
-            var touchStartY = 0;
-            var swiping = false;
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                        var n = parseInt(entry.target.getAttribute('data-page'));
+                        if (n && n !== currentPage) {
+                            currentPage = n;
+                            updateWizardIndicators();
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
 
-            document.addEventListener('touchstart', function(e) {
-                // Ne pas interférer avec les canvas de signature
-                if (e.target.tagName === 'CANVAS') return;
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                swiping = true;
-            }, { passive: true });
-
-            document.addEventListener('touchend', function(e) {
-                if (!swiping) return;
-                swiping = false;
-                var touchEndX = e.changedTouches[0].clientX;
-                var touchEndY = e.changedTouches[0].clientY;
-                var diffX = touchEndX - touchStartX;
-                var diffY = touchEndY - touchStartY;
-
-                // Swipe vertical (comme TikTok) : vérifier que c'est bien vertical
-                if (Math.abs(diffY) < 80 || Math.abs(diffY) < Math.abs(diffX)) return;
-
-                // Seulement si on est en haut ou en bas de la page (pas en train de scroller du contenu)
-                var atTop = window.scrollY < 10;
-                var atBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 30);
-
-                // Vérifier qu'on est sur l'onglet Bon
-                var vueBon = document.getElementById('vueBon');
-                if (!vueBon || !vueBon.classList.contains('active')) return;
-
-                if (diffY < -80 && atBottom) {
-                    // Swipe vers le haut (en bas de page) → page suivante
-                    wizardNextPage();
-                } else if (diffY > 80 && atTop) {
-                    // Swipe vers le bas (en haut de page) → page précédente
-                    wizardPrevPage();
-                }
-            }, { passive: true });
+            // Observer après le chargement du DOM
+            setTimeout(function() {
+                document.querySelectorAll('.form-page').forEach(function(p) {
+                    observer.observe(p);
+                });
+            }, 500);
         })();
 
         function updateWizardVisibility() {
