@@ -2344,9 +2344,14 @@
                 }
             });
 
-            // Masquer le header sauf page 1
+            // Masquer le header et les onglets sauf page 1
             var header = document.querySelector('.header');
             if (header) header.style.display = (n === 1) ? '' : 'none';
+            var tabs = document.querySelector('.tabs-nav');
+            if (tabs) tabs.style.display = (n === 1) ? '' : 'none';
+            // Ajuster la hauteur du form-body quand le header est masqué
+            var formBody = document.querySelector('.form-body');
+            if (formBody) formBody.style.height = (n === 1) ? 'calc(100vh - 80px)' : '100vh';
 
             // Indicateurs
             document.querySelectorAll('.wizard-step').forEach((s, i) => {
