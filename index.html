@@ -56,10 +56,10 @@
             background: var(--card);
         }
         .form-page.active { display: block; }
-        .form-page.slide-up { animation: slideUp 0.2s ease-out; }
-        .form-page.slide-down { animation: slideDown 0.2s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        .form-page.slide-up { animation: slideUp 0.35s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        .form-page.slide-down { animation: slideDown 0.35s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        @keyframes slideUp { from { transform: translateY(60%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideDown { from { transform: translateY(-60%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
 
         .wizard-nav {
             position: fixed;
