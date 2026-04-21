@@ -4270,8 +4270,12 @@
                 alert("Code incorrect.");
                 return;
             }
-            document.getElementById('sectionBonsArchives').style.display = 'block';
+            const section = document.getElementById('sectionBonsArchives');
+            section.style.display = 'block';
             renderBonsArchives();
+            setTimeout(function() {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         }
 
         function fermerBonsArchives() {
