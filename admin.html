@@ -954,7 +954,15 @@
         function loadMeteo() {
             fetch('https://wttr.in/Paris?format=%t+%C&lang=fr')
                 .then(function(r) { return r.text(); })
-                .then(function(t) { _meteoCache = t.trim(); updateHeaderInfo(); })
+                .then(function(t) {
+                    var txt = (t || '').trim();
+                    if (!txt || txt.length > 80 || /<[a-z!]/i.test(txt)) {
+                        _meteoCache = '';
+                    } else {
+                        _meteoCache = txt;
+                    }
+                    updateHeaderInfo();
+                })
                 .catch(function() { _meteoCache = ''; });
         }
         updateHeaderInfo();

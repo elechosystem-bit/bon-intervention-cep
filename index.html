@@ -1880,8 +1880,14 @@
             fetch('https://wttr.in/Paris?format=%t+%C&lang=fr')
                 .then(function(r) { return r.text(); })
                 .then(function(t) {
-                    _meteoCache = t.trim();
-                    _meteoEmoji = getMeteoEmoji(t);
+                    var txt = (t || '').trim();
+                    if (!txt || txt.length > 80 || /<[a-z!]/i.test(txt)) {
+                        _meteoCache = ''; _meteoEmoji = '';
+                        updateHeaderInfo();
+                        return;
+                    }
+                    _meteoCache = txt;
+                    _meteoEmoji = getMeteoEmoji(txt);
                     updateHeaderInfo();
                 })
                 .catch(function() { _meteoCache = ''; _meteoEmoji = ''; });
