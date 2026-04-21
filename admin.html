@@ -4266,7 +4266,7 @@
         // ============================================
         function accederBonsArchives() {
             const code = prompt("Entrez le code admin pour accéder aux bons archivés :");
-            if (code !== 'CEP2024') {
+            if (!code || code.trim().toUpperCase() !== 'CEP2024') {
                 alert("Code incorrect.");
                 return;
             }
