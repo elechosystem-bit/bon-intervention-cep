@@ -1181,6 +1181,16 @@
       "rue": "19, rue René Boulanger"
     },
     {
+      "id": 282600504,
+      "nom": "BISTROT RICHELIEU",
+      "email": "leschenapans79@gmail.com",
+      "telephone": "",
+      "adresse": "45 Rue de Richelieu, 75001, Paris",
+      "ville": "Paris",
+      "codePostal": "75001",
+      "rue": "45 Rue de Richelieu"
+    },
+    {
       "id": 125155855,
       "nom": "BISTROT SAINT PAUL",
       "email": "paco_franck@live.fr",
@@ -11991,6 +12001,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1199,
-  "syncDate": "2026-04-20T05:01:47Z"
+  "total": 1200,
+  "syncDate": "2026-04-21T04:57:51Z"
 }
