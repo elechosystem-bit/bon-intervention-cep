@@ -2751,6 +2751,16 @@
       "rue": "13, rue de Charonne"
     },
     {
+      "id": 283330220,
+      "nom": "CHEZ PLUMEAU - FK TERTRE",
+      "email": "louis@feat-kitchen.com",
+      "telephone": "",
+      "adresse": "4 Place du Calvaire, 75018, Paris",
+      "ville": "Paris",
+      "codePostal": "75018",
+      "rue": "4 Place du Calvaire"
+    },
+    {
       "id": 125155869,
       "nom": "CHEZ PLUMEAU - SAS DERRIERE LA GARE",
       "email": "chezplumeau2022@gmail.com",
@@ -12001,6 +12011,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1200,
-  "syncDate": "2026-04-21T04:57:51Z"
+  "total": 1201,
+  "syncDate": "2026-04-22T04:56:03Z"
 }
