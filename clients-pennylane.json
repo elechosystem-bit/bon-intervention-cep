@@ -213,12 +213,12 @@
     {
       "id": 125155929,
       "nom": "AJ GAITE",
-      "email": "",
+      "email": "factureplomb15@gmail.com",
       "telephone": "",
-      "adresse": "A compléter, 75000, PARIS",
-      "ville": "PARIS",
-      "codePostal": "75000",
-      "rue": "A compléter"
+      "adresse": "3 Rue de la Gaîté, 75014, Paris",
+      "ville": "Paris",
+      "codePostal": "75014",
+      "rue": "3 Rue de la Gaîté"
     },
     {
       "id": 255182324,
@@ -5173,12 +5173,12 @@
     {
       "id": 250032580,
       "nom": "LA PORTE MONTMARTRE",
-      "email": "",
+      "email": "portemontmartre@gmail.fr",
       "telephone": "",
-      "adresse": "",
-      "ville": "",
-      "codePostal": "",
-      "rue": ""
+      "adresse": "29 Boulevard Poissonnière, 75002, Paris",
+      "ville": "Paris",
+      "codePostal": "75002",
+      "rue": "29 Boulevard Poissonnière"
     },
     {
       "id": 248733409,
@@ -5583,12 +5583,12 @@
     {
       "id": 249899408,
       "nom": "LE CAPONE",
-      "email": "",
+      "email": "joelleparisnation@gmail.com",
       "telephone": "",
-      "adresse": "",
-      "ville": "",
-      "codePostal": "",
-      "rue": ""
+      "adresse": "8 Avenue du Trône, 75012, Paris",
+      "ville": "Paris",
+      "codePostal": "75012",
+      "rue": "8 Avenue du Trône"
     },
     {
       "id": 126987526,
@@ -9591,16 +9591,6 @@
       "rue": "8, rue du Faubourg Poissonniere"
     },
     {
-      "id": 248732835,
-      "nom": "PORTE MONTMARTRE",
-      "email": "ludovic.girbal@gmail.com",
-      "telephone": "0142338109",
-      "adresse": "A compléter, 75002, Paris",
-      "ville": "Paris",
-      "codePostal": "75002",
-      "rue": "A compléter"
-    },
-    {
       "id": 248732717,
       "nom": "POT DE FER",
       "email": "",
@@ -9742,8 +9732,8 @@
     },
     {
       "id": 278374912,
-      "nom": "PUCHI",
-      "email": "",
+      "nom": "PUCHI - ARIDO",
+      "email": "hello@puchi.fr",
       "telephone": "",
       "adresse": "11 Rue Saint-Honoré, 78000, Versailles",
       "ville": "Versailles",
@@ -10593,12 +10583,12 @@
     {
       "id": 249900907,
       "nom": "SAS AJ GAITE",
-      "email": "",
+      "email": "factureplomb15@gmail.com",
       "telephone": "",
-      "adresse": "",
-      "ville": "",
-      "codePostal": "",
-      "rue": ""
+      "adresse": "3 Rue de la Gaîté, 75014, Paris",
+      "ville": "Paris",
+      "codePostal": "75014",
+      "rue": "3 Rue de la Gaîté"
     },
     {
       "id": 248733002,
@@ -12011,6 +12001,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1201,
-  "syncDate": "2026-04-22T04:56:03Z"
+  "total": 1200,
+  "syncDate": "2026-04-23T04:59:10Z"
 }
