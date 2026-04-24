@@ -7352,13 +7352,23 @@
     },
     {
       "id": 248732870,
-      "nom": "MAISON BECQUEY - LE COMPTOIR D'ETIENNE",
+      "nom": "MAISON BECQUEY - LE COMPTOIR D'ETIENNE ne plus utiliser",
       "email": "lecomptoirdetienne@gmail.com",
-      "telephone": "0145269779",
+      "telephone": "+33 1 45 26 97 79",
       "adresse": "34, quai de la Marne, 75019, Paris",
       "ville": "Paris",
       "codePostal": "75019",
       "rue": "34, quai de la Marne"
+    },
+    {
+      "id": 284360824,
+      "nom": "MAISON BECQUEY - SAS CANAL 2A",
+      "email": "sascanal2a@gmail.com",
+      "telephone": "",
+      "adresse": "34 Quai de la Marne, 75019, Paris",
+      "ville": "Paris",
+      "codePostal": "75019",
+      "rue": "34 Quai de la Marne"
     },
     {
       "id": 248733461,
@@ -12001,6 +12011,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1200,
-  "syncDate": "2026-04-23T04:59:10Z"
+  "total": 1201,
+  "syncDate": "2026-04-24T05:00:57Z"
 }
