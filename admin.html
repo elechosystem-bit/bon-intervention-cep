@@ -4392,36 +4392,35 @@
                 return dateStr + ' : ' + (desc || '(pas de description)');
             }).join('\n\n');
 
-            // Fusionner les heures (additionner les demi-heures de MO)
-            // On calcule depuis moDemiHeures ET moDuree, on prend le max (pour etre robuste)
-            let totalDemiHeures = 0;
+            // Fusionner les heures (additionner les minutes de MO de chaque bon)
+            // moDuree au format "XhYY" (ex: 1h30, 0h45) est la source principale
+            // Fallback : moDemiHeures au format "X demi-heure(s)" si moDuree absent
+            let totalMinutesMO = 0;
+            const detailsMOParBon = [];
             bonsAFusionner.forEach(b => {
-                let dhFromField = 0;
-                let dhFromDuree = 0;
-
-                // moDemiHeures : "X demi-heures" ou "X demi-heure"
-                const mdh = String(b.moDemiHeures || '');
-                const matchDH = mdh.match(/(\d+)\s*demi/);
-                if (matchDH) dhFromField = parseInt(matchDH[1], 10) || 0;
-
-                // moDuree : "XhYY" (ex: 1h30, 0h30)
-                const duree = String(b.moDuree || '0h00');
-                const matchDuree = duree.match(/(\d+)h(\d+)/);
+                let minutesBon = 0;
+                let source = '-';
+                const duree = String(b.moDuree || '').trim();
+                const matchDuree = duree.match(/(\d+)\s*h\s*(\d+)/i);
                 if (matchDuree) {
-                    const minutes = parseInt(matchDuree[1], 10) * 60 + parseInt(matchDuree[2], 10);
-                    if (minutes > 0) dhFromDuree = Math.ceil(minutes / 30);
+                    minutesBon = parseInt(matchDuree[1], 10) * 60 + parseInt(matchDuree[2], 10);
+                    source = 'moDuree="' + duree + '"';
+                } else {
+                    const mdh = String(b.moDemiHeures || '');
+                    const matchDH = mdh.match(/(\d+)\s*demi/);
+                    if (matchDH) {
+                        minutesBon = parseInt(matchDH[1], 10) * 30;
+                        source = 'moDemiHeures="' + mdh + '"';
+                    }
                 }
-
-                // Prendre le max : si un champ est 0 mais pas l'autre, on prend le non-zéro
-                const dhBon = Math.max(dhFromField, dhFromDuree);
-                console.log('[Fusion] Bon ' + (b.numero || b.id) + ' : moDemiHeures="' + mdh + '" (' + dhFromField + ') | moDuree="' + duree + '" (' + dhFromDuree + ') => ' + dhBon + ' demi-h');
-                totalDemiHeures += dhBon;
+                console.log('[Fusion MO] Bon ' + (b.numero || b.id) + ' : ' + source + ' => ' + minutesBon + ' min');
+                detailsMOParBon.push((b.numero || b.id) + '=' + Math.floor(minutesBon / 60) + 'h' + String(minutesBon % 60).padStart(2, '0'));
+                totalMinutesMO += minutesBon;
             });
-            console.log('[Fusion] Total demi-heures : ' + totalDemiHeures);
-            const totalMinutesMO = totalDemiHeures * 30;
             const moHeures = Math.floor(totalMinutesMO / 60);
             const moMinutes = totalMinutesMO % 60;
             const moDuree = moHeures + 'h' + String(moMinutes).padStart(2, '0');
+            const totalDemiHeures = Math.ceil(totalMinutesMO / 30);
             const moDemiHeures = totalDemiHeures + ' demi-heure' + (totalDemiHeures > 1 ? 's' : '');
 
             // Fusionner les déplacements (additionner)
@@ -4430,19 +4429,36 @@
                 totalDepl += parseInt(b.deplNombre || '0') || 0;
             });
 
-            // Fusionner les produits
+            // Fusionner les produits — normaliser les conventions name/nom et qty/quantite
+            // Custom : { name, qty, prixUnitaire }
+            // Catalogue : { nom, quantite, prixUnitaire, reference, index }
             const produitsMap = new Map();
+            const detailsProduitsParBon = [];
             bonsAFusionner.forEach(b => {
-                (b.produits || []).forEach(p => {
-                    const key = (p.name || p.nom || '') + '|' + (p.prixUnitaire || p.prix || 0);
+                const liste = Array.isArray(b.produits) ? b.produits : [];
+                detailsProduitsParBon.push((b.numero || b.id) + '=' + liste.length + ' produit(s)');
+                console.log('[Fusion Produits] Bon ' + (b.numero || b.id) + ' a ' + liste.length + ' produit(s)');
+                liste.forEach(p => {
+                    const nom = String(p.name || p.nom || '').trim();
+                    if (!nom) return;
+                    const qty = parseFloat(p.qty != null ? p.qty : (p.quantite != null ? p.quantite : 1)) || 0;
+                    const prix = parseFloat(p.prixUnitaire != null ? p.prixUnitaire : (p.prix != null ? p.prix : 0)) || 0;
+                    const key = nom.toLowerCase() + '|' + prix;
                     if (produitsMap.has(key)) {
-                        produitsMap.get(key).qty += (p.qty || p.quantite || 1);
+                        produitsMap.get(key).qty += qty;
                     } else {
-                        produitsMap.set(key, { ...p, qty: p.qty || p.quantite || 1 });
+                        produitsMap.set(key, {
+                            index: p.index != null ? p.index : 'custom',
+                            name: nom,
+                            qty: qty,
+                            prixUnitaire: prix,
+                            reference: p.reference || ''
+                        });
                     }
                 });
             });
             const produitsFusionnes = Array.from(produitsMap.values());
+            console.log('[Fusion Produits] Total produits fusionnés : ' + produitsFusionnes.length);
 
             // Fusionner les photos
             let photosFusionnees = [];
@@ -4468,16 +4484,17 @@
             const totalTTC = (parseFloat(totalHT) + parseFloat(totalTVA)).toFixed(2);
 
             // Confirmation avec détails par bon (pour diagnostic)
-            const detailsParBon = bonsAFusionner.map(b => {
-                return '• N°' + (b.numero || b.id) + ' : moDuree="' + (b.moDuree || '-') + '" | moDemiHeures="' + (b.moDemiHeures || '-') + '" | depl=' + (b.deplNombre || '0');
+            const detailsParBon = bonsAFusionner.map((b, i) => {
+                const nbProd = Array.isArray(b.produits) ? b.produits.length : 0;
+                return '• N°' + (b.numero || b.id) + ' : MO=' + (b.moDuree || '-') + ' | depl=' + (b.deplNombre || '0') + ' | ' + nbProd + ' produit(s)';
             }).join('\n');
             const msg = 'Fusionner ' + bonsAFusionner.length + ' bons pour le client "' + bonsAFusionner[0].client + '" ?\n\n' +
                         recapTitre + '\n\n' +
                         'DETAILS PAR BON :\n' + detailsParBon + '\n\n' +
                         'TOTAUX CALCULES :\n' +
-                        'Total demi-heures : ' + totalDemiHeures + '\n' +
                         'MO totale : ' + moDuree + ' (' + moDemiHeures + ')\n' +
                         'Déplacements : ' + totalDepl + '\n' +
+                        'Produits fusionnés : ' + produitsFusionnes.length + ' ligne(s)\n' +
                         'Sous-total MO : ' + subtotalMO + '€\n' +
                         'Total HT : ' + totalHT + '€\n\n' +
                         'Les bons originaux seront archivés.';
