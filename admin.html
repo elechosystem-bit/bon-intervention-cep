@@ -2126,11 +2126,17 @@
         function calculerMainOeuvre() {
             const heureArrivee = document.getElementById('heureArrivee').value;
             const heureDepart = document.getElementById('heureDepart').value;
-            
+
             if (!heureArrivee || !heureDepart) {
-                document.getElementById('moDuree').value = '0h00';
-                document.getElementById('moDemiHeures').value = '0 demi-heures';
-                document.getElementById('moTotal').textContent = '0.00€';
+                // Cas bon fusionné ou saisie manuelle : ne PAS écraser moDuree/moDemiHeures.
+                // On recalcule juste le total MO à partir de moDemiHeures × moTarif (× samedi).
+                const mdhStr = String(document.getElementById('moDemiHeures').value || '');
+                const mdhMatch = mdhStr.match(/(\d+)\s*demi/);
+                const demiHeures = mdhMatch ? parseInt(mdhMatch[1], 10) : 0;
+                const tarif = parseFloat(document.getElementById('moTarif').value) || 35;
+                const samediCoeff = document.getElementById('adminCheckSamedi')?.checked ? 1.5 : 1;
+                const totalMO = demiHeures * tarif * samediCoeff;
+                document.getElementById('moTotal').textContent = totalMO.toFixed(2) + '€';
                 calculateTotals();
                 return;
             }
