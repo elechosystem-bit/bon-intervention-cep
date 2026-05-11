@@ -618,6 +618,9 @@
                     <button onclick="accederBonsArchives()" style="float:right; padding:6px 14px; background:#718096; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem;">📦 Bons archivés</button>
                 </h3>
                 <div style="margin-bottom:10px;">
+                    <button id="btnToggleCompta" onclick="toggleAfficherEnvoyesCompta()" style="padding:8px 16px; background:#48bb78; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; margin-right:8px;">
+                        ✓ Afficher les bons envoyés en compta (<span id="nbEnvoyesCompta">0</span>)
+                    </button>
                     <button id="btnFusionnerSelection" onclick="fusionnerBonsSelectionnes()" style="padding:8px 16px; background:#3182ce; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; display:none; margin-right:8px;" disabled>
                         🔗 Fusionner la sélection (<span id="nbFusionnes">0</span>)
                     </button>
@@ -2998,6 +3001,11 @@
         }
 
         var renderHistoriqueEnCours = false;
+        var afficherEnvoyesCompta = false; // false = on masque les bons déjà envoyés en compta
+        function toggleAfficherEnvoyesCompta() {
+            afficherEnvoyesCompta = !afficherEnvoyesCompta;
+            renderHistorique();
+        }
         async function renderHistorique() {
             if (renderHistoriqueEnCours) return;
             renderHistoriqueEnCours = true;
@@ -3027,12 +3035,28 @@
                 });
                 const bonsUniques = Array.from(parNumero.values());
 
+                // Compter les bons déjà envoyés en compta (statut validé)
+                let nbCompta = 0;
                 bonsUniques.forEach(bon => {
-                const tr = document.createElement('tr');
-                tr.setAttribute('data-bon-id', bon.id);
+                    const s = bon.statut || 'en_attente';
+                    if (s === 'validé' || s === 'valide') nbCompta++;
+                });
+                const btnToggle = document.getElementById('btnToggleCompta');
+                if (btnToggle) {
+                    btnToggle.innerHTML = afficherEnvoyesCompta
+                        ? 'Masquer les bons envoyés en compta (' + nbCompta + ')'
+                        : '✓ Afficher les bons envoyés en compta (' + nbCompta + ')';
+                    btnToggle.style.background = afficherEnvoyesCompta ? '#718096' : '#48bb78';
+                }
+
+                bonsUniques.forEach(bon => {
                 const statut = bon.statut || 'en_attente';
                 const estValide = statut === 'validé' || statut === 'valide';
-                
+                // Par défaut on n'affiche que les bons à faire ; les bons envoyés en compta sont masqués
+                if (estValide && !afficherEnvoyesCompta) return;
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-bon-id', bon.id);
+
                 // Badge pour les bons validés
                 const badgeStatut = estValide 
                     ? '<span style="background:#48bb78;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;">✓ Envoyé à la compta</span>'
