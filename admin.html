@@ -618,6 +618,7 @@
                     <button onclick="accederBonsArchives()" style="float:right; padding:6px 14px; background:#718096; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem;">📦 Bons archivés</button>
                 </h3>
                 <div style="margin-bottom:10px;">
+                    <span id="badgeAFaire" style="display:inline-block; padding:8px 16px; background:#f6ad55; color:#fff; border-radius:4px; font-size:0.9rem; font-weight:600; margin-right:8px;">📋 0 bon à faire</span>
                     <button id="btnToggleCompta" onclick="toggleAfficherEnvoyesCompta()" style="padding:8px 16px; background:#48bb78; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; margin-right:8px;">
                         ✓ Afficher les bons envoyés en compta (<span id="nbEnvoyesCompta">0</span>)
                     </button>
@@ -3035,12 +3036,18 @@
                 });
                 const bonsUniques = Array.from(parNumero.values());
 
-                // Compter les bons déjà envoyés en compta (statut validé)
-                let nbCompta = 0;
+                // Compter les bons déjà envoyés en compta (statut validé) et ceux à faire
+                let nbCompta = 0, nbAFaire = 0;
                 bonsUniques.forEach(bon => {
                     const s = bon.statut || 'en_attente';
                     if (s === 'validé' || s === 'valide') nbCompta++;
+                    else nbAFaire++;
                 });
+                const badgeAFaire = document.getElementById('badgeAFaire');
+                if (badgeAFaire) {
+                    badgeAFaire.textContent = '📋 ' + nbAFaire + ' bon' + (nbAFaire > 1 ? 's' : '') + ' à faire';
+                    badgeAFaire.style.background = nbAFaire > 0 ? '#f6ad55' : '#48bb78';
+                }
                 const btnToggle = document.getElementById('btnToggleCompta');
                 if (btnToggle) {
                     btnToggle.innerHTML = afficherEnvoyesCompta
