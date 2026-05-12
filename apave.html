@@ -427,6 +427,52 @@
             .step-label { font-size: 0.7rem; }
             .step-line { margin-top: 22px; }
         }
+
+        /* ZONES DE DÉPÔT DE DOCUMENTS (drag & drop) */
+        .docs-section { margin: 4px 0 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+        .docs-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+        .docs-zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        @media (max-width: 640px) { .docs-zones { grid-template-columns: 1fr; } }
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: var(--bg);
+            transition: background 0.12s, border-color 0.12s;
+            min-height: 64px;
+        }
+        .drop-zone.z-rapport { border-color: #bfdbfe; background: #f0f7ff; }
+        .drop-zone.z-devis { border-color: #fde68a; background: #fffbeb; }
+        .drop-zone.z-signe { border-color: #a7f3d0; background: #f0fdf4; }
+        .drop-zone.drag-over { border-style: solid; border-color: var(--primary); background: #eef2ff; }
+        .dz-label { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .dz-hint { font-size: 0.7rem; color: var(--text-light); }
+        .dz-add { display: inline-block; margin-top: 4px; font-size: 0.72rem; color: var(--primary); cursor: pointer; font-weight: 700; }
+        .dz-add:hover { text-decoration: underline; }
+        .doc-file {
+            display: flex; align-items: center; gap: 5px;
+            background: white; border: 1px solid var(--border); border-radius: 8px;
+            padding: 5px 7px; margin-bottom: 4px; font-size: 0.76rem;
+            cursor: grab;
+        }
+        .doc-file:active { cursor: grabbing; opacity: 0.6; }
+        .doc-file a { color: var(--primary); text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .doc-file-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; font-size: 0.65rem; cursor: pointer; flex-shrink: 0; }
+        .doc-file-btn.del { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+        .doc-file-btn.del:hover { background: #fca5a5; color: white; }
+        .archives-block { margin-top: 12px; }
+        .archives-toggle { font-size: 0.78rem; color: var(--text-light); cursor: pointer; font-weight: 700; user-select: none; padding: 6px 0; display: inline-block; }
+        .archives-toggle:hover { color: var(--text); }
+        .archives-years { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .archive-year {
+            border: 1px dashed var(--border); border-radius: 10px; padding: 8px 10px;
+            background: var(--bg); flex: 1; min-width: 130px;
+        }
+        .archive-year.drag-over { border-style: solid; border-color: var(--navy); background: #eef2ff; }
+        .archive-year-label { font-size: 0.74rem; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+        .archive-year-empty { font-size: 0.66rem; color: var(--text-light); font-style: italic; }
+        .docs-anciens { margin-top: 10px; font-size: 0.74rem; }
+        .docs-anciens summary { cursor: pointer; color: var(--text-light); font-weight: 600; }
     </style>
 </head>
 <body>
@@ -752,12 +798,6 @@
             }
         }
 
-        // PDFs
-        const nbPdfs = (c.pdfs || []).length;
-        const btnPdfs = nbPdfs > 0
-            ? `<button class="btn-icon" onclick="editer('${c.id}')" title="Voir les PDFs">📎 ${nbPdfs}</button>`
-            : '';
-
         const notesHtml = c.notes ? `<div class="notes">📌 ${(c.notes || '').replace(/</g,'&lt;')}</div>` : '';
 
         return `
@@ -775,14 +815,205 @@
                 </div>
                 <div class="pipeline">${pipelineHtml}</div>
                 <div class="dates-row">${datesHtml}</div>
+                ${renderDocsSection(c)}
                 <div class="actions-row">
                     ${mainAction}
-                    ${btnPdfs}
                     <button class="btn-icon" onclick="editer('${c.id}')">✎ Modifier</button>
                     <button class="btn-icon danger" onclick="supprimer('${c.id}')">🗑</button>
                 </div>
             </div>
         `;
+    }
+
+    // ============================================
+    //  DOCUMENTS — zones de dépôt drag & drop
+    // ============================================
+    const CASIERS_FIXES = [
+        { key: 'rapport',    label: 'Rapport Apave', icon: '📄', cls: 'z-rapport', hint: 'Le rapport reçu' },
+        { key: 'devis',      label: 'Devis',         icon: '📝', cls: 'z-devis',   hint: 'Le devis envoyé' },
+        { key: 'devisSigne', label: 'Devis signé',   icon: '✅', cls: 'z-signe',   hint: 'Le devis retourné signé' },
+    ];
+    let archivesOuvertes = {};
+
+    function anneesArchive() {
+        const max = Math.max(2030, new Date().getFullYear() + 1);
+        const arr = [];
+        for (let y = 2024; y <= max; y++) arr.push(String(y));
+        return arr;
+    }
+    function getCasier(c, key) {
+        return (c.documents && Array.isArray(c.documents[key])) ? c.documents[key] : [];
+    }
+    function clientById(id) { return tousLesClients.find(x => x.id === id); }
+
+    function renderFileItem(clientId, casier, idx, f) {
+        const nom = (f.name || 'document').replace(/</g, '&lt;');
+        return `<div class="doc-file" draggable="true" ondragstart="onDocDragStart(event,'${clientId}','${casier}',${idx})">
+            <span>📎</span>
+            <a href="${(f.url||'#').replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${nom}</a>
+            <button class="doc-file-btn del" onclick="supprimerDoc('${clientId}','${casier}',${idx})" title="Supprimer">✕</button>
+        </div>`;
+    }
+    function renderDropZone(clientId, casier, label, icon, cls, hint, files) {
+        const filesHtml = files.map((f, i) => renderFileItem(clientId, casier, i, f)).join('');
+        return `<div class="drop-zone ${cls}"
+            ondragover="onDZover(event,this)" ondragleave="onDZleave(event,this)"
+            ondrop="onDZdrop(event,this,'${clientId}','${casier}')">
+            <div class="dz-label">${icon} ${label}</div>
+            ${filesHtml || `<div class="dz-hint">${hint} — glissez un PDF ici</div>`}
+            <span class="dz-add" onclick="pickFiles('${clientId}','${casier}')">+ Ajouter un fichier</span>
+        </div>`;
+    }
+    function renderDocsSection(c) {
+        const zonesHtml = CASIERS_FIXES.map(z =>
+            renderDropZone(c.id, z.key, z.label, z.icon, z.cls, z.hint, getCasier(c, z.key))
+        ).join('');
+
+        const annees = anneesArchive();
+        const ouvert = !!archivesOuvertes[c.id];
+        let archivesYearsHtml = '';
+        if (ouvert) {
+            archivesYearsHtml = '<div class="archives-years">' + annees.map(y => {
+                const files = getCasier(c, y);
+                const fh = files.map((f, i) => renderFileItem(c.id, y, i, f)).join('');
+                return `<div class="archive-year"
+                    ondragover="onDZover(event,this)" ondragleave="onDZleave(event,this)"
+                    ondrop="onDZdrop(event,this,'${c.id}','${y}')">
+                    <div class="archive-year-label">📁 ${y}</div>
+                    ${fh || '<div class="archive-year-empty">vide</div>'}
+                    <span class="dz-add" onclick="pickFiles('${c.id}','${y}')">+ Ajouter</span>
+                </div>`;
+            }).join('') + '</div>';
+        }
+        const nbArchives = annees.reduce((n, y) => n + getCasier(c, y).length, 0);
+        const archivesBlock = `<div class="archives-block">
+            <span class="archives-toggle" onclick="toggleArchives('${c.id}')">${ouvert ? '▾' : '▸'} Archives par année${nbArchives ? ' ('+nbArchives+')' : ''}</span>
+            ${archivesYearsHtml}
+        </div>`;
+
+        let anciensHtml = '';
+        if (Array.isArray(c.pdfs) && c.pdfs.length) {
+            const items = c.pdfs.map((p, i) => `<div class="doc-file" draggable="true" ondragstart="onDocDragStart(event,'${c.id}','__pdfs__',${i})">
+                <span>📎</span><a href="${(p.url||'#').replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${(p.name||'PDF').replace(/</g,'&lt;')}</a>
+                <button class="doc-file-btn del" onclick="supprimerDoc('${c.id}','__pdfs__',${i})">✕</button>
+            </div>`).join('');
+            anciensHtml = `<details class="docs-anciens"><summary>Anciens PDF (${c.pdfs.length}) — glissez-les vers un casier</summary><div style="margin-top:6px;">${items}</div></details>`;
+        }
+
+        return `<div class="docs-section">
+            <div class="docs-title">Documents</div>
+            <div class="docs-zones">${zonesHtml}</div>
+            ${archivesBlock}
+            ${anciensHtml}
+        </div>`;
+    }
+    function toggleArchives(clientId) {
+        archivesOuvertes[clientId] = !archivesOuvertes[clientId];
+        afficher();
+    }
+
+    function onDZover(ev, el) { ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'copy'; } catch(e){} el.classList.add('drag-over'); }
+    function onDZleave(ev, el) { if (!el.contains(ev.relatedTarget)) el.classList.remove('drag-over'); }
+    function onDocDragStart(ev, clientId, casier, idx) {
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/plain', JSON.stringify({ t: 'doc', clientId: clientId, casier: casier, idx: idx }));
+    }
+    async function onDZdrop(ev, el, clientId, casier) {
+        ev.preventDefault();
+        el.classList.remove('drag-over');
+        if (ev.dataTransfer.files && ev.dataTransfer.files.length) {
+            await uploadVersCasier(clientId, casier, ev.dataTransfer.files);
+            return;
+        }
+        let payload = null;
+        try { payload = JSON.parse(ev.dataTransfer.getData('text/plain') || 'null'); } catch (e) {}
+        if (payload && payload.t === 'doc') {
+            if (payload.clientId !== clientId) { toast('Un document ne peut être déplacé que dans la même fiche', true); return; }
+            if (payload.casier === casier) return;
+            await deplacerDoc(clientId, payload.casier, payload.idx, casier);
+        }
+    }
+    function pickFiles(clientId, casier) {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/pdf,image/*';
+        inp.multiple = true;
+        inp.onchange = function () { if (inp.files && inp.files.length) uploadVersCasier(clientId, casier, inp.files); };
+        inp.click();
+    }
+    async function uploadVersCasier(clientId, casier, fileList) {
+        const c = clientById(clientId);
+        if (!c) return;
+        toast('Upload en cours...');
+        try {
+            const storage = firebase.storage();
+            const liste = getCasier(c, casier).slice();
+            for (const file of fileList) {
+                const safe = (file.name || 'doc').replace(/[^a-zA-Z0-9._-]/g, '_');
+                const path = 'apave/' + SOCIETE_ID + '/' + clientId + '/' + casier + '/' + Date.now() + '_' + safe;
+                const ref = storage.ref(path);
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+                liste.push({ name: file.name, url: url, path: path, uploadedAt: new Date().toISOString() });
+            }
+            const docs = Object.assign({}, c.documents || {});
+            docs[casier] = liste;
+            await getCollectionRef().doc(clientId).update({ documents: docs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            c.documents = docs;
+            afficher();
+            toast(fileList.length + ' fichier(s) ajouté(s)');
+        } catch (e) {
+            console.error(e);
+            toast('Erreur upload : ' + (e.message || ''), true);
+        }
+    }
+    async function deplacerDoc(clientId, casierSrc, idx, casierDest) {
+        const c = clientById(clientId);
+        if (!c) return;
+        try {
+            let srcList, fichier;
+            if (casierSrc === '__pdfs__') { srcList = Array.isArray(c.pdfs) ? c.pdfs.slice() : []; }
+            else { srcList = getCasier(c, casierSrc).slice(); }
+            fichier = srcList[idx];
+            if (!fichier) return;
+            srcList.splice(idx, 1);
+            const destList = getCasier(c, casierDest).slice();
+            destList.push(fichier);
+
+            const docs = Object.assign({}, c.documents || {});
+            docs[casierDest] = destList;
+            const update = { documents: docs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+            if (casierSrc === '__pdfs__') update.pdfs = srcList;
+            else docs[casierSrc] = srcList;
+
+            await getCollectionRef().doc(clientId).update(update);
+            c.documents = docs;
+            if (casierSrc === '__pdfs__') c.pdfs = srcList;
+            afficher();
+            toast('Document déplacé');
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+    async function supprimerDoc(clientId, casier, idx) {
+        const c = clientById(clientId);
+        if (!c) return;
+        let fichier = (casier === '__pdfs__') ? (c.pdfs || [])[idx] : getCasier(c, casier)[idx];
+        if (!fichier) return;
+        if (!confirm('Supprimer « ' + (fichier.name || 'ce document') + ' » ?')) return;
+        try {
+            if (fichier.path) { try { await firebase.storage().ref(fichier.path).delete(); } catch (e) { console.warn(e); } }
+            if (casier === '__pdfs__') {
+                const nv = (c.pdfs || []).filter((_, i) => i !== idx);
+                await getCollectionRef().doc(clientId).update({ pdfs: nv, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                c.pdfs = nv;
+            } else {
+                const docs = Object.assign({}, c.documents || {});
+                docs[casier] = getCasier(c, casier).filter((_, i) => i !== idx);
+                await getCollectionRef().doc(clientId).update({ documents: docs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                c.documents = docs;
+            }
+            afficher();
+            toast('Document supprimé');
+        } catch (e) { toast('Erreur : ' + e.message, true); }
     }
 
     function ouvrirModalAjout() {
@@ -885,11 +1116,20 @@
     async function renouvelerAnnee(clientId) {
         const c = tousLesClients.find(x => x.id === clientId);
         if (!c) return;
-        if (!confirm('Démarrer un nouveau cycle annuel pour ' + (c.name || '') + ' ?\n\nCela avance l\'échéance de +1 an et remet les étapes à zéro.')) return;
+        const anneeQuiSeTermine = String(c.dueYear || new Date().getFullYear());
+        if (!confirm('Démarrer un nouveau cycle annuel pour ' + (c.name || '') + ' ?\n\nLes documents du cycle (rapport, devis, devis signé) seront archivés dans l\'année ' + anneeQuiSeTermine + ', puis les étapes repartent à zéro.')) return;
         const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
         try {
+            const docs = Object.assign({}, c.documents || {});
+            const archive = Array.isArray(docs[anneeQuiSeTermine]) ? docs[anneeQuiSeTermine].slice() : [];
+            ['rapport', 'devis', 'devisSigne'].forEach(k => {
+                (docs[k] || []).forEach(f => archive.push(f));
+                docs[k] = [];
+            });
+            docs[anneeQuiSeTermine] = archive;
             await getCollectionRef().doc(clientId).update({
                 dueYear: prochaineAnnee,
+                documents: docs,
                 rapportRecuDate: firebase.firestore.FieldValue.delete(),
                 devisFaitDate: firebase.firestore.FieldValue.delete(),
                 devisValideDate: firebase.firestore.FieldValue.delete(),
