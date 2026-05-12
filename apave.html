@@ -474,6 +474,18 @@
         .docs-anciens { margin-top: 10px; font-size: 0.74rem; }
         .docs-anciens summary { cursor: pointer; color: var(--text-light); font-weight: 600; }
 
+        /* FICHE PLIABLE (accordéon) */
+        .card-header {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; user-select: none;
+        }
+        .card-header:hover .card-name { text-decoration: underline; }
+        .card-chevron { font-size: 0.85rem; color: var(--text-light); flex-shrink: 0; width: 14px; text-align: center; }
+        .card-name { font-size: 1.15rem; font-weight: 700; flex: 1; }
+        .card-body { margin-top: 16px; }
+        .client-card.collapsed { padding: 14px 20px; margin-bottom: 10px; }
+        .client-card.collapsed .card-body { display: none; }
+
         /* COMPTEUR 365 JOURS APAVE */
         .apave-compteur {
             margin: 12px 0 4px; padding: 10px 14px; border-radius: 10px;
@@ -503,6 +515,7 @@
         </div>
         <div class="header-actions">
             <a class="btn-back" href="admin.html">← Retour</a>
+            <button class="btn-back" onclick="toggleTout()">⇕ Tout déplier / replier</button>
             <button class="btn-new" onclick="ouvrirModalAjout()">+ Nouveau client</button>
         </div>
     </div>
@@ -844,31 +857,50 @@
         }
 
         const notesHtml = c.notes ? `<div class="notes">📌 ${(c.notes || '').replace(/</g,'&lt;')}</div>` : '';
+        const ouvert = !!cartesOuvertes[c.id];
 
         return `
-            <div class="client-card ${statut}">
-                <div class="client-top">
-                    <div class="client-info">
-                        <h3>${(c.name || '-').replace(/</g,'&lt;')}</h3>
-                        <div class="contact">${(c.contact || '-').replace(/</g,'&lt;')}</div>
-                        ${notesHtml}
-                    </div>
-                    <div class="client-badges">
-                        ${badge}
-                        ${rappelAnnuel}
-                    </div>
+            <div class="client-card ${statut}${ouvert ? '' : ' collapsed'}">
+                <div class="card-header" onclick="toggleCarte('${c.id}')">
+                    <span class="card-chevron">${ouvert ? '▾' : '▸'}</span>
+                    <span class="card-name">${(c.name || '-').replace(/</g,'&lt;')}</span>
+                    ${badge}
                 </div>
-                <div class="pipeline">${pipelineHtml}</div>
-                <div class="dates-row">${datesHtml}</div>
-                ${renderCompteurApave(c)}
-                ${renderDocsSection(c)}
-                <div class="actions-row">
-                    ${mainAction}
-                    <button class="btn-icon" onclick="editer('${c.id}')">✎ Modifier</button>
-                    <button class="btn-icon danger" onclick="supprimer('${c.id}')">🗑</button>
+                <div class="card-body">
+                    <div class="client-top">
+                        <div class="client-info">
+                            <div class="contact">${(c.contact || '-').replace(/</g,'&lt;')}</div>
+                            ${notesHtml}
+                        </div>
+                        <div class="client-badges">
+                            ${rappelAnnuel}
+                        </div>
+                    </div>
+                    <div class="pipeline">${pipelineHtml}</div>
+                    <div class="dates-row">${datesHtml}</div>
+                    ${renderCompteurApave(c)}
+                    ${renderDocsSection(c)}
+                    <div class="actions-row">
+                        ${mainAction}
+                        <button class="btn-icon" onclick="editer('${c.id}')">✎ Modifier</button>
+                        <button class="btn-icon danger" onclick="supprimer('${c.id}')">🗑</button>
+                    </div>
                 </div>
             </div>
         `;
+    }
+    let cartesOuvertes = {};
+    function toggleCarte(id) {
+        cartesOuvertes[id] = !cartesOuvertes[id];
+        afficher();
+    }
+    function deplierTout(ouvrir) {
+        tousLesClients.forEach(c => { cartesOuvertes[c.id] = !!ouvrir; });
+        afficher();
+    }
+    function toggleTout() {
+        const auMoinsUnOuvert = tousLesClients.some(c => cartesOuvertes[c.id]);
+        deplierTout(!auMoinsUnOuvert);
     }
 
     // ============================================
