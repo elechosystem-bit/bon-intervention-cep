@@ -473,6 +473,20 @@
         .archive-year-empty { font-size: 0.66rem; color: var(--text-light); font-style: italic; }
         .docs-anciens { margin-top: 10px; font-size: 0.74rem; }
         .docs-anciens summary { cursor: pointer; color: var(--text-light); font-weight: 600; }
+
+        /* COMPTEUR 365 JOURS APAVE */
+        .apave-compteur {
+            margin: 12px 0 4px; padding: 10px 14px; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 700; display: flex; align-items: center; gap: 8px;
+        }
+        .apave-compteur.ok    { background: var(--success-light); color: #047857; }
+        .apave-compteur.orange{ background: var(--warn-light); color: #b45309; border: 1px solid #fcd34d; }
+        .apave-compteur.rouge { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+        .apave-compteur .ac-bar { flex: 1; height: 6px; background: rgba(0,0,0,0.08); border-radius: 999px; overflow: hidden; }
+        .apave-compteur .ac-fill { height: 100%; border-radius: 999px; }
+        .apave-compteur.ok    .ac-fill { background: #10b981; }
+        .apave-compteur.orange .ac-fill { background: #f59e0b; }
+        .apave-compteur.rouge .ac-fill { background: #ef4444; }
     </style>
 </head>
 <body>
@@ -634,6 +648,36 @@
         const rappel = prochainRappelDate(client);
         const now = new Date();
         return Math.floor((rappel - now) / (1000 * 60 * 60 * 24));
+    }
+
+    // Compteur 365 jours à partir de la réalisation des travaux
+    // < 300 j : vert | 300-364 j : orange (mail d'alerte) | >= 365 j : rouge
+    function compteurApave(client) {
+        if (!client.travauxFaitsDate) return null;
+        const debut = new Date(client.travauxFaitsDate);
+        if (isNaN(debut.getTime())) return null;
+        const joursEcoules = Math.floor((Date.now() - debut.getTime()) / 86400000);
+        const joursRestants = 365 - joursEcoules;
+        let niveau = 'ok';
+        if (joursEcoules >= 365) niveau = 'rouge';
+        else if (joursEcoules >= 300) niveau = 'orange';
+        return { joursEcoules: joursEcoules, joursRestants: joursRestants, niveau: niveau };
+    }
+
+    function renderCompteurApave(c) {
+        const cpt = compteurApave(c);
+        if (!cpt) return '';
+        const pct = Math.max(0, Math.min(100, Math.round(cpt.joursEcoules / 365 * 100)));
+        let txt;
+        if (cpt.niveau === 'rouge') {
+            txt = '🔴 Contrôle Apave à refaire — dépassé de ' + Math.abs(cpt.joursRestants) + ' jour(s)';
+        } else if (cpt.niveau === 'orange') {
+            txt = '🟠 Contrôle Apave dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
+        } else {
+            txt = '🟢 Prochain contrôle Apave dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
+        }
+        return '<div class="apave-compteur ' + cpt.niveau + '"><span>' + txt + '</span>'
+             + '<span class="ac-bar"><span class="ac-fill" style="width:' + pct + '%"></span></span></div>';
     }
 
     function calculerStatut(client) {
@@ -815,6 +859,7 @@
                 </div>
                 <div class="pipeline">${pipelineHtml}</div>
                 <div class="dates-row">${datesHtml}</div>
+                ${renderCompteurApave(c)}
                 ${renderDocsSection(c)}
                 <div class="actions-row">
                     ${mainAction}
