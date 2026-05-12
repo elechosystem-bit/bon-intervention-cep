@@ -3278,6 +3278,23 @@
                 // Pas besoin de l'enregistrer dans Firebase au moment de l'enregistrement
                 // Utiliser le numéro comme ID document pour éviter les doublons (set écrase si même ID)
                 const bonsRef = db.collection(getCollectionPath('bons'));
+
+                // Garde-fou : un document Firestore ne peut dépasser ~1 Mo. Si le bon est
+                // trop lourd (miniatures base64), on les retire et on ne garde que les URLs
+                // Storage (la photo pleine résolution reste accessible via son URL).
+                try {
+                    let tailleApprox = new Blob([JSON.stringify(bon)]).size;
+                    if (tailleApprox > 900000) {
+                        console.warn('Bon volumineux (' + (tailleApprox / 1024).toFixed(0) + ' Ko) — suppression des miniatures base64');
+                        bon.photos = (bon.photos || []).map(function (p) {
+                            if (typeof p === 'string') return p;
+                            return (p && p.url) ? p.url : p;
+                        });
+                        tailleApprox = new Blob([JSON.stringify(bon)]).size;
+                        console.warn('Nouvelle taille : ' + (tailleApprox / 1024).toFixed(0) + ' Ko');
+                    }
+                } catch (e) { console.warn('Mesure de la taille du bon impossible', e); }
+
                 await bonsRef.doc(numeroDefinitif).set(bon);
                 
                 // Mettre à jour le badge de notifications
@@ -3370,16 +3387,14 @@
                 .replace(/[^a-zA-Z0-9-_]/g, '_');
 
             for (const file of toUpload) {
-                // Détecter si on est sur mobile pour ajuster la compression
-                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                const maxWidth = isMobile ? 1000 : 1200; // Plus petit sur mobile
-                const quality = isMobile ? 0.7 : 0.8; // Compression plus agressive sur mobile
-                
-                // Compresser l'image pour réduire la taille (important pour mobile)
-                console.log('Compression de l\'image:', file.name, 'Taille originale:', (file.size / 1024 / 1024).toFixed(2), 'MB', isMobile ? '(Mobile)' : '(PC)');
-                const base64 = await compressImage(file, maxWidth, quality);
-                const compressedSize = (base64.length * 3 / 4 / 1024 / 1024).toFixed(2);
-                console.log('Taille compressée:', compressedSize, 'MB');
+                // Un document Firestore (= un bon) est limité à 1 Mo. La photo pleine
+                // résolution part sur Firebase Storage (URL ci-dessous) ; dans le document
+                // on ne garde qu'une MINIATURE base64 légère (~60 Ko) pour le PDF et
+                // l'aperçu hors-ligne. Ainsi 5 photos tiennent sans dépasser la limite.
+                console.log('Compression de l\'image:', file.name, 'Taille originale:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+                const base64 = await compressImage(file, 800, 0.5);
+                const compressedSize = (base64.length * 3 / 4 / 1024).toFixed(0);
+                console.log('Miniature base64:', compressedSize, 'Ko');
                 
                 // Afficher immédiatement une vignette locale pour le technicien
                 const localUrl = URL.createObjectURL(file);
