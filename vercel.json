@@ -2,8 +2,15 @@
   "functions": {
     "api/send-email.js": {
       "maxDuration": 30
+    },
+    "api/check-apave.js": {
+      "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/check-apave",
+      "schedule": "0 7 * * *"
+    }
+  ]
 }
-
-

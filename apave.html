@@ -676,7 +676,8 @@
         } else {
             txt = '🟢 Prochain contrôle Apave dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
         }
-        return '<div class="apave-compteur ' + cpt.niveau + '"><span>' + txt + '</span>'
+        const mailNote = c.alerteApaveEnvoyee ? '  📧 alerte envoyée' + (c.alerteApaveDate ? ' le ' + formaterDate(c.alerteApaveDate) : '') : '';
+        return '<div class="apave-compteur ' + cpt.niveau + '"><span>' + txt + mailNote + '</span>'
              + '<span class="ac-bar"><span class="ac-fill" style="width:' + pct + '%"></span></span></div>';
     }
 
@@ -1129,10 +1130,15 @@
         if (dejaFait) {
             if (!demanderCodeAdmin()) return;
             try {
-                await getCollectionRef().doc(clientId).update({
+                const upd = {
                     [etapeKey]: firebase.firestore.FieldValue.delete(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                });
+                };
+                if (etapeKey === 'travauxFaitsDate') {
+                    upd.alerteApaveEnvoyee = firebase.firestore.FieldValue.delete();
+                    upd.alerteApaveDate = firebase.firestore.FieldValue.delete();
+                }
+                await getCollectionRef().doc(clientId).update(upd);
                 toast('Étape décochée');
                 charger();
             } catch (e) { toast('Erreur : ' + e.message, true); }
@@ -1179,6 +1185,8 @@
                 devisFaitDate: firebase.firestore.FieldValue.delete(),
                 devisValideDate: firebase.firestore.FieldValue.delete(),
                 travauxFaitsDate: firebase.firestore.FieldValue.delete(),
+                alerteApaveEnvoyee: firebase.firestore.FieldValue.delete(),
+                alerteApaveDate: firebase.firestore.FieldValue.delete(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
             toast('Nouveau cycle : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
