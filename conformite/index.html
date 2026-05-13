@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mise en conformité — CEP</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Conformité">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --navy: #1e293b;
+            --navy-light: #334155;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warn: #f59e0b;
+            --warn-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --blue: #3b82f6;
+            --blue-light: #dbeafe;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .header-left { display: flex; gap: 16px; align-items: center; }
+        .header-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 700; }
+        .header p { font-size: 0.9rem; opacity: 0.8; margin-top: 2px; }
+        .header-actions { display: flex; gap: 8px; }
+        .btn-new {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+            transition: all 0.15s;
+        }
+        .btn-new:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-back {
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+        }
+        .stat-card.total { background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-color: #c7d2fe; }
+        .stat-card.complets { background: linear-gradient(135deg, #d1fae5, #a7f3d0); border-color: #6ee7b7; }
+        .stat-card.encours { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #fcd34d; }
+        .stat-card.retard { background: linear-gradient(135deg, #fee2e2, #fecaca); border-color: #fca5a5; }
+        .stat-num {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+            font-family: Georgia, serif;
+        }
+        .stat-card.total .stat-num { color: var(--primary); }
+        .stat-card.complets .stat-num { color: var(--success); }
+        .stat-card.encours .stat-num { color: var(--warn); }
+        .stat-card.retard .stat-num { color: var(--danger); }
+        .stat-label { font-size: 0.85rem; color: var(--text-light); margin-top: 6px; font-weight: 500; }
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .stat-num { font-size: 1.8rem; }
+        }
+
+        /* BARRE RECHERCHE + FILTRES */
+        .filters-card {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+        }
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .search-box::before { content: '🔍'; margin-right: 10px; opacity: 0.5; }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .filter-row:last-child { margin-bottom: 0; }
+        .filter-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-right: 4px;
+        }
+        .chip {
+            padding: 7px 16px;
+            border-radius: 999px;
+            background: var(--bg);
+            border: 2px solid transparent;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text);
+        }
+        .chip:hover { background: var(--border); }
+        .chip.active-statut { background: var(--primary); color: white; }
+        .chip.active-etape { background: var(--navy); color: white; }
+
+        /* CLIENT CARD */
+        .client-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 6px solid var(--border);
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+        .client-card.complet {
+            border-left-color: var(--success);
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+        }
+        .client-card.encours {
+            border-left-color: var(--warn);
+            border-color: #fcd34d;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+        }
+        .client-card.retard {
+            border-left-color: var(--danger);
+            border-color: #fca5a5;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
+            animation: pulse-alert 2.5s ease-in-out infinite;
+        }
+        @keyframes pulse-alert {
+            0%, 100% { box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
+        }
+
+        .client-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .client-info h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+        .client-info .contact { font-size: 0.9rem; color: var(--text-light); }
+        .client-info .notes { font-size: 0.85rem; color: var(--text); margin-top: 6px; display: flex; gap: 4px; align-items: flex-start; }
+
+        .client-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .badge.complet { background: var(--success-light); color: var(--success); }
+        .badge.encours { background: var(--warn-light); color: #b45309; }
+        .badge.retard { background: var(--danger-light); color: var(--danger); }
+        .badge-annuel {
+            padding: 5px 12px;
+            border-radius: 999px;
+            background: var(--blue-light);
+            color: var(--blue);
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* PIPELINE */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            cursor: pointer;
+            width: 80px;
+        }
+        .step-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            background: var(--border);
+            color: var(--text-light);
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .step.done .step-circle { background: var(--success); color: white; }
+        .step.current .step-circle { background: white; color: var(--primary); border-color: var(--primary); font-weight: 700; font-family: Georgia, serif; }
+        .step.pending .step-circle { background: #f1f5f9; color: #94a3b8; font-weight: 700; font-family: Georgia, serif; }
+        .step-label { font-size: 0.8rem; font-weight: 600; text-align: center; }
+        .step.done .step-label { color: var(--text); }
+        .step.current .step-label { color: var(--primary); font-weight: 700; }
+        .step.pending .step-label { color: var(--text-light); }
+        .step-line {
+            flex: 1;
+            height: 3px;
+            background: var(--border);
+            margin: 0 4px;
+            align-self: flex-start;
+            margin-top: 26px;
+        }
+        .step-line.done { background: var(--success); }
+
+        .dates-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .date-chip {
+            padding: 6px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text);
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .btn-validate {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 16px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+            transition: all 0.15s;
+        }
+        .btn-validate:hover { background: #059669; transform: translateY(-1px); }
+        .btn-renew {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+        }
+        .btn-icon {
+            padding: 14px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .btn-icon.danger { background: var(--danger-light); color: var(--danger); border-color: #fca5a5; }
+        .btn-icon:hover { background: var(--border); }
+        .btn-icon.danger:hover { background: #fca5a5; color: white; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 20px;
+            max-width: 520px;
+            width: 100%;
+            padding: 28px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h2 { margin-bottom: 20px; color: var(--text); font-size: 1.3rem; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: white;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .btn-cancel { padding: 10px 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-weight: 500; }
+        .btn-save { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 14px 22px;
+            background: var(--navy);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 200;
+            display: none;
+            font-weight: 500;
+        }
+        .toast.show { display: block; }
+        .toast.error { background: var(--danger); }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+
+        @media (max-width: 720px) {
+            .pipeline { gap: 2px; }
+            .step { width: 60px; }
+            .step-circle { width: 44px; height: 44px; font-size: 1.1rem; }
+            .step-label { font-size: 0.7rem; }
+            .step-line { margin-top: 22px; }
+        }
+
+        /* ZONES DE DÉPÔT DE DOCUMENTS (drag & drop) */
+        .docs-section { margin: 4px 0 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+        .docs-title { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+        .docs-zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        @media (max-width: 640px) { .docs-zones { grid-template-columns: 1fr; } }
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: var(--bg);
+            transition: background 0.12s, border-color 0.12s;
+            min-height: 64px;
+        }
+        .drop-zone.z-rapport { border-color: #bfdbfe; background: #f0f7ff; }
+        .drop-zone.z-devis { border-color: #fde68a; background: #fffbeb; }
+        .drop-zone.z-signe { border-color: #a7f3d0; background: #f0fdf4; }
+        .drop-zone.drag-over { border-style: solid; border-color: var(--primary); background: #eef2ff; }
+        .dz-label { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .dz-hint { font-size: 0.7rem; color: var(--text-light); }
+        .dz-add { display: inline-block; margin-top: 4px; font-size: 0.72rem; color: var(--primary); cursor: pointer; font-weight: 700; }
+        .dz-add:hover { text-decoration: underline; }
+        .doc-file {
+            display: flex; align-items: center; gap: 5px;
+            background: white; border: 1px solid var(--border); border-radius: 8px;
+            padding: 5px 7px; margin-bottom: 4px; font-size: 0.76rem;
+            cursor: grab;
+        }
+        .doc-file:active { cursor: grabbing; opacity: 0.6; }
+        .doc-file a { color: var(--primary); text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .doc-file-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; font-size: 0.65rem; cursor: pointer; flex-shrink: 0; }
+        .doc-file-btn.del { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+        .doc-file-btn.del:hover { background: #fca5a5; color: white; }
+        .archives-block { margin-top: 12px; }
+        .archives-toggle { font-size: 0.78rem; color: var(--text-light); cursor: pointer; font-weight: 700; user-select: none; padding: 6px 0; display: inline-block; }
+        .archives-toggle:hover { color: var(--text); }
+        .archives-years { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .archive-year {
+            border: 1px dashed var(--border); border-radius: 10px; padding: 8px 10px;
+            background: var(--bg); flex: 1; min-width: 130px;
+        }
+        .archive-year.drag-over { border-style: solid; border-color: var(--navy); background: #eef2ff; }
+        .archive-year-label { font-size: 0.74rem; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+        .archive-year-empty { font-size: 0.66rem; color: var(--text-light); font-style: italic; }
+        .docs-anciens { margin-top: 10px; font-size: 0.74rem; }
+        .docs-anciens summary { cursor: pointer; color: var(--text-light); font-weight: 600; }
+
+        /* FICHE PLIABLE (accordéon) */
+        .card-header {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; user-select: none;
+        }
+        .card-header:hover .card-name { text-decoration: underline; }
+        .card-chevron { font-size: 0.85rem; color: var(--text-light); flex-shrink: 0; width: 14px; text-align: center; }
+        .card-name { font-size: 1.15rem; font-weight: 700; flex: 1; }
+        .card-body { margin-top: 16px; }
+        .client-card.collapsed { padding: 14px 20px; margin-bottom: 10px; }
+        .client-card.collapsed .card-body { display: none; }
+
+        /* NOTE SUR LES TRAVAUX */
+        .note-travaux { margin: 10px 0 4px; padding: 8px 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; font-size: 0.84rem; color: #92400e; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .note-travaux.vide { background: transparent; border: none; padding: 4px 0; }
+
+        /* COMPTEUR 365 JOURS APAVE */
+        .apave-compteur {
+            margin: 12px 0 4px; padding: 10px 14px; border-radius: 10px;
+            font-size: 0.88rem; font-weight: 700; display: flex; align-items: center; gap: 8px;
+        }
+        .apave-compteur.ok    { background: var(--success-light); color: #047857; }
+        .apave-compteur.orange{ background: var(--warn-light); color: #b45309; border: 1px solid #fcd34d; }
+        .apave-compteur.rouge { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+        .apave-compteur .ac-bar { flex: 1; height: 6px; background: rgba(0,0,0,0.08); border-radius: 999px; overflow: hidden; }
+        .apave-compteur .ac-fill { height: 100%; border-radius: 999px; }
+        .apave-compteur.ok    .ac-fill { background: #10b981; }
+        .apave-compteur.orange .ac-fill { background: #f59e0b; }
+        .apave-compteur.rouge .ac-fill { background: #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="header-left">
+            <div class="header-icon">⚡</div>
+            <div>
+                <h1>Mise en conformité — CEP</h1>
+                <p>Suivi des contrôles électriques CHR</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-back" onclick="toggleTout()">⇕ Tout déplier / replier</button>
+            <button class="btn-new" onclick="ouvrirModalAjout()">+ Nouveau client</button>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="stats"></div>
+
+    <div class="filters-card">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Rechercher un client..." oninput="afficher()">
+        </div>
+        <div class="filter-row">
+            <span class="filter-label">Statut :</span>
+            <button class="chip active-statut" data-statut="tous" onclick="setFiltreStatut('tous')">Tous</button>
+            <button class="chip" data-statut="complet" onclick="setFiltreStatut('complet')">Complets</button>
+            <button class="chip" data-statut="encours" onclick="setFiltreStatut('encours')">En cours</button>
+            <button class="chip" data-statut="retard" onclick="setFiltreStatut('retard')">En retard</button>
+        </div>
+        <div class="filter-row">
+            <span class="filter-label">Étape :</span>
+            <button class="chip active-etape" data-etape="toutes" onclick="setFiltreEtape('toutes')">Toutes</button>
+            <button class="chip" data-etape="rapportRecuDate" onclick="setFiltreEtape('rapportRecuDate')">📥 Rapport reçu</button>
+            <button class="chip" data-etape="devisFaitDate" onclick="setFiltreEtape('devisFaitDate')">📝 Devis fait</button>
+            <button class="chip" data-etape="devisValideDate" onclick="setFiltreEtape('devisValideDate')">✅ Devis validé</button>
+            <button class="chip" data-etape="travauxFaitsDate" onclick="setFiltreEtape('travauxFaitsDate')">🔧 Travaux faits</button>
+        </div>
+    </div>
+
+    <div id="clientsList">
+        <div class="empty-state"><div class="emoji">⏳</div>Chargement...</div>
+    </div>
+
+</div>
+
+<!-- Modal Ajout / Edition -->
+<div class="modal-overlay" id="modalForm">
+    <div class="modal">
+        <h2 id="modalTitre">Ajouter un client</h2>
+        <input type="hidden" id="formId">
+        <div class="form-group">
+            <label>Nom du client *</label>
+            <input type="text" id="formName" placeholder="Ex : Le Bistrot de Paul">
+        </div>
+        <div class="form-group">
+            <label>Contact email</label>
+            <input type="email" id="formContact" placeholder="contact@client.fr">
+        </div>
+        <div class="form-group">
+            <label>Mois du rappel annuel</label>
+            <select id="formDueMonth">
+                <option value="1">Janvier</option><option value="2">Février</option>
+                <option value="3">Mars</option><option value="4">Avril</option>
+                <option value="5">Mai</option><option value="6">Juin</option>
+                <option value="7">Juillet</option><option value="8">Août</option>
+                <option value="9">Septembre</option><option value="10">Octobre</option>
+                <option value="11">Novembre</option><option value="12">Décembre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Année cible</label>
+            <input type="number" id="formDueYear" min="2024" max="2100">
+        </div>
+        <div class="form-group">
+            <label>Notes (tableau électrique, infos d'accès, etc.)</label>
+            <textarea id="formNotes" rows="2" placeholder="Ex : Tableau électrique RDC"></textarea>
+        </div>
+        <div class="form-group" id="pdfSection" style="display:none;">
+            <label>Rapports PDF</label>
+            <div id="pdfList" style="margin-bottom:8px;"></div>
+            <input type="file" id="formPdf" accept="application/pdf" multiple onchange="uploerPdfs()">
+            <small style="color:var(--text-light);">Sélectionnez un ou plusieurs PDF à ajouter</small>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="fermerModal()">Annuler</button>
+            <button class="btn-save" onclick="sauvegarderClient()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAuX2gsGiRGqVbsk93y0wmwJOsT-RuEkE4",
+        authDomain: "bon-d-intervention-cep.firebaseapp.com",
+        projectId: "bon-d-intervention-cep",
+        storageBucket: "bon-d-intervention-cep.firebasestorage.app",
+        messagingSenderId: "323636987494",
+        appId: "1:323636987494:web:0b07cffbb086c767320fa7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const SOCIETE_ID = 'cep';
+    const ADMIN_CODE = 'CEP2024';
+
+    const ETAPES = [
+        { key: 'rapportRecuDate',   label: 'Rapport reçu',   icon: '📥' },
+        { key: 'devisFaitDate',     label: 'Devis fait',     icon: '📝' },
+        { key: 'devisValideDate',   label: 'Devis validé',   icon: '✅' },
+        { key: 'travauxFaitsDate',  label: 'Travaux faits',  icon: '🔧' },
+    ];
+
+    let tousLesClients = [];
+    let filtreStatut = 'tous';
+    let filtreEtape = 'toutes';
+
+    function getCollectionRef() {
+        return db.collection('societes').doc(SOCIETE_ID).collection('apave');
+    }
+
+    function demanderCodeAdmin() {
+        const code = prompt('Code administrateur requis :');
+        if (code === null) return false;
+        if (code !== ADMIN_CODE) { toast('Code incorrect', true); return false; }
+        return true;
+    }
+
+    function etapeEnCours(client) {
+        for (const e of ETAPES) if (!client[e.key]) return e.key;
+        return 'termine';
+    }
+
+    function prochainRappelDate(client) {
+        // Si travaux faits, rappel = travauxFaitsDate + 1 an
+        if (client.travauxFaitsDate) {
+            const d = new Date(client.travauxFaitsDate);
+            d.setFullYear(d.getFullYear() + 1);
+            return d;
+        }
+        // Sinon, utiliser dueMonth/dueYear (fin du mois cible)
+        const dueMonth = client.dueMonth || 1;
+        const dueYear = client.dueYear || new Date().getFullYear();
+        return new Date(dueYear, dueMonth, 0);
+    }
+
+    function joursAvantRappel(client) {
+        const rappel = prochainRappelDate(client);
+        const now = new Date();
+        return Math.floor((rappel - now) / (1000 * 60 * 60 * 24));
+    }
+
+    // Compteur 365 jours à partir de la réalisation des travaux
+    // < 300 j : vert | 300-364 j : orange (mail d'alerte) | >= 365 j : rouge
+    function compteurApave(client) {
+        if (!client.travauxFaitsDate) return null;
+        const debut = new Date(client.travauxFaitsDate);
+        if (isNaN(debut.getTime())) return null;
+        const joursEcoules = Math.floor((Date.now() - debut.getTime()) / 86400000);
+        const joursRestants = 365 - joursEcoules;
+        let niveau = 'ok';
+        if (joursEcoules >= 365) niveau = 'rouge';
+        else if (joursEcoules >= 300) niveau = 'orange';
+        return { joursEcoules: joursEcoules, joursRestants: joursRestants, niveau: niveau };
+    }
+
+    function renderCompteurApave(c) {
+        const cpt = compteurApave(c);
+        if (!cpt) return '';
+        const pct = Math.max(0, Math.min(100, Math.round(cpt.joursEcoules / 365 * 100)));
+        let txt;
+        if (cpt.niveau === 'rouge') {
+            txt = '🔴 Contrôle de conformité à refaire — dépassé de ' + Math.abs(cpt.joursRestants) + ' jour(s)';
+        } else if (cpt.niveau === 'orange') {
+            txt = '🟠 Contrôle de conformité dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
+        } else {
+            txt = '🟢 Prochain contrôle de conformité dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
+        }
+        const mailNote = c.alerteApaveEnvoyee ? '  📧 alerte envoyée' + (c.alerteApaveDate ? ' le ' + formaterDate(c.alerteApaveDate) : '') : '';
+        return '<div class="apave-compteur ' + cpt.niveau + '"><span>' + txt + mailNote + '</span>'
+             + '<span class="ac-bar"><span class="ac-fill" style="width:' + pct + '%"></span></span></div>';
+    }
+
+    function calculerStatut(client) {
+        const termine = ETAPES.every(e => client[e.key]);
+        const jours = joursAvantRappel(client);
+
+        // Si cycle terminé (tous travaux faits)
+        if (termine) {
+            if (jours < 0) return 'retard';      // Rappel dépassé, nouveau cycle à démarrer
+            if (jours <= 30) return 'encours';   // Rappel imminent (30j avant)
+            return 'complet';                    // Tout va bien
+        }
+        // Cycle en cours (pas tout fait)
+        if (jours < 0) return 'retard';
+        return 'encours';
+    }
+
+    function formaterDateCourt(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            const mois = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+            return d.getDate() + ' ' + mois[d.getMonth()];
+        } catch { return dateStr; }
+    }
+
+    function formaterDate(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch { return dateStr; }
+    }
+
+    function moisNom(mois) {
+        const noms = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+        return noms[(mois || 1) - 1];
+    }
+
+    // Accepte "jj/mm/aaaa" (ou . ou - comme séparateur, année sur 2 ou 4 chiffres)
+    // ET "aaaa-mm-jj" ; renvoie "aaaa-mm-jj" valide, ou null si non reconnu.
+    function normaliserDateSaisie(s) {
+        s = (s || '').trim();
+        if (!s) return null;
+        let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (m) {
+            const y = m[1], mo = String(m[2]).padStart(2,'0'), d = String(m[3]).padStart(2,'0');
+            return (+mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) ? y + '-' + mo + '-' + d : null;
+        }
+        m = s.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})$/);
+        if (m) {
+            let y = m[3]; if (y.length === 2) y = '20' + y;
+            const mo = String(m[2]).padStart(2,'0'), d = String(m[1]).padStart(2,'0');
+            return (+mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) ? y + '-' + mo + '-' + d : null;
+        }
+        return null;
+    }
+
+    async function charger() {
+        try {
+            const snap = await getCollectionRef().get();
+            tousLesClients = [];
+            snap.forEach(doc => tousLesClients.push({ id: doc.id, ...doc.data() }));
+            tousLesClients.sort((a, b) => (a.dueYear - b.dueYear) || (a.dueMonth - b.dueMonth));
+            afficher();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('clientsList').innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div>Erreur de chargement</div>';
+        }
+    }
+
+    function setFiltreStatut(s) {
+        filtreStatut = s;
+        document.querySelectorAll('[data-statut]').forEach(btn => {
+            btn.classList.toggle('active-statut', btn.getAttribute('data-statut') === s);
+        });
+        afficher();
+    }
+    function setFiltreEtape(e) {
+        filtreEtape = e;
+        document.querySelectorAll('[data-etape]').forEach(btn => {
+            btn.classList.toggle('active-etape', btn.getAttribute('data-etape') === e);
+        });
+        afficher();
+    }
+
+    function afficher() {
+        // STATS
+        let nbComplet = 0, nbEncours = 0, nbRetard = 0;
+        tousLesClients.forEach(c => {
+            const s = calculerStatut(c);
+            if (s === 'complet') nbComplet++;
+            else if (s === 'encours') nbEncours++;
+            else if (s === 'retard') nbRetard++;
+        });
+        document.getElementById('stats').innerHTML = `
+            <div class="stat-card total"><div class="stat-num">${tousLesClients.length}</div><div class="stat-label">Total</div></div>
+            <div class="stat-card complets"><div class="stat-num">${nbComplet}</div><div class="stat-label">Complets</div></div>
+            <div class="stat-card encours"><div class="stat-num">${nbEncours}</div><div class="stat-label">En cours</div></div>
+            <div class="stat-card retard"><div class="stat-num">${nbRetard}</div><div class="stat-label">En retard</div></div>
+        `;
+
+        // FILTRE + RECHERCHE
+        const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+        let liste = tousLesClients.filter(c => {
+            if (search && !(c.name || '').toLowerCase().includes(search) && !(c.contact || '').toLowerCase().includes(search)) return false;
+            const s = calculerStatut(c);
+            if (filtreStatut !== 'tous' && s !== filtreStatut) return false;
+            if (filtreEtape !== 'toutes' && etapeEnCours(c) !== filtreEtape) return false;
+            return true;
+        });
+
+        const container = document.getElementById('clientsList');
+        if (liste.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="emoji">📋</div>Aucun client ne correspond</div>';
+            return;
+        }
+
+        container.innerHTML = liste.map(c => renderClientCard(c)).join('');
+    }
+
+    function renderClientCard(c) {
+        const statut = calculerStatut(c);
+        const termine = ETAPES.every(e => c[e.key]);
+        const etape = etapeEnCours(c);
+
+        // Badge statut
+        const badge = statut === 'complet' ? '<span class="badge complet">Complet</span>'
+                    : statut === 'retard' ? '<span class="badge retard">En retard</span>'
+                    : '<span class="badge encours">En cours</span>';
+
+        // Badge rappel annuel (visible si travaux faits) — calculé depuis travauxFaitsDate + 1 an
+        let rappelAnnuel = '';
+        if (c.travauxFaitsDate) {
+            const rappel = prochainRappelDate(c);
+            const jours = joursAvantRappel(c);
+            const rappelLabel = rappel.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+            let couleurRappel = '';
+            let icone = '🔄';
+            if (jours < 0) { couleurRappel = 'background:var(--danger-light);color:var(--danger);'; icone = '⚠'; }
+            else if (jours <= 30) { couleurRappel = 'background:var(--warn-light);color:#b45309;'; icone = '⏰'; }
+            rappelAnnuel = '<span class="badge-annuel" style="' + couleurRappel + '">' + icone + ' Rappel annuel : ' + rappelLabel + '</span>';
+        }
+
+        // Pipeline (4 étapes)
+        let pipelineHtml = '';
+        ETAPES.forEach((e, i) => {
+            const done = !!c[e.key];
+            const current = !done && e.key === etape;
+            let cls = done ? 'done' : (current ? 'current' : 'pending');
+            const circleContent = done ? e.icon : (i + 1);
+            pipelineHtml += `<div class="step ${cls}" onclick="toggleEtape('${c.id}','${e.key}')">
+                <div class="step-circle">${circleContent}</div>
+                <div class="step-label">${e.label}</div>
+            </div>`;
+            if (i < ETAPES.length - 1) {
+                const lineDone = !!c[ETAPES[i+1].key] || done;
+                pipelineHtml += `<div class="step-line ${done ? 'done' : ''}"></div>`;
+            }
+        });
+
+        // Dates sous le pipeline
+        const datesHtml = ETAPES.filter(e => c[e.key]).map(e =>
+            `<span class="date-chip">${e.icon} ${formaterDateCourt(c[e.key])}</span>`
+        ).join('');
+
+        // Bouton d'action principal
+        let mainAction = '';
+        if (termine) {
+            const jours = joursAvantRappel(c);
+            // Proposer "Nouvelle année" seulement quand le rappel approche ou est dépassé
+            if (jours <= 30) {
+                const libelle = jours < 0 ? '⚠ Rappel dépassé — Nouveau cycle' : '🔄 Nouveau cycle à démarrer';
+                mainAction = `<button class="btn-renew" onclick="renouvelerAnnee('${c.id}')">${libelle}</button>`;
+            }
+            // Sinon : pas de bouton principal (juste Complet affiché, on attend)
+        } else {
+            const prochaineEtape = ETAPES.find(e => !c[e.key]);
+            if (prochaineEtape) {
+                mainAction = `<button class="btn-validate" onclick="toggleEtape('${c.id}','${prochaineEtape.key}')">✓ Valider : ${prochaineEtape.label}</button>`;
+            }
+        }
+
+        const notesHtml = c.notes ? `<div class="notes">📌 ${(c.notes || '').replace(/</g,'&lt;')}</div>` : '';
+        const ouvert = !!cartesOuvertes[c.id];
+
+        return `
+            <div class="client-card ${statut}${ouvert ? '' : ' collapsed'}">
+                <div class="card-header" onclick="toggleCarte('${c.id}')">
+                    <span class="card-chevron">${ouvert ? '▾' : '▸'}</span>
+                    <span class="card-name">${(c.name || '-').replace(/</g,'&lt;')}</span>
+                    ${badge}
+                </div>
+                <div class="card-body">
+                    <div class="client-top">
+                        <div class="client-info">
+                            <div class="contact">${(c.contact || '-').replace(/</g,'&lt;')}</div>
+                            ${notesHtml}
+                        </div>
+                        <div class="client-badges">
+                            ${rappelAnnuel}
+                        </div>
+                    </div>
+                    <div class="pipeline">${pipelineHtml}</div>
+                    <div class="dates-row">${datesHtml}</div>
+                    ${renderNoteTravaux(c)}
+                    ${renderCompteurApave(c)}
+                    ${renderDocsSection(c)}
+                    <div class="actions-row">
+                        ${mainAction}
+                        <button class="btn-icon" onclick="editer('${c.id}')">✎ Modifier</button>
+                        <button class="btn-icon danger" onclick="supprimer('${c.id}')">🗑</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    let cartesOuvertes = {};
+    function toggleCarte(id) {
+        cartesOuvertes[id] = !cartesOuvertes[id];
+        afficher();
+    }
+
+    function renderNoteTravaux(c) {
+        if (!c.travauxFaitsDate) return '';
+        const note = (c.travauxFaitsNote || '').trim();
+        if (note) {
+            return '<div class="note-travaux">📝 <span><strong>Travaux — note :</strong> ' + note.replace(/</g,'&lt;') + '</span>'
+                 + ' <button class="doc-file-btn" onclick="editerNoteTravaux(\'' + c.id + '\')">✎ modifier</button></div>';
+        }
+        return '<div class="note-travaux vide"><button class="doc-file-btn" onclick="editerNoteTravaux(\'' + c.id + '\')">+ Ajouter une note sur les travaux</button></div>';
+    }
+    async function editerNoteTravaux(clientId) {
+        const c = clientById(clientId);
+        if (!c) return;
+        const note = prompt('Note sur les travaux (ce qui reste à faire, observations…) :', c.travauxFaitsNote || '');
+        if (note === null) return;
+        try {
+            await getCollectionRef().doc(clientId).update({
+                travauxFaitsNote: (note || '').trim(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            c.travauxFaitsNote = (note || '').trim();
+            afficher();
+            toast('Note enregistrée');
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+    function deplierTout(ouvrir) {
+        tousLesClients.forEach(c => { cartesOuvertes[c.id] = !!ouvrir; });
+        afficher();
+    }
+    function toggleTout() {
+        const auMoinsUnOuvert = tousLesClients.some(c => cartesOuvertes[c.id]);
+        deplierTout(!auMoinsUnOuvert);
+    }
+
+    // ============================================
+    //  DOCUMENTS — zones de dépôt drag & drop
+    // ============================================
+    const CASIERS_FIXES = [
+        { key: 'rapport',    label: 'Rapport de contrôle', icon: '📄', cls: 'z-rapport', hint: 'Le rapport Apave reçu' },
+        { key: 'devis',      label: 'Devis',         icon: '📝', cls: 'z-devis',   hint: 'Le devis envoyé' },
+        { key: 'devisSigne', label: 'Devis signé',   icon: '✅', cls: 'z-signe',   hint: 'Le devis retourné signé' },
+    ];
+    let archivesOuvertes = {};
+
+    function anneesArchive() {
+        const max = Math.max(2030, new Date().getFullYear() + 1);
+        const arr = [];
+        for (let y = 2024; y <= max; y++) arr.push(String(y));
+        return arr;
+    }
+    function getCasier(c, key) {
+        return (c.documents && Array.isArray(c.documents[key])) ? c.documents[key] : [];
+    }
+    function clientById(id) { return tousLesClients.find(x => x.id === id); }
+
+    function renderFileItem(clientId, casier, idx, f) {
+        const nom = (f.name || 'document').replace(/</g, '&lt;');
+        return `<div class="doc-file" draggable="true" ondragstart="onDocDragStart(event,'${clientId}','${casier}',${idx})">
+            <span>📎</span>
+            <a href="${(f.url||'#').replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${nom}</a>
+            <button class="doc-file-btn del" onclick="supprimerDoc('${clientId}','${casier}',${idx})" title="Supprimer">✕</button>
+        </div>`;
+    }
+    function renderDropZone(clientId, casier, label, icon, cls, hint, files) {
+        const filesHtml = files.map((f, i) => renderFileItem(clientId, casier, i, f)).join('');
+        return `<div class="drop-zone ${cls}"
+            ondragover="onDZover(event,this)" ondragleave="onDZleave(event,this)"
+            ondrop="onDZdrop(event,this,'${clientId}','${casier}')">
+            <div class="dz-label">${icon} ${label}</div>
+            ${filesHtml || `<div class="dz-hint">${hint} — glissez un PDF ici</div>`}
+            <span class="dz-add" onclick="pickFiles('${clientId}','${casier}')">+ Ajouter un fichier</span>
+        </div>`;
+    }
+    function renderDocsSection(c) {
+        const zonesHtml = CASIERS_FIXES.map(z =>
+            renderDropZone(c.id, z.key, z.label, z.icon, z.cls, z.hint, getCasier(c, z.key))
+        ).join('');
+
+        const annees = anneesArchive();
+        const ouvert = !!archivesOuvertes[c.id];
+        let archivesYearsHtml = '';
+        if (ouvert) {
+            archivesYearsHtml = '<div class="archives-years">' + annees.map(y => {
+                const files = getCasier(c, y);
+                const fh = files.map((f, i) => renderFileItem(c.id, y, i, f)).join('');
+                return `<div class="archive-year"
+                    ondragover="onDZover(event,this)" ondragleave="onDZleave(event,this)"
+                    ondrop="onDZdrop(event,this,'${c.id}','${y}')">
+                    <div class="archive-year-label">📁 ${y}</div>
+                    ${fh || '<div class="archive-year-empty">vide</div>'}
+                    <span class="dz-add" onclick="pickFiles('${c.id}','${y}')">+ Ajouter</span>
+                </div>`;
+            }).join('') + '</div>';
+        }
+        const nbArchives = annees.reduce((n, y) => n + getCasier(c, y).length, 0);
+        const archivesBlock = `<div class="archives-block">
+            <span class="archives-toggle" onclick="toggleArchives('${c.id}')">${ouvert ? '▾' : '▸'} Archives par année${nbArchives ? ' ('+nbArchives+')' : ''}</span>
+            ${archivesYearsHtml}
+        </div>`;
+
+        let anciensHtml = '';
+        if (Array.isArray(c.pdfs) && c.pdfs.length) {
+            const items = c.pdfs.map((p, i) => `<div class="doc-file" draggable="true" ondragstart="onDocDragStart(event,'${c.id}','__pdfs__',${i})">
+                <span>📎</span><a href="${(p.url||'#').replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${(p.name||'PDF').replace(/</g,'&lt;')}</a>
+                <button class="doc-file-btn del" onclick="supprimerDoc('${c.id}','__pdfs__',${i})">✕</button>
+            </div>`).join('');
+            anciensHtml = `<details class="docs-anciens"><summary>Anciens PDF (${c.pdfs.length}) — glissez-les vers un casier</summary><div style="margin-top:6px;">${items}</div></details>`;
+        }
+
+        return `<div class="docs-section">
+            <div class="docs-title">Documents</div>
+            <div class="docs-zones">${zonesHtml}</div>
+            ${archivesBlock}
+            ${anciensHtml}
+        </div>`;
+    }
+    function toggleArchives(clientId) {
+        archivesOuvertes[clientId] = !archivesOuvertes[clientId];
+        afficher();
+    }
+
+    function onDZover(ev, el) { ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'copy'; } catch(e){} el.classList.add('drag-over'); }
+    function onDZleave(ev, el) { if (!el.contains(ev.relatedTarget)) el.classList.remove('drag-over'); }
+    function onDocDragStart(ev, clientId, casier, idx) {
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/plain', JSON.stringify({ t: 'doc', clientId: clientId, casier: casier, idx: idx }));
+    }
+    async function onDZdrop(ev, el, clientId, casier) {
+        ev.preventDefault();
+        el.classList.remove('drag-over');
+        if (ev.dataTransfer.files && ev.dataTransfer.files.length) {
+            await uploadVersCasier(clientId, casier, ev.dataTransfer.files);
+            return;
+        }
+        let payload = null;
+        try { payload = JSON.parse(ev.dataTransfer.getData('text/plain') || 'null'); } catch (e) {}
+        if (payload && payload.t === 'doc') {
+            if (payload.clientId !== clientId) { toast('Un document ne peut être déplacé que dans la même fiche', true); return; }
+            if (payload.casier === casier) return;
+            await deplacerDoc(clientId, payload.casier, payload.idx, casier);
+        }
+    }
+    function pickFiles(clientId, casier) {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = 'application/pdf,image/*';
+        inp.multiple = true;
+        inp.onchange = function () { if (inp.files && inp.files.length) uploadVersCasier(clientId, casier, inp.files); };
+        inp.click();
+    }
+    async function uploadVersCasier(clientId, casier, fileList) {
+        const c = clientById(clientId);
+        if (!c) return;
+        toast('Upload en cours...');
+        try {
+            const storage = firebase.storage();
+            const liste = getCasier(c, casier).slice();
+            for (const file of fileList) {
+                const safe = (file.name || 'doc').replace(/[^a-zA-Z0-9._-]/g, '_');
+                const path = 'apave/' + SOCIETE_ID + '/' + clientId + '/' + casier + '/' + Date.now() + '_' + safe;
+                const ref = storage.ref(path);
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+                liste.push({ name: file.name, url: url, path: path, uploadedAt: new Date().toISOString() });
+            }
+            const docs = Object.assign({}, c.documents || {});
+            docs[casier] = liste;
+            await getCollectionRef().doc(clientId).update({ documents: docs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            c.documents = docs;
+            afficher();
+            toast(fileList.length + ' fichier(s) ajouté(s)');
+        } catch (e) {
+            console.error(e);
+            toast('Erreur upload : ' + (e.message || ''), true);
+        }
+    }
+    async function deplacerDoc(clientId, casierSrc, idx, casierDest) {
+        const c = clientById(clientId);
+        if (!c) return;
+        try {
+            let srcList, fichier;
+            if (casierSrc === '__pdfs__') { srcList = Array.isArray(c.pdfs) ? c.pdfs.slice() : []; }
+            else { srcList = getCasier(c, casierSrc).slice(); }
+            fichier = srcList[idx];
+            if (!fichier) return;
+            srcList.splice(idx, 1);
+            const destList = getCasier(c, casierDest).slice();
+            destList.push(fichier);
+
+            const docs = Object.assign({}, c.documents || {});
+            docs[casierDest] = destList;
+            const update = { documents: docs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+            if (casierSrc === '__pdfs__') update.pdfs = srcList;
+            else docs[casierSrc] = srcList;
+
+            await getCollectionRef().doc(clientId).update(update);
+            c.documents = docs;
+            if (casierSrc === '__pdfs__') c.pdfs = srcList;
+            afficher();
+            toast('Document déplacé');
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+    async function supprimerDoc(clientId, casier, idx) {
+        const c = clientById(clientId);
+        if (!c) return;
+        let fichier = (casier === '__pdfs__') ? (c.pdfs || [])[idx] : getCasier(c, casier)[idx];
+        if (!fichier) return;
+        if (!confirm('Supprimer « ' + (fichier.name || 'ce document') + ' » ?')) return;
+        try {
+            if (fichier.path) { try { await firebase.storage().ref(fichier.path).delete(); } catch (e) { console.warn(e); } }
+            if (casier === '__pdfs__') {
+                const nv = (c.pdfs || []).filter((_, i) => i !== idx);
+                await getCollectionRef().doc(clientId).update({ pdfs: nv, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                c.pdfs = nv;
+            } else {
+                const docs = Object.assign({}, c.documents || {});
+                docs[casier] = getCasier(c, casier).filter((_, i) => i !== idx);
+                await getCollectionRef().doc(clientId).update({ documents: docs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                c.documents = docs;
+            }
+            afficher();
+            toast('Document supprimé');
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    function ouvrirModalAjout() {
+        document.getElementById('modalTitre').textContent = 'Nouveau client';
+        document.getElementById('formId').value = '';
+        document.getElementById('formName').value = '';
+        document.getElementById('formContact').value = '';
+        const now = new Date();
+        document.getElementById('formDueMonth').value = (now.getMonth() + 1);
+        document.getElementById('formDueYear').value = now.getFullYear() + 1;
+        document.getElementById('formNotes').value = '';
+        document.getElementById('pdfSection').style.display = 'none';
+        document.getElementById('modalForm').classList.add('show');
+    }
+
+    function editer(id) {
+        const c = tousLesClients.find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('modalTitre').textContent = 'Modifier ' + (c.name || '');
+        document.getElementById('formId').value = id;
+        document.getElementById('formName').value = c.name || '';
+        document.getElementById('formContact').value = c.contact || '';
+        document.getElementById('formDueMonth').value = c.dueMonth || 1;
+        document.getElementById('formDueYear').value = c.dueYear || new Date().getFullYear() + 1;
+        document.getElementById('formNotes').value = c.notes || '';
+        document.getElementById('pdfSection').style.display = 'block';
+        afficherListePdfs(c.pdfs || []);
+        document.getElementById('modalForm').classList.add('show');
+    }
+
+    function fermerModal() {
+        document.getElementById('modalForm').classList.remove('show');
+    }
+
+    async function sauvegarderClient() {
+        const id = document.getElementById('formId').value;
+        const data = {
+            name: document.getElementById('formName').value.trim(),
+            contact: document.getElementById('formContact').value.trim(),
+            dueMonth: parseInt(document.getElementById('formDueMonth').value, 10),
+            dueYear: parseInt(document.getElementById('formDueYear').value, 10),
+            notes: document.getElementById('formNotes').value.trim(),
+            societe: SOCIETE_ID,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        if (!data.name) { toast('Le nom du client est obligatoire', true); return; }
+        try {
+            if (id) {
+                await getCollectionRef().doc(id).update(data);
+                toast('Modifié');
+            } else {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await getCollectionRef().add(data);
+                toast('Ajouté');
+            }
+            fermerModal();
+            charger();
+        } catch (e) {
+            toast('Erreur : ' + e.message, true);
+        }
+    }
+
+    async function toggleEtape(clientId, etapeKey) {
+        const c = tousLesClients.find(x => x.id === clientId);
+        if (!c) return;
+        const dejaFait = !!c[etapeKey];
+
+        if (dejaFait) {
+            if (!demanderCodeAdmin()) return;
+            try {
+                const upd = {
+                    [etapeKey]: firebase.firestore.FieldValue.delete(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+                if (etapeKey === 'travauxFaitsDate') {
+                    upd.alerteApaveEnvoyee = firebase.firestore.FieldValue.delete();
+                    upd.alerteApaveDate = firebase.firestore.FieldValue.delete();
+                    upd.travauxFaitsNote = firebase.firestore.FieldValue.delete();
+                }
+                await getCollectionRef().doc(clientId).update(upd);
+                toast('Étape décochée');
+                charger();
+            } catch (e) { toast('Erreur : ' + e.message, true); }
+            return;
+        }
+
+        const etape = ETAPES.find(e => e.key === etapeKey);
+        const aujourdhui = new Date();
+        const defautAffiche = String(aujourdhui.getDate()).padStart(2,'0') + '/' + String(aujourdhui.getMonth()+1).padStart(2,'0') + '/' + aujourdhui.getFullYear();
+        let date = null;
+        while (date === null) {
+            const saisie = prompt('Date — ' + (etape?.label || etapeKey) + '\n(jj/mm/aaaa — peut être une date passée ; laisser vide = aujourd\'hui)', defautAffiche);
+            if (saisie === null) return; // annulé
+            if (!saisie.trim()) { date = new Date().toISOString().slice(0,10); break; }
+            const norm = normaliserDateSaisie(saisie);
+            if (norm) { date = norm; break; }
+            alert('Date non comprise. Écris-la sous la forme jj/mm/aaaa — par exemple 15/02/2026.');
+        }
+
+        const update = {
+            [etapeKey]: date,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        if (etapeKey === 'rapportRecuDate') update.lastClientReport = date;
+        if (etapeKey === 'travauxFaitsDate') {
+            const note = prompt('Note sur les travaux (ce qui reste à faire, observations…) — laisser vide si rien :', c.travauxFaitsNote || '');
+            if (note !== null) update.travauxFaitsNote = (note || '').trim();
+        }
+
+        try {
+            await getCollectionRef().doc(clientId).update(update);
+            toast((etape?.label || etapeKey) + ' — OK');
+            charger();
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    async function renouvelerAnnee(clientId) {
+        const c = tousLesClients.find(x => x.id === clientId);
+        if (!c) return;
+        const anneeQuiSeTermine = String(c.dueYear || new Date().getFullYear());
+        if (!confirm('Démarrer un nouveau cycle annuel pour ' + (c.name || '') + ' ?\n\nLes documents du cycle (rapport, devis, devis signé) seront archivés dans l\'année ' + anneeQuiSeTermine + ', puis les étapes repartent à zéro.')) return;
+        const prochaineAnnee = (c.dueYear || new Date().getFullYear()) + 1;
+        try {
+            const docs = Object.assign({}, c.documents || {});
+            const archive = Array.isArray(docs[anneeQuiSeTermine]) ? docs[anneeQuiSeTermine].slice() : [];
+            ['rapport', 'devis', 'devisSigne'].forEach(k => {
+                (docs[k] || []).forEach(f => archive.push(f));
+                docs[k] = [];
+            });
+            docs[anneeQuiSeTermine] = archive;
+            await getCollectionRef().doc(clientId).update({
+                dueYear: prochaineAnnee,
+                documents: docs,
+                rapportRecuDate: firebase.firestore.FieldValue.delete(),
+                devisFaitDate: firebase.firestore.FieldValue.delete(),
+                devisValideDate: firebase.firestore.FieldValue.delete(),
+                travauxFaitsDate: firebase.firestore.FieldValue.delete(),
+                travauxFaitsNote: firebase.firestore.FieldValue.delete(),
+                alerteApaveEnvoyee: firebase.firestore.FieldValue.delete(),
+                alerteApaveDate: firebase.firestore.FieldValue.delete(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            toast('Nouveau cycle : ' + moisNom(c.dueMonth) + ' ' + prochaineAnnee);
+            charger();
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    async function supprimer(id) {
+        const c = tousLesClients.find(x => x.id === id);
+        if (!confirm('Supprimer ' + (c?.name || 'ce client') + ' ?')) return;
+        if (!demanderCodeAdmin()) return;
+        try {
+            await getCollectionRef().doc(id).delete();
+            toast('Supprimé');
+            charger();
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    // PDFs
+    function afficherListePdfs(pdfs) {
+        const container = document.getElementById('pdfList');
+        if (!pdfs.length) {
+            container.innerHTML = '<small style="color:var(--text-light);">Aucun PDF uploadé</small>';
+            return;
+        }
+        container.innerHTML = pdfs.map((p, i) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:10px;margin-bottom:6px;gap:8px;">
+                <a href="${p.url}" target="_blank" style="color:var(--primary);text-decoration:none;flex:1;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📄 ${p.name || 'PDF'}</a>
+                <button class="btn-icon danger" style="padding:6px 10px;font-size:0.75rem;" onclick="supprimerPdf(${i})">✕</button>
+            </div>
+        `).join('');
+    }
+
+    async function uploerPdfs() {
+        const id = document.getElementById('formId').value;
+        if (!id) { toast('Enregistrez d\'abord le client', true); document.getElementById('formPdf').value = ''; return; }
+        const files = document.getElementById('formPdf').files;
+        if (!files.length) return;
+
+        const clientRef = getCollectionRef().doc(id);
+        const c = tousLesClients.find(x => x.id === id) || {};
+        const pdfs = Array.isArray(c.pdfs) ? [...c.pdfs] : [];
+
+        toast('Upload en cours...');
+        try {
+            const storage = firebase.storage();
+            for (const file of files) {
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const path = 'apave/' + SOCIETE_ID + '/' + id + '/' + Date.now() + '_' + safeName;
+                const ref = storage.ref(path);
+                await ref.put(file);
+                const url = await ref.getDownloadURL();
+                pdfs.push({ name: file.name, url, path, uploadedAt: new Date().toISOString() });
+            }
+            await clientRef.update({ pdfs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            const idx = tousLesClients.findIndex(x => x.id === id);
+            if (idx >= 0) tousLesClients[idx].pdfs = pdfs;
+            afficherListePdfs(pdfs);
+            document.getElementById('formPdf').value = '';
+            toast(files.length + ' PDF(s) ajouté(s)');
+        } catch (e) {
+            console.error(e);
+            toast('Erreur upload : ' + (e.message || ''), true);
+        }
+    }
+
+    async function supprimerPdf(index) {
+        const id = document.getElementById('formId').value;
+        const c = tousLesClients.find(x => x.id === id);
+        if (!c || !c.pdfs || !c.pdfs[index]) return;
+        if (!confirm('Supprimer ce PDF ?')) return;
+        if (!demanderCodeAdmin()) return;
+        const pdf = c.pdfs[index];
+        try {
+            if (pdf.path) {
+                try { await firebase.storage().ref(pdf.path).delete(); } catch (e) { console.warn(e); }
+            }
+            const nouveaux = c.pdfs.filter((_, i) => i !== index);
+            await getCollectionRef().doc(id).update({
+                pdfs: nouveaux,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            c.pdfs = nouveaux;
+            afficherListePdfs(nouveaux);
+            toast('PDF supprimé');
+        } catch (e) { toast('Erreur : ' + e.message, true); }
+    }
+
+    function toast(msg, isError) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = 'toast show' + (isError ? ' error' : '');
+        setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // Attendre que la connexion (anonyme) à Firebase soit prête AVANT de charger les
+    // données : sinon Firestore renvoie une erreur de droits et la liste arrive vide.
+    let _dejaCharge = false;
+    firebase.auth().onAuthStateChanged(function (user) {
+        if (user && !_dejaCharge) { _dejaCharge = true; charger(); }
+    });
+    firebase.auth().signInAnonymously().catch(function (err) {
+        console.error('Connexion anonyme échouée:', err);
+        const c = document.getElementById('clientsList');
+        if (c) c.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div>Connexion impossible. Rechargez la page.</div>';
+    });
+</script>
+
+</body>
+</html>

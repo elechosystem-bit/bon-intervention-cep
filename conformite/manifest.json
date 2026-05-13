@@ -1,0 +1,19 @@
+{
+  "name": "Mise en conformité — CEP",
+  "short_name": "Conformité",
+  "description": "Suivi des contrôles électriques et mises en conformité CEP",
+  "start_url": "/conformite/",
+  "scope": "/conformite/",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#1e293b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
