@@ -734,6 +734,25 @@
         return noms[(mois || 1) - 1];
     }
 
+    // Accepte "jj/mm/aaaa" (ou . ou - comme séparateur, année sur 2 ou 4 chiffres)
+    // ET "aaaa-mm-jj" ; renvoie "aaaa-mm-jj" valide, ou null si non reconnu.
+    function normaliserDateSaisie(s) {
+        s = (s || '').trim();
+        if (!s) return null;
+        let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (m) {
+            const y = m[1], mo = String(m[2]).padStart(2,'0'), d = String(m[3]).padStart(2,'0');
+            return (+mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) ? y + '-' + mo + '-' + d : null;
+        }
+        m = s.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})$/);
+        if (m) {
+            let y = m[3]; if (y.length === 2) y = '20' + y;
+            const mo = String(m[2]).padStart(2,'0'), d = String(m[1]).padStart(2,'0');
+            return (+mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31) ? y + '-' + mo + '-' + d : null;
+        }
+        return null;
+    }
+
     async function charger() {
         try {
             const snap = await getCollectionRef().get();
@@ -1207,11 +1226,18 @@
             return;
         }
 
-        const defautDate = new Date().toISOString().slice(0, 10);
         const etape = ETAPES.find(e => e.key === etapeKey);
-        const dateSaisie = prompt('Date — ' + (etape?.label || etapeKey) + ' :\n(format YYYY-MM-DD)', defautDate);
-        if (dateSaisie === null) return;
-        const date = (dateSaisie || '').trim() || defautDate;
+        const aujourdhui = new Date();
+        const defautAffiche = String(aujourdhui.getDate()).padStart(2,'0') + '/' + String(aujourdhui.getMonth()+1).padStart(2,'0') + '/' + aujourdhui.getFullYear();
+        let date = null;
+        while (date === null) {
+            const saisie = prompt('Date — ' + (etape?.label || etapeKey) + '\n(jj/mm/aaaa — peut être une date passée ; laisser vide = aujourd\'hui)', defautAffiche);
+            if (saisie === null) return; // annulé
+            if (!saisie.trim()) { date = new Date().toISOString().slice(0,10); break; }
+            const norm = normaliserDateSaisie(saisie);
+            if (norm) { date = norm; break; }
+            alert('Date non comprise. Écris-la sous la forme jj/mm/aaaa — par exemple 15/02/2026.');
+        }
 
         const update = {
             [etapeKey]: date,
