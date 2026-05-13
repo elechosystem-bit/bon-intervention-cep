@@ -615,7 +615,6 @@
         appId: "1:323636987494:web:0b07cffbb086c767320fa7"
     };
     firebase.initializeApp(firebaseConfig);
-    firebase.auth().signInAnonymously().catch(err => console.error('Auth:', err));
     const db = firebase.firestore();
 
     const SOCIETE_ID = 'cep';
@@ -1350,7 +1349,17 @@
         setTimeout(() => el.classList.remove('show'), 3000);
     }
 
-    charger();
+    // Attendre que la connexion (anonyme) à Firebase soit prête AVANT de charger les
+    // données : sinon Firestore renvoie une erreur de droits et la liste arrive vide.
+    let _dejaCharge = false;
+    firebase.auth().onAuthStateChanged(function (user) {
+        if (user && !_dejaCharge) { _dejaCharge = true; charger(); }
+    });
+    firebase.auth().signInAnonymously().catch(function (err) {
+        console.error('Connexion anonyme échouée:', err);
+        const c = document.getElementById('clientsList');
+        if (c) c.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div>Connexion impossible. Rechargez la page.</div>';
+    });
 </script>
 
 </body>
