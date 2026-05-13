@@ -6211,22 +6211,22 @@
       "rue": "43, avenue du Maine"
     },
     {
-      "id": 266006957,
-      "nom": "LE PARIS SPORT",
-      "email": "facturesparissport@gmail.com",
-      "telephone": "",
-      "adresse": "116, rue de Paris, 94220, Charenton le Pont",
-      "ville": "Charenton le Pont",
-      "codePostal": "94220",
-      "rue": "116, rue de Paris"
-    },
-    {
       "id": 248733500,
       "nom": "LE PARIS SPORT - GC MARQUES",
       "email": "gc13marques@gmail.com",
       "telephone": "",
       "adresse": "116, rue de Paris, 94220, Charenton-le-Pont",
       "ville": "Charenton-le-Pont",
+      "codePostal": "94220",
+      "rue": "116, rue de Paris"
+    },
+    {
+      "id": 266006957,
+      "nom": "LE PARIS SPORT - MASSON JJJ",
+      "email": "facturesparissport@gmail.com",
+      "telephone": "",
+      "adresse": "116, rue de Paris, 94220, Charenton le Pont",
+      "ville": "Charenton le Pont",
       "codePostal": "94220",
       "rue": "116, rue de Paris"
     },
@@ -11991,6 +11991,16 @@
       "rue": "VIALE ABRUZZI 94"
     },
     {
+      "id": 1189942083584,
+      "nom": "ZAVEZ - BISTROT LA RENAISSANCE",
+      "email": "bistrotlarenaissance@gmail.com",
+      "telephone": "",
+      "adresse": "112 RUE CHAMPIONNET, 75018, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75018",
+      "rue": "112 RUE CHAMPIONNET"
+    },
+    {
       "id": 248732679,
       "nom": "ZEBRE A MONTMARTRE",
       "email": "",
@@ -12021,6 +12031,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1202,
-  "syncDate": "2026-05-12T05:12:14Z"
+  "total": 1203,
+  "syncDate": "2026-05-13T05:16:39Z"
 }
