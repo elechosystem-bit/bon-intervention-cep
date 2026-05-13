@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Apave — CEP</title>
+    <title>Mise en conformité — CEP</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -513,7 +513,7 @@
         <div class="header-left">
             <div class="header-icon">⚡</div>
             <div>
-                <h1>Gestion Apave — CEP</h1>
+                <h1>Mise en conformité — CEP</h1>
                 <p>Suivi des contrôles électriques CHR</p>
             </div>
         </div>
@@ -687,11 +687,11 @@
         const pct = Math.max(0, Math.min(100, Math.round(cpt.joursEcoules / 365 * 100)));
         let txt;
         if (cpt.niveau === 'rouge') {
-            txt = '🔴 Contrôle Apave à refaire — dépassé de ' + Math.abs(cpt.joursRestants) + ' jour(s)';
+            txt = '🔴 Contrôle de conformité à refaire — dépassé de ' + Math.abs(cpt.joursRestants) + ' jour(s)';
         } else if (cpt.niveau === 'orange') {
-            txt = '🟠 Contrôle Apave dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
+            txt = '🟠 Contrôle de conformité dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
         } else {
-            txt = '🟢 Prochain contrôle Apave dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
+            txt = '🟢 Prochain contrôle de conformité dans ' + cpt.joursRestants + ' jour(s)  (J' + cpt.joursEcoules + '/365)';
         }
         const mailNote = c.alerteApaveEnvoyee ? '  📧 alerte envoyée' + (c.alerteApaveDate ? ' le ' + formaterDate(c.alerteApaveDate) : '') : '';
         return '<div class="apave-compteur ' + cpt.niveau + '"><span>' + txt + mailNote + '</span>'
@@ -937,7 +937,7 @@
     //  DOCUMENTS — zones de dépôt drag & drop
     // ============================================
     const CASIERS_FIXES = [
-        { key: 'rapport',    label: 'Rapport Apave', icon: '📄', cls: 'z-rapport', hint: 'Le rapport reçu' },
+        { key: 'rapport',    label: 'Rapport de contrôle', icon: '📄', cls: 'z-rapport', hint: 'Le rapport Apave reçu' },
         { key: 'devis',      label: 'Devis',         icon: '📝', cls: 'z-devis',   hint: 'Le devis envoyé' },
         { key: 'devisSigne', label: 'Devis signé',   icon: '✅', cls: 'z-signe',   hint: 'Le devis retourné signé' },
     ];

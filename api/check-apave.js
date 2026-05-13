@@ -124,22 +124,22 @@ export default async function handler(req, res) {
                     ? 'DÉPASSÉ de ' + (c.jours - 365) + ' jour(s)'
                     : 'dans ' + restant + ' jour(s)';
                 return '• ' + c.nom + (c.contact ? '  (' + c.contact + ')' : '')
-                     + ' — contrôle Apave ' + etat
+                     + ' — contrôle de conformité ' + etat
                      + '   [travaux réalisés le ' + c.travaux + ', soit J+' + c.jours + ']';
             }).join('\n');
             const corps =
-'Rappel automatique — contrôles électriques Apave (CEP)\n' +
+'Rappel automatique — mises en conformité électrique (CEP)\n' +
 '==========================================================\n\n' +
 aAlerter.length + ' client(s) arrivent à échéance de leur contrôle annuel\n' +
 '(300 jours ou plus depuis la réalisation des travaux) :\n\n' +
 lignes + '\n\n' +
-'Pensez à relancer le cycle Apave pour ces clients\n' +
+'Pensez à relancer le cycle de mise en conformité pour ces clients\n' +
 '(nouveau rapport → devis → travaux).\n\n' +
 '— Message envoyé automatiquement par l\'outil Bon d\'intervention.';
             await transporter.sendMail({
-                from: '"CEP — Suivi Apave" <' + SMTP_USER + '>',
+                from: '"CEP — Mise en conformité" <' + SMTP_USER + '>',
                 to: DEST,
-                subject: '⚠ Apave — ' + aAlerter.length + ' client(s) à relancer',
+                subject: '⚠ Mise en conformité — ' + aAlerter.length + ' client(s) à relancer',
                 text: corps
             });
             emailEnvoye = true;
