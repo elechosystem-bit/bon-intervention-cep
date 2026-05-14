@@ -6711,6 +6711,16 @@
       "rue": "35, rue des Abbesses"
     },
     {
+      "id": 1191346524160,
+      "nom": "LE SARMENT DE MONTMARTRE - SAS VIE",
+      "email": "",
+      "telephone": "",
+      "adresse": "62 Rue du Mont Cenis, 75018, Paris",
+      "ville": "Paris",
+      "codePostal": "75018",
+      "rue": "62 Rue du Mont Cenis"
+    },
+    {
       "id": 248733303,
       "nom": "LE SEGUR",
       "email": "",
@@ -12031,6 +12041,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1203,
-  "syncDate": "2026-05-13T05:16:39Z"
+  "total": 1204,
+  "syncDate": "2026-05-14T05:16:08Z"
 }
