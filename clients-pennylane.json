@@ -1691,6 +1691,16 @@
       "rue": "15 Place du Marché, 92370 Chaville"
     },
     {
+      "id": 1194752475136,
+      "nom": "Blossom Arms",
+      "email": "",
+      "telephone": "",
+      "adresse": "17 Rue Guy Môquet, 75017 Paris, 75017, Paris",
+      "ville": "Paris",
+      "codePostal": "75017",
+      "rue": "17 Rue Guy Môquet, 75017 Paris"
+    },
+    {
       "id": 260054859,
       "nom": "Brasserie Bohème",
       "email": "",
@@ -12041,6 +12051,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1204,
-  "syncDate": "2026-05-15T05:17:33Z"
+  "total": 1205,
+  "syncDate": "2026-05-16T05:04:48Z"
 }
