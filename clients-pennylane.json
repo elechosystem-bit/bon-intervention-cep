@@ -243,7 +243,7 @@
     {
       "id": 248733315,
       "nom": "ALIZE - MC DONALD'S ST PIERRE LES NEMOURS",
-      "email": "",
+      "email": "a.mathieu@elechosystem.com",
       "telephone": "",
       "adresse": "2, rue du Port, 77140, Saint-Pierre-lès-Nemours",
       "ville": "Saint-Pierre-lès-Nemours",
@@ -1681,6 +1681,16 @@
       "rue": "26, rue Hervet"
     },
     {
+      "id": 1197207453696,
+      "nom": "Bistro Renaissance",
+      "email": "",
+      "telephone": "",
+      "adresse": "112 Rue Championnet, 75018 Paris, 75018, Paris",
+      "ville": "Paris",
+      "codePostal": "75018",
+      "rue": "112 Rue Championnet, 75018 Paris"
+    },
+    {
       "id": 261107967,
       "nom": "Bistrot du Marché - ALBANOLA",
       "email": "bistrotdumarche.chaville@gmail.com",
@@ -1689,16 +1699,6 @@
       "ville": "Chaville",
       "codePostal": "92370",
       "rue": "15 Place du Marché, 92370 Chaville"
-    },
-    {
-      "id": 1194752475136,
-      "nom": "Blossom Arms",
-      "email": "",
-      "telephone": "",
-      "adresse": "17 Rue Guy Môquet, 75017 Paris, 75017, Paris",
-      "ville": "Paris",
-      "codePostal": "75017",
-      "rue": "17 Rue Guy Môquet, 75017 Paris"
     },
     {
       "id": 260054859,
@@ -7211,6 +7211,16 @@
       "rue": "30, boulevard Sébastopol"
     },
     {
+      "id": 1196164341760,
+      "nom": "Le Campus",
+      "email": "",
+      "telephone": "",
+      "adresse": "19 Avenue de Saint-Mandé, 75012 Paris, 75012, Paris",
+      "ville": "Paris",
+      "codePostal": "75012",
+      "rue": "19 Avenue de Saint-Mandé, 75012 Paris"
+    },
+    {
       "id": 255248681,
       "nom": "Le Rapido - 2CO",
       "email": "direction.lerapido@gmail.com",
@@ -8201,20 +8211,10 @@
       "rue": "Avenue Charles de Gaulle"
     },
     {
-      "id": 248732710,
-      "nom": "MC DONALD'S MOISSY CRAMAYEL - MOYSIS SD942",
-      "email": "moysis@pdf.basware.com",
-      "telephone": "0164139685",
-      "adresse": "avenue André Ampère, 77550, Moissy-Cramayel",
-      "ville": "Moissy-Cramayel",
-      "codePostal": "77550",
-      "rue": "avenue André Ampère"
-    },
-    {
       "id": 127446896,
-      "nom": "MC DONALD'S MOISSY CRAMAYEL - MOYSIS SD942",
+      "nom": "MC DONALD'S MOISSY CRAMAYEL - SD942",
       "email": "moysis@pdf.basware.com",
-      "telephone": "0164139685",
+      "telephone": "+33 1 64 13 96 85",
       "adresse": "avenue André Ampère, 77550, Moissy-Cramayel",
       "ville": "Moissy-Cramayel",
       "codePostal": "77550",
@@ -8494,7 +8494,7 @@
       "id": 248732975,
       "nom": "MC DONALD'S SURESNES (AGOR)",
       "email": "comptabilite@mcdo-suresnes.com",
-      "telephone": "0184207345",
+      "telephone": "+33 1 84 20 73 45",
       "adresse": "1, rue Berthelot, 92150, Suresnes",
       "ville": "Suresnes",
       "codePostal": "92150",
@@ -8949,6 +8949,26 @@
       "ville": "Paris",
       "codePostal": "75016",
       "rue": "106, avenue Mozart"
+    },
+    {
+      "id": 1196526854144,
+      "nom": "McDonald's Auneaux",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
+    },
+    {
+      "id": 1196516057088,
+      "nom": "McDonald's Auneaux",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
     },
     {
       "id": 248732740,
@@ -11581,6 +11601,16 @@
       "rue": "A compléter"
     },
     {
+      "id": 1194752475136,
+      "nom": "THE BLOSSOM ARMS",
+      "email": "theblossomarms@gmail.com",
+      "telephone": "",
+      "adresse": "17 RUE GUY MOQUET, 75017, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75017",
+      "rue": "17 RUE GUY MOQUET"
+    },
+    {
       "id": 248733442,
       "nom": "THE CAMBRIDGE PUBLIC HOUSE",
       "email": "hugo@thecambridge.paris",
@@ -12051,6 +12081,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1205,
-  "syncDate": "2026-05-18T05:21:48Z"
+  "total": 1208,
+  "syncDate": "2026-05-19T05:19:41Z"
 }
