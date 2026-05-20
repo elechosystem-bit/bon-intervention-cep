@@ -2542,7 +2542,7 @@
     },
     {
       "id": 248733181,
-      "nom": "CEP COMPAGNIE ELECTRICITE PARISIENNE",
+      "nom": "CEP 75 - COMPAGNIE ELECTRICITE PARISIENNE",
       "email": "compta@cep75.fr",
       "telephone": "",
       "adresse": "6, rue de Metz, 94240, L'Haÿ-les-Roses",
@@ -8902,7 +8902,7 @@
     },
     {
       "id": 248733549,
-      "nom": "MY AUCHAN JUVISY",
+      "nom": "MY AUCHAN JUVISY - MPJ",
       "email": "mpj4940@gmail.com",
       "telephone": "",
       "adresse": "6, rue des Gaulois, 91260, Juvisy-sur-Orge",
@@ -12082,5 +12082,5 @@
     }
   ],
   "total": 1208,
-  "syncDate": "2026-05-19T05:19:41Z"
+  "syncDate": "2026-05-20T05:20:12Z"
 }
