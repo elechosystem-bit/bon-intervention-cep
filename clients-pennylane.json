@@ -3231,6 +3231,26 @@
       "rue": "À préciser"
     },
     {
+      "id": 1199918116864,
+      "nom": "Café Étienne",
+      "email": "",
+      "telephone": "",
+      "adresse": "14 Rue de Turbigo, 75001 Paris, 75001, Paris",
+      "ville": "Paris",
+      "codePostal": "75001",
+      "rue": "14 Rue de Turbigo, 75001 Paris"
+    },
+    {
+      "id": 1200039194624,
+      "nom": "Capone",
+      "email": "",
+      "telephone": "",
+      "adresse": "8-10 Avenue du Trône, 75012 Paris, 75012, Paris",
+      "ville": "Paris",
+      "codePostal": "75012",
+      "rue": "8-10 Avenue du Trône, 75012 Paris"
+    },
+    {
       "id": 83439916,
       "nom": "Clients - Shine",
       "email": "",
@@ -12081,6 +12101,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1208,
-  "syncDate": "2026-05-20T05:20:12Z"
+  "total": 1210,
+  "syncDate": "2026-05-21T05:23:55Z"
 }
