@@ -243,7 +243,7 @@
     {
       "id": 248733315,
       "nom": "ALIZE - MC DONALD'S ST PIERRE LES NEMOURS",
-      "email": "a.mathieu@elechosystem.com",
+      "email": "svignon282@gmail.com",
       "telephone": "",
       "adresse": "2, rue du Port, 77140, Saint-Pierre-lès-Nemours",
       "ville": "Saint-Pierre-lès-Nemours",
@@ -799,6 +799,16 @@
       "ville": "Paris",
       "codePostal": "75011",
       "rue": "21, rue de Lappe"
+    },
+    {
+      "id": 1202402689024,
+      "nom": "BAR L'IPN",
+      "email": "",
+      "telephone": "",
+      "adresse": "23, rue Mouffetard, 75005 Paris, 75005, Paris",
+      "ville": "Paris",
+      "codePostal": "75005",
+      "rue": "23, rue Mouffetard, 75005 Paris"
     },
     {
       "id": 248733218,
@@ -7233,7 +7243,7 @@
     {
       "id": 1196164341760,
       "nom": "Le Campus",
-      "email": "",
+      "email": "aavchr24@gmail.com",
       "telephone": "",
       "adresse": "19 Avenue de Saint-Mandé, 75012 Paris, 75012, Paris",
       "ville": "Paris",
@@ -12101,6 +12111,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1210,
-  "syncDate": "2026-05-21T05:23:55Z"
+  "total": 1211,
+  "syncDate": "2026-05-22T05:19:56Z"
 }
