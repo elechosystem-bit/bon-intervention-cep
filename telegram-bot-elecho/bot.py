@@ -432,9 +432,10 @@ async def handle_refuse(query, context: ContextTypes.DEFAULT_TYPE):
     })
 
     # Marquer le bon comme refuse dans Firestore (sinon il reste compte
-    # comme "a valider" dans le rappel quotidien et dans l'admin)
+    # comme "a valider" dans le rappel quotidien et dans l'admin).
+    # Orthographe "refuse" sans accent : coherence avec l'existant.
     try:
-        update_bon_statut(bon_id, "refusé")
+        update_bon_statut(bon_id, "refuse")
     except Exception as statut_err:
         logger.error(f"Erreur mise a jour statut refuse: {statut_err}")
 
