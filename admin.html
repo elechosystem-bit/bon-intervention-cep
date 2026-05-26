@@ -3059,14 +3059,17 @@
                 bonsUniques.forEach(bon => {
                 const statut = bon.statut || 'en_attente';
                 const estValide = statut === 'validé' || statut === 'valide';
-                // Par défaut on n'affiche que les bons à faire ; les bons envoyés en compta sont masqués
-                if (estValide && !afficherEnvoyesCompta) return;
+                const estRefuse = statut === 'refusé' || statut === 'refuse';
+                // Par défaut on n'affiche que les bons à faire ; les bons envoyés en compta et refusés sont masqués
+                if ((estValide || estRefuse) && !afficherEnvoyesCompta) return;
                 const tr = document.createElement('tr');
                 tr.setAttribute('data-bon-id', bon.id);
 
-                // Badge pour les bons validés
-                const badgeStatut = estValide 
+                // Badge selon le statut
+                const badgeStatut = estValide
                     ? '<span style="background:#48bb78;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;">✓ Envoyé à la compta</span>'
+                    : estRefuse
+                    ? '<span style="background:#e53e3e;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;">✗ Refusé</span>'
                     : '<span style="background:#f6ad55;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-right:4px;">En attente</span>';
                 
                 // Bouton supprimer selon le statut

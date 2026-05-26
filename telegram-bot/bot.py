@@ -431,6 +431,13 @@ async def handle_refuse(query, context: ContextTypes.DEFAULT_TYPE):
         "timestamp": datetime.now().isoformat(),
     })
 
+    # Marquer le bon comme refuse dans Firestore (sinon il reste compte
+    # comme "a valider" dans le rappel quotidien et dans l'admin)
+    try:
+        update_bon_statut(bon_id, "refusé")
+    except Exception as statut_err:
+        logger.error(f"Erreur mise a jour statut refuse: {statut_err}")
+
     bon_data = get_bon(bon_id)
     if bon_data:
         # Envoyer email compta avec bandeau REFUSE
