@@ -884,14 +884,31 @@ def main():
     _app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
+async def reinit_firebase_listener():
+    """Re-init periodique du listener Firestore. Necessaire car Google envoie
+    parfois un GOAWAY (too_many_pings) qui tue le listener silencieusement."""
+    try:
+        from firebase_listener import stop_listener as _stop, listen_for_signed_bons as _listen
+        try:
+            _stop()
+        except Exception:
+            pass
+        _listen(on_new_signed_bon)
+        logger.info("Listener Firestore re-initialise (preventif anti-GOAWAY)")
+    except Exception as e:
+        logger.error(f"Echec reinit listener Firestore : {e}")
+
+
 async def _post_init(application: Application):
     """Called after the application is initialized - start Firebase listener."""
     global _loop
     _loop = asyncio.get_running_loop()
 
-    # Schedule daily summary at 18h (must be started inside the event loop)
+    # Schedule daily summary at 18h + re-init du listener toutes les 30 min
+    # pour eviter qu'un GOAWAY de Firestore tue le listener pour de bon.
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_daily_summary, "cron", hour=18, minute=0)
+    scheduler.add_job(reinit_firebase_listener, "interval", minutes=30)
     scheduler.start()
 
     listen_for_signed_bons(on_new_signed_bon)
