@@ -44,7 +44,9 @@ from config import (
     TVA_RATE,
 )
 from firebase_listener import (
+    BONS_COLLECTION,
     get_bon,
+    get_db,
     init_firebase,
     is_bon_signed,
     listen_for_signed_bons,
@@ -207,6 +209,7 @@ async def send_bon_to_admin(bon_id: str, bon_data: dict):
 
     sent_any = False
     last_message_id = 0
+    envois = []  # liste {chat_id, message_id} pour pouvoir retirer les boutons plus tard
     for admin_id in TELEGRAM_ADMIN_IDS:
         try:
             msg = await _app.bot.send_message(
@@ -217,11 +220,21 @@ async def send_bon_to_admin(bon_id: str, bon_data: dict):
             )
             sent_any = True
             last_message_id = msg.message_id
+            envois.append({"chat_id": admin_id, "message_id": msg.message_id})
             logger.info(f"Bon {bon_id} envoye a admin {admin_id} (message_id={msg.message_id})")
         except Exception as e:
             logger.warning(f"Echec envoi bon {bon_id} a admin {admin_id} : {e}")
     if sent_any:
         bons_envoyes[bon_id] = last_message_id
+        # Stocker dans Firestore pour que notif-telegram puisse retirer les boutons
+        # quand le bon est valide / refuse depuis l'admin web.
+        try:
+            db = get_db()
+            db.collection(BONS_COLLECTION).document(bon_id).update({
+                "telegram_messages": envois,
+            })
+        except Exception as e:
+            logger.warning(f"Echec stockage telegram_messages pour {bon_id} : {e}")
 
 
 # ── Command handlers ────────────────────────────────────────────────────
@@ -332,6 +345,20 @@ async def handle_validate(query, context: ContextTypes.DEFAULT_TYPE):
     """Validate a bon and create a Pennylane draft."""
     bon_id = query.data.replace("valid_", "")
 
+    # Anti-doublon Firestore : si le bon a deja ete traite (valide depuis admin
+    # web par exemple, ou valide via Telegram avant un restart), on refuse et
+    # on retire les boutons. Survit aux redemarrages du bot.
+    try:
+        bon_actuel = get_bon(bon_id)
+        statut_actuel = (bon_actuel.get("statut") or "").lower() if bon_actuel else ""
+        if statut_actuel in ("valide", "validé", "refuse", "refusé"):
+            await query.edit_message_reply_markup(reply_markup=None)
+            etat = "deja envoye en compta" if statut_actuel in ("valide", "validé") else "deja refuse"
+            await query.message.reply_text(f"Bon {bon_id} : {etat}. Action bloquee.")
+            return
+    except Exception as e:
+        logger.warning(f"Check statut Firestore avant validation {bon_id} : {e}")
+
     # Anti-doublon: check if draft already created
     if bon_id in brouillons_crees:
         await query.edit_message_reply_markup(reply_markup=None)
@@ -435,6 +462,18 @@ async def handle_validate(query, context: ContextTypes.DEFAULT_TYPE):
 async def handle_refuse(query, context: ContextTypes.DEFAULT_TYPE):
     """Refuse a bon - send to accounting with NE PAS FACTURER, no Pennylane draft."""
     bon_id = query.data.replace("refus_", "")
+
+    # Anti-doublon Firestore : meme principe que handle_validate (survit aux restarts).
+    try:
+        bon_actuel = get_bon(bon_id)
+        statut_actuel = (bon_actuel.get("statut") or "").lower() if bon_actuel else ""
+        if statut_actuel in ("valide", "validé", "refuse", "refusé"):
+            await query.edit_message_reply_markup(reply_markup=None)
+            etat = "deja envoye en compta" if statut_actuel in ("valide", "validé") else "deja refuse"
+            await query.message.reply_text(f"Bon {bon_id} : {etat}. Action bloquee.")
+            return
+    except Exception as e:
+        logger.warning(f"Check statut Firestore avant refus {bon_id} : {e}")
 
     # Log refusal
     log_action(bon_id, "refuse", {

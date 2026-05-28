@@ -2888,6 +2888,7 @@
                     // Notification Telegram (best effort - n'echoue pas si Telegram tombe)
                     try {
                         const notifBody = {
+                            bonId: currentBonId,
                             numero: numeroBon,
                             client: client,
                             montant: totalTTC,
