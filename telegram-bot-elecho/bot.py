@@ -203,6 +203,12 @@ async def send_bon_to_admin(bon_id: str, bon_data: dict):
     """Send bon summary to all admins on Telegram (Mathieu, Frederic, Aurele...)."""
     if bon_id in bons_envoyes:
         return
+    # Si Firestore montre que le bon a deja ete notifie sur Telegram (presence
+    # de telegram_messages), on ne renvoie pas (utile apres restart du bot,
+    # qui perd la memoire mais retrouve l'info dans Firestore).
+    if bon_data.get("telegram_messages"):
+        bons_envoyes[bon_id] = 0
+        return
 
     summary = format_bon_summary(bon_id, bon_data)
     keyboard = get_action_keyboard(bon_id)
