@@ -3881,6 +3881,16 @@
       "rue": "17 RUE MICHEL CHASLES"
     },
     {
+      "id": 125164947,
+      "nom": "GASTON ET MARLO - SARL ECIB",
+      "email": "eric.coursieres@gmail.com",
+      "telephone": "",
+      "adresse": "4, boulevard Saint Denis, 75010, Paris",
+      "ville": "Paris",
+      "codePostal": "75010",
+      "rue": "4, boulevard Saint Denis"
+    },
+    {
       "id": 248733499,
       "nom": "GLOBALEASE",
       "email": "",
@@ -6469,16 +6479,6 @@
       "ville": "Paris",
       "codePostal": "75014",
       "rue": "3, rue de la Gaité"
-    },
-    {
-      "id": 125164947,
-      "nom": "LE PLOMB DU CANTAL RIVE DROITE - SARL ECIB",
-      "email": "eric.coursieres@gmail.com",
-      "telephone": "",
-      "adresse": "4, boulevard Saint Denis, 75010, Paris",
-      "ville": "Paris",
-      "codePostal": "75010",
-      "rue": "4, boulevard Saint Denis"
     },
     {
       "id": 125164939,
@@ -12112,5 +12112,5 @@
     }
   ],
   "total": 1211,
-  "syncDate": "2026-05-27T05:28:37Z"
+  "syncDate": "2026-05-28T05:23:37Z"
 }
