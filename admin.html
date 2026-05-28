@@ -3254,6 +3254,12 @@
         }
 
         async function chargerBon(id) {
+            // Warm-up de la fonction Vercel send-email pour eviter le cold start
+            // au moment du clic "Envoyer en compta" (fire-and-forget, n'attend pas)
+            try {
+                fetch(SMTP_API_URL, { method: 'OPTIONS', mode: 'no-cors' }).catch(function () {});
+                fetch('https://bon-intervention-cep.vercel.app/api/notif-telegram', { method: 'OPTIONS', mode: 'no-cors' }).catch(function () {});
+            } catch (e) { /* silencieux */ }
             try {
                 const doc = await db.collection(getCollectionPath('bons')).doc(id).get();
                 if (!doc.exists) {
