@@ -1,10 +1,11 @@
 // Notification Telegram quand un bon est valide en compta depuis l'admin web.
 //
-// Appelle par admin.html juste apres l'envoi du mail comptabilite. Fait 2 choses :
-//   1. Retire les boutons "Valider / Refuser / Modifier" du message Telegram
-//      d'origine (s'il y en a) -- pour figer le bon dans la conv.
-//   2. Envoie un nouveau message de confirmation a tous les admins
-//      ("Bon envoye en compta -- ce bon ne peut plus etre modifie").
+// Appelle par admin.html juste apres l'envoi du mail comptabilite.
+// Pour chaque message Telegram d'origine (un par admin destinataire),
+// EDITE le texte pour afficher "✅ BON VALIDE" et retire les boutons
+// "Valider / Refuser / Modifier" (idem comportement clic Telegram natif).
+// Si aucun message d'origine n'est trouve (bon ancien sans telegram_messages),
+// envoie un nouveau message court a tous les admins en fallback.
 //
 // Variables d'environnement attendues (cote Vercel) :
 //   TELEGRAM_BOT_TOKEN_CEP     - token du bot @BonInterCEP_bot
@@ -41,15 +42,21 @@ async function lireTelegramMessages(idToken, societeId, bonId) {
     }).filter(Boolean);
 }
 
-async function retirerBoutons(token, chatId, messageId) {
-    const r = await fetch('https://api.telegram.org/bot' + token + '/editMessageReplyMarkup', {
+async function editerMessage(token, chatId, messageId, texte) {
+    const r = await fetch('https://api.telegram.org/bot' + token + '/editMessageText', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } })
+        body: JSON.stringify({
+            chat_id: chatId,
+            message_id: messageId,
+            text: texte,
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard: [] }
+        })
     });
     if (!r.ok) {
         const err = await r.text();
-        throw new Error('editMessageReplyMarkup ' + r.status + ' : ' + err);
+        throw new Error('editMessageText ' + r.status + ' : ' + err);
     }
     return r.json();
 }
@@ -82,7 +89,6 @@ export default async function handler(req, res) {
         const client = body.client || '';
         const montant = body.montant || '';
         const technicien = body.technicien || '';
-        const date = body.date || '';
 
         if (!numero) return res.status(400).json({ error: 'numero manquant' });
 
@@ -92,59 +98,58 @@ export default async function handler(req, res) {
             : process.env.TELEGRAM_BOT_TOKEN_CEP;
         if (!token) return res.status(500).json({ error: 'Token Telegram manquant pour ' + societeId });
 
-        const adminsRaw = process.env.TELEGRAM_ADMIN_IDS || '';
-        const adminIds = adminsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-        if (adminIds.length === 0) return res.status(500).json({ error: 'TELEGRAM_ADMIN_IDS vide' });
+        // Heure FR pour l'affichage
+        const heureFr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+        const texteEdit =
+            '✅ <b>BON VALIDÉ — ' + heureFr + '</b>\n' +
+            '\n' +
+            'N° ' + numero + (client ? ' (' + client + ')' : '') + (montant ? ' — ' + montant : '') + '\n' +
+            (technicien ? 'Tech : ' + technicien + '\n' : '') +
+            '\n' +
+            '<i>Envoyé en compta depuis l\'admin web.</i>';
 
-        // 1. Retirer les boutons des messages Telegram d'origine (best effort)
-        let boutonsRetires = 0;
-        let boutonsEchecs = 0;
+        // 1. Editer chaque message Telegram d'origine (boutons retires + texte remplace)
+        let editsOk = 0;
+        let editsKo = 0;
+        let messages = [];
         if (bonId) {
             try {
                 const idToken = await getAnonToken();
-                const messages = await lireTelegramMessages(idToken, societeId, bonId);
+                messages = await lireTelegramMessages(idToken, societeId, bonId);
                 for (const m of messages) {
                     try {
-                        await retirerBoutons(token, m.chat_id, m.message_id);
-                        boutonsRetires++;
+                        await editerMessage(token, m.chat_id, m.message_id, texteEdit);
+                        editsOk++;
                     } catch (e) {
-                        // Si "message is not modified" ou "message to edit not found", pas grave
-                        boutonsEchecs++;
+                        editsKo++;
                     }
                 }
             } catch (e) {
-                console.warn('Retrait boutons impossible:', e.message);
+                console.warn('Edition messages impossible:', e.message);
             }
         }
 
-        // 2. Envoyer le message de confirmation a tous les admins
-        const societeNom = societeId === 'elechosystem' ? 'Elecho' : 'CEP';
-        const msg =
-            '✅ <b>Bon envoyé en compta — ' + societeNom + '</b>\n' +
-            '\n' +
-            '<b>N° :</b> ' + numero + '\n' +
-            '<b>Client :</b> ' + client + '\n' +
-            (technicien ? '<b>Tech :</b> ' + technicien + '\n' : '') +
-            (date ? '<b>Date :</b> ' + date + '\n' : '') +
-            (montant ? '<b>TTC :</b> ' + montant + '\n' : '') +
-            '\n' +
-            '<i>Validé depuis l\'admin web — ce bon ne peut plus être modifié.</i>';
-
-        const resultats = [];
-        for (const id of adminIds) {
-            try {
-                await envoyerTelegram(token, id, msg);
-                resultats.push({ id: id, ok: true });
-            } catch (e) {
-                resultats.push({ id: id, ok: false, err: e.message });
+        // 2. Fallback : si aucun message d'origine connu (bon ancien) -> envoyer
+        //    un nouveau message a tous les admins, sinon ils ne sauraient pas.
+        let fallbackResultats = [];
+        if (editsOk === 0) {
+            const adminsRaw = process.env.TELEGRAM_ADMIN_IDS || '';
+            const adminIds = adminsRaw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+            for (const id of adminIds) {
+                try {
+                    await envoyerTelegram(token, id, texteEdit);
+                    fallbackResultats.push({ id: id, ok: true });
+                } catch (e) {
+                    fallbackResultats.push({ id: id, ok: false, err: e.message });
+                }
             }
         }
-        const success = resultats.some(function (r) { return r.ok; });
+
         return res.status(200).json({
-            ok: success,
-            boutonsRetires: boutonsRetires,
-            boutonsEchecs: boutonsEchecs,
-            resultats: resultats
+            ok: editsOk > 0 || fallbackResultats.some(function (r) { return r.ok; }),
+            editsOk: editsOk,
+            editsKo: editsKo,
+            fallback: fallbackResultats
         });
     } catch (e) {
         console.error('notif-telegram error:', e);
