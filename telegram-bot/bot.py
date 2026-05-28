@@ -37,6 +37,7 @@ from config import (
     ALERT_THRESHOLD_PER_HOUR,
     MAX_DRAFTS_PER_DAY,
     TELEGRAM_ADMIN_ID,
+    TELEGRAM_ADMIN_IDS,
     TELEGRAM_BOT_TOKEN,
     TELEGRAM_SURVEILLANCE_CHAT_ID,
     TEST_MODE,
@@ -84,7 +85,7 @@ daily_validated: list[dict] = []
 
 # ── Helpers ─────────────────────────────────────────────────────────────
 def is_admin(user_id: int) -> bool:
-    return user_id == TELEGRAM_ADMIN_ID
+    return user_id in TELEGRAM_ADMIN_IDS
 
 
 def parse_price_str(value) -> float:
@@ -197,21 +198,30 @@ def on_new_signed_bon(bon_id: str, bon_data: dict):
 
 
 async def send_bon_to_admin(bon_id: str, bon_data: dict):
-    """Send bon summary to admin on Telegram."""
+    """Send bon summary to all admins on Telegram (Mathieu, Frederic, Aurele...)."""
     if bon_id in bons_envoyes:
         return
 
     summary = format_bon_summary(bon_id, bon_data)
     keyboard = get_action_keyboard(bon_id)
 
-    msg = await _app.bot.send_message(
-        chat_id=TELEGRAM_ADMIN_ID,
-        text=f"Nouveau bon signe !\n\n<pre>{summary}</pre>",
-        parse_mode="HTML",
-        reply_markup=keyboard,
-    )
-    bons_envoyes[bon_id] = msg.message_id
-    logger.info(f"Bon {bon_id} envoye a l'admin (message_id={msg.message_id})")
+    sent_any = False
+    last_message_id = 0
+    for admin_id in TELEGRAM_ADMIN_IDS:
+        try:
+            msg = await _app.bot.send_message(
+                chat_id=admin_id,
+                text=f"Nouveau bon signe !\n\n<pre>{summary}</pre>",
+                parse_mode="HTML",
+                reply_markup=keyboard,
+            )
+            sent_any = True
+            last_message_id = msg.message_id
+            logger.info(f"Bon {bon_id} envoye a admin {admin_id} (message_id={msg.message_id})")
+        except Exception as e:
+            logger.warning(f"Echec envoi bon {bon_id} a admin {admin_id} : {e}")
+    if sent_any:
+        bons_envoyes[bon_id] = last_message_id
 
 
 # ── Command handlers ────────────────────────────────────────────────────
@@ -818,7 +828,7 @@ def main():
 
     # Text message handler — modification flow OR free text search (admin only)
     _app.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND & filters.User(TELEGRAM_ADMIN_ID),
+        filters.TEXT & ~filters.COMMAND & filters.User(TELEGRAM_ADMIN_IDS),
         handle_free_text,
     ))
 

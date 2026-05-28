@@ -3,9 +3,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Telegram
+# Telegram - liste d'admins (CSV). Tombe sur TELEGRAM_ADMIN_ID si la nouvelle var n'existe pas (retro-compat).
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_ADMIN_ID = int(os.getenv("TELEGRAM_ADMIN_ID", "0"))
+_admin_csv = os.getenv("TELEGRAM_ADMIN_IDS", os.getenv("TELEGRAM_ADMIN_ID", "0"))
+TELEGRAM_ADMIN_IDS = [int(s.strip()) for s in _admin_csv.split(",") if s.strip().lstrip("-").isdigit()]
+# Garde l'ancien nom pour retro-compat (= premier ID, utilise quand un seul destinataire est attendu)
+TELEGRAM_ADMIN_ID = TELEGRAM_ADMIN_IDS[0] if TELEGRAM_ADMIN_IDS else 0
 TELEGRAM_SURVEILLANCE_CHAT_ID = os.getenv("TELEGRAM_SURVEILLANCE_CHAT_ID")
 
 # Pennylane
