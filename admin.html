@@ -2884,7 +2884,32 @@
                     
                     console.log('✅ Email envoyé avec succès à la comptabilité');
                     showToast('Email envoyé à la comptabilité');
-                    
+
+                    // Notification Telegram (best effort - n'echoue pas si Telegram tombe)
+                    try {
+                        const notifBody = {
+                            numero: numeroBon,
+                            client: client,
+                            montant: totalTTC,
+                            technicien: technicien,
+                            date: date,
+                            societe: societeComptaId
+                        };
+                        const notifRes = await fetch('https://bon-intervention-cep.vercel.app/api/notif-telegram', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(notifBody)
+                        });
+                        if (notifRes.ok) {
+                            console.log('Notification Telegram envoyée');
+                        } else {
+                            const txt = await notifRes.text();
+                            console.warn('Notification Telegram echouee:', notifRes.status, txt);
+                        }
+                    } catch (notifErr) {
+                        console.warn('Notification Telegram impossible:', notifErr);
+                    }
+
                 } catch (pdfError) {
                     console.error('❌ ERREUR lors de la génération/envoi du PDF:', pdfError);
                     console.error('Type d\'erreur:', typeof pdfError);
