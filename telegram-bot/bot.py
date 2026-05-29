@@ -884,6 +884,77 @@ def main():
     _app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
+async def editer_messages_apres_validation_refus():
+    """Job periodique : pour chaque bon valide/refuse qui a des messages Telegram
+    non encore edites, edite ces messages avec V vert ou X rouge + retrait des
+    boutons. Couvre les validations/refus faits via TELEGRAM ou ADMIN WEB.
+    Tourne toutes les 30 secondes."""
+    try:
+        from firebase_listener import get_bons_a_editer, marquer_telegram_edite
+        bons = get_bons_a_editer()
+        if not bons:
+            return
+        for b in bons:
+            bon_id = b["id"]
+            data = b["data"]
+            statut = b["statut"].lower()
+            est_refus = statut in ("refuse", "refusé")
+            heure = datetime.now().strftime("%H:%M")
+            numero = data.get("numero", bon_id)
+            client = data.get("client", "?")
+            montant = data.get("totalTTC", "")
+            technicien = data.get("technicien", "")
+
+            if est_refus:
+                entete = f"❌ <b>BON REFUSE — {heure}</b>"
+                pied = "<i>Refus enregistre. Ne pas facturer.</i>"
+            else:
+                entete = f"✅ <b>BON VALIDE — {heure}</b>"
+                pied = "<i>Envoye en compta.</i>"
+
+            texte = (
+                f"{entete}\n\n"
+                f"N° {numero} ({client})"
+                + (f" — {montant}" if montant else "")
+                + "\n"
+                + (f"Tech : {technicien}\n" if technicien else "")
+                + f"\n{pied}"
+            )
+
+            telegram_messages = data.get("telegram_messages", [])
+            edited_count = 0
+            for m in telegram_messages:
+                if not isinstance(m, dict):
+                    continue
+                chat_id = m.get("chat_id")
+                message_id = m.get("message_id")
+                if not chat_id or not message_id:
+                    continue
+                try:
+                    await _app.bot.edit_message_text(
+                        chat_id=int(chat_id),
+                        message_id=int(message_id),
+                        text=texte,
+                        parse_mode="HTML",
+                        reply_markup=None,
+                    )
+                    edited_count += 1
+                except Exception as e:
+                    # "message is not modified" ou "message to edit not found" : pas grave
+                    if "not modified" not in str(e).lower() and "not found" not in str(e).lower():
+                        logger.warning(f"Edit msg echec bon {bon_id} chat {chat_id}: {e}")
+
+            # Marquer comme traite pour ne pas re-editer en boucle
+            try:
+                marquer_telegram_edite(bon_id)
+                if edited_count > 0:
+                    logger.info(f"Bon {bon_id} : {edited_count}/{len(telegram_messages)} messages edites ({statut})")
+            except Exception as e:
+                logger.warning(f"Marquage telegram_edite echec bon {bon_id}: {e}")
+    except Exception as e:
+        logger.error(f"editer_messages_apres_validation_refus echec : {e}")
+
+
 async def _post_init(application: Application):
     """Called after the application is initialized - start Firebase listener.
     Note : pas de reinit interne du listener -- ca pose des problemes de thread
@@ -893,9 +964,11 @@ async def _post_init(application: Application):
     global _loop
     _loop = asyncio.get_running_loop()
 
-    # Schedule daily summary at 18h
+    # Schedule daily summary at 18h + edition des messages Telegram apres
+    # validation/refus toutes les 30 sec (couvre Telegram + admin web)
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_daily_summary, "cron", hour=18, minute=0)
+    scheduler.add_job(editer_messages_apres_validation_refus, "interval", seconds=30)
     scheduler.start()
 
     listen_for_signed_bons(on_new_signed_bon)

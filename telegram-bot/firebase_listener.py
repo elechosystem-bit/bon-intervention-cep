@@ -128,6 +128,32 @@ def update_bon_produits(bon_id: str, produits: list):
     })
 
 
+def get_bons_a_editer():
+    """Retourne les bons valide/refuse qui ont des messages Telegram non encore edites.
+    Sert au job qui edite ces messages (V vert ou X rouge + retrait des boutons)."""
+    db = get_db()
+    docs_a_editer = []
+    for statut in ("validé", "valide", "refuse", "refusé"):
+        try:
+            for doc in db.collection(BONS_COLLECTION).where("statut", "==", statut).stream():
+                data = doc.to_dict()
+                telegram_messages = data.get("telegram_messages")
+                if not telegram_messages or not isinstance(telegram_messages, list):
+                    continue
+                if data.get("telegram_edite"):
+                    continue
+                docs_a_editer.append({"id": doc.id, "data": data, "statut": statut})
+        except Exception as e:
+            logger.warning(f"Lecture bons statut={statut}: {e}")
+    return docs_a_editer
+
+
+def marquer_telegram_edite(bon_id):
+    """Marque un bon comme ayant ses messages Telegram edites apres validation/refus."""
+    db = get_db()
+    db.collection(BONS_COLLECTION).document(bon_id).update({"telegram_edite": True})
+
+
 def get_bon(bon_id: str) -> dict | None:
     """Fetch a bon document by ID."""
     db = get_db()
