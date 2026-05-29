@@ -1005,11 +1005,9 @@ async def _post_init(application: Application):
         cleanup_initial_bons_valides_refuses()
     except Exception as e:
         logger.warning(f"Cleanup initial echoue (non bloquant) : {e}")
-    # Cleanup en_attente : eviter le re-push des bons existants apres restart.
-    try:
-        cleanup_initial_bons_en_attente()
-    except Exception as e:
-        logger.warning(f"Cleanup en_attente echoue (non bloquant) : {e}")
+    # PAS de cleanup en_attente : il etait trop agressif, il bloquait les vrais
+    # MODIFIED. La protection contre le re-push est deja assuree par le champ
+    # telegram_messages stocke des le 1er envoi reussi.
 
     # Schedule daily summary at 18h + edition des messages Telegram apres
     # validation/refus toutes les 30 sec (couvre Telegram + admin web)
