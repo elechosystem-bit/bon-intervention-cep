@@ -89,6 +89,7 @@ export default async function handler(req, res) {
         const client = body.client || '';
         const montant = body.montant || '';
         const technicien = body.technicien || '';
+        const action = (body.action || 'valide').toLowerCase();  // 'valide' ou 'refuse'
 
         if (!numero) return res.status(400).json({ error: 'numero manquant' });
 
@@ -100,13 +101,20 @@ export default async function handler(req, res) {
 
         // Heure FR pour l'affichage
         const heureFr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+        const estRefus = action === 'refuse' || action === 'refus';
+        const entete = estRefus
+            ? '❌ <b>BON REFUSÉ — ' + heureFr + '</b>'
+            : '✅ <b>BON VALIDÉ — ' + heureFr + '</b>';
+        const piedDePage = estRefus
+            ? '<i>Refusé depuis l\'admin web — email \"NE PAS FACTURER\" envoyé à la compta.</i>'
+            : '<i>Envoyé en compta depuis l\'admin web.</i>';
         const texteEdit =
-            '✅ <b>BON VALIDÉ — ' + heureFr + '</b>\n' +
+            entete + '\n' +
             '\n' +
             'N° ' + numero + (client ? ' (' + client + ')' : '') + (montant ? ' — ' + montant : '') + '\n' +
             (technicien ? 'Tech : ' + technicien + '\n' : '') +
             '\n' +
-            '<i>Envoyé en compta depuis l\'admin web.</i>';
+            piedDePage;
 
         // 1. Editer chaque message Telegram d'origine (boutons retires + texte remplace)
         let editsOk = 0;

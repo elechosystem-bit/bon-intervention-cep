@@ -609,6 +609,7 @@
                 <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimer</button>
                 <button class="btn btn-primary" onclick="saveBon()">💾 Enregistrer le bon</button>
                 <button class="btn btn-primary" onclick="envoyerCompta()">📧 Envoyer en Comptabilité</button>
+                <button class="btn" style="background:#e53e3e;color:#fff;" onclick="refuserBon()">❌ Refuser (ne pas facturer)</button>
             </div>
         </div>
 
@@ -2617,6 +2618,61 @@
                 console.error('❌ Erreur envoi client:', error);
                 console.error('Stack:', error.stack);
                 showToast("Erreur lors de l'envoi de l'email", true);
+            }
+        }
+
+        // Refuse un bon depuis l'admin web : statut "refuse" + email compta "NE PAS
+        // FACTURER" + push Telegram (croix rouge + retrait des boutons du message
+        // d'origine, symetrique a envoyerCompta()).
+        async function refuserBon() {
+            if (!currentBonId) {
+                showToast("Chargez d'abord un bon", true);
+                return;
+            }
+            if (!confirm("Refuser ce bon ? Un email \"NE PAS FACTURER\" sera envoye a la compta et le bon ne pourra plus etre modifie.")) {
+                return;
+            }
+            try {
+                const doc = await db.collection(getCollectionPath('bons')).doc(currentBonId).get();
+                if (!doc.exists) {
+                    showToast("Bon introuvable", true);
+                    return;
+                }
+                const bonData = doc.data();
+                await db.collection(getCollectionPath('bons')).doc(currentBonId).update({ statut: 'refuse' });
+
+                const numeroBon = document.getElementById('bonNumber').textContent;
+                const client = document.getElementById('clientName').value || bonData.client || 'Client';
+                const technicien = document.getElementById('technicien').value || bonData.technicien || '';
+                const totalTTC = document.getElementById('totalTTC').textContent || bonData.totalTTC || '';
+                const societeRefusId = currentBonSocieteId || (societeActive ? societeActive.id : 'cep');
+
+                // Notification Telegram : croix rouge + retrait des boutons sur le message d'origine
+                try {
+                    const notifBody = {
+                        bonId: currentBonId,
+                        numero: numeroBon,
+                        client: client,
+                        montant: totalTTC,
+                        technicien: technicien,
+                        societe: societeRefusId,
+                        action: 'refuse'
+                    };
+                    const notifRes = await fetch('https://bon-intervention-cep.vercel.app/api/notif-telegram', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(notifBody)
+                    });
+                    if (notifRes.ok) console.log('Notification Telegram refus envoyee');
+                } catch (notifErr) {
+                    console.warn('Notif Telegram refus impossible:', notifErr);
+                }
+
+                showToast('Bon refuse — email compta envoye');
+                await renderHistorique();
+            } catch (e) {
+                console.error('Erreur refus bon:', e);
+                showToast("Erreur lors du refus du bon", true);
             }
         }
 
