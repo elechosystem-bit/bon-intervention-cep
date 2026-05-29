@@ -129,17 +129,17 @@ def update_bon_produits(bon_id: str, produits: list):
 
 
 def get_bons_a_editer():
-    """Retourne les bons valide/refuse qui ont des messages Telegram non encore edites.
-    Sert au job qui edite ces messages (V vert ou X rouge + retrait des boutons)."""
+    """Retourne les bons valide/refuse non encore notifies sur Telegram.
+    Couvre 2 cas :
+      - Bons recents avec telegram_messages : on edite les messages d'origine + push
+      - Bons anciens sans telegram_messages : on envoie juste un push (rattrapage)
+    Sert au job qui notifie de la validation/refus (V vert ou X rouge)."""
     db = get_db()
     docs_a_editer = []
     for statut in ("validé", "valide", "refuse", "refusé"):
         try:
             for doc in db.collection(BONS_COLLECTION).where("statut", "==", statut).stream():
                 data = doc.to_dict()
-                telegram_messages = data.get("telegram_messages")
-                if not telegram_messages or not isinstance(telegram_messages, list):
-                    continue
                 if data.get("telegram_edite"):
                     continue
                 docs_a_editer.append({"id": doc.id, "data": data, "statut": statut})
@@ -152,6 +152,28 @@ def marquer_telegram_edite(bon_id):
     """Marque un bon comme ayant ses messages Telegram edites apres validation/refus."""
     db = get_db()
     db.collection(BONS_COLLECTION).document(bon_id).update({"telegram_edite": True})
+
+
+def cleanup_initial_bons_valides_refuses():
+    """Au demarrage du bot, marquer tous les bons valides/refuses existants
+    comme telegram_edite=true. Evite que le job d'edition envoie un spam de
+    push pour tous les bons valides du passe."""
+    db = get_db()
+    n = 0
+    for statut in ("validé", "valide", "refuse", "refusé"):
+        try:
+            for doc in db.collection(BONS_COLLECTION).where("statut", "==", statut).stream():
+                data = doc.to_dict()
+                if data.get("telegram_edite"):
+                    continue
+                try:
+                    doc.reference.update({"telegram_edite": True})
+                    n += 1
+                except Exception as e:
+                    logger.warning(f"Cleanup bon {doc.id}: {e}")
+        except Exception as e:
+            logger.warning(f"Cleanup lecture statut={statut}: {e}")
+    logger.info(f"Cleanup initial : {n} bons valides/refuses marques comme deja notifies")
 
 
 def get_bon(bon_id: str) -> dict | None:

@@ -45,6 +45,7 @@ from config import (
 )
 from firebase_listener import (
     BONS_COLLECTION,
+    cleanup_initial_bons_valides_refuses,
     get_bon,
     get_db,
     init_firebase,
@@ -923,6 +924,7 @@ async def editer_messages_apres_validation_refus():
 
             telegram_messages = data.get("telegram_messages", [])
             edited_count = 0
+            chat_ids_uniques = set()
             for m in telegram_messages:
                 if not isinstance(m, dict):
                     continue
@@ -930,6 +932,7 @@ async def editer_messages_apres_validation_refus():
                 message_id = m.get("message_id")
                 if not chat_id or not message_id:
                     continue
+                chat_ids_uniques.add(int(chat_id))
                 try:
                     await _app.bot.edit_message_text(
                         chat_id=int(chat_id),
@@ -943,10 +946,33 @@ async def editer_messages_apres_validation_refus():
                     if "not modified" not in str(e).lower() and "not found" not in str(e).lower():
                         logger.warning(f"Edit msg echec bon {bon_id} chat {chat_id}: {e}")
 
+            # Envoyer un nouveau message court (notification sonore).
+            # Si on a des chat_id depuis telegram_messages -> on cible ces admins.
+            # Sinon, fallback : envoi a tous les TELEGRAM_ADMIN_IDS (rattrapage).
+            cibles_push = chat_ids_uniques if chat_ids_uniques else set(TELEGRAM_ADMIN_IDS)
+            push_court = (
+                ("❌" if est_refus else "✅")
+                + " <b>"
+                + ("REFUSE" if est_refus else "VALIDE")
+                + "</b> — N° " + str(numero)
+                + " (" + str(client) + ")"
+                + ((" — " + str(montant)) if montant else "")
+            )
+            push_count = 0
+            for chat_id in cibles_push:
+                try:
+                    await _app.bot.send_message(
+                        chat_id=int(chat_id),
+                        text=push_court,
+                        parse_mode="HTML",
+                    )
+                    push_count += 1
+                except Exception as e:
+                    logger.warning(f"Push notif echec bon {bon_id} chat {chat_id}: {e}")
+
             try:
                 marquer_telegram_edite(bon_id)
-                if edited_count > 0:
-                    logger.info(f"Bon {bon_id} : {edited_count}/{len(telegram_messages)} messages edites ({statut})")
+                logger.info(f"Bon {bon_id} : {edited_count} edites + {push_count} push ({statut})")
             except Exception as e:
                 logger.warning(f"Marquage telegram_edite echec bon {bon_id}: {e}")
     except Exception as e:
@@ -961,6 +987,13 @@ async def _post_init(application: Application):
     """
     global _loop
     _loop = asyncio.get_running_loop()
+
+    # Cleanup one-shot : marquer tous les bons deja valides/refuses comme
+    # deja notifies, pour ne pas envoyer un spam de push a chaque demarrage.
+    try:
+        cleanup_initial_bons_valides_refuses()
+    except Exception as e:
+        logger.warning(f"Cleanup initial echoue (non bloquant) : {e}")
 
     # Schedule daily summary at 18h + edition des messages Telegram apres
     # validation/refus toutes les 30 sec (couvre Telegram + admin web)
