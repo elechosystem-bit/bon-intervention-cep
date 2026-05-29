@@ -7741,16 +7741,6 @@
       "rue": "rue Montchavant"
     },
     {
-      "id": 270601580,
-      "nom": "MC DONALD'S - DELI SAS",
-      "email": "a.chevassus@xlgestion.fr",
-      "telephone": "+33 6 99 05 61 01",
-      "adresse": "4 rue du Donjon, 94300, VINCENNES",
-      "ville": "VINCENNES",
-      "codePostal": "94300",
-      "rue": "4 rue du Donjon"
-    },
-    {
       "id": 248733331,
       "nom": "MC DONALD'S - FAYAR8 SARL - SD1516",
       "email": "1516@net.mcdonalds.fr",
@@ -8331,14 +8321,14 @@
       "rue": "MC DONALD'S PIGNAN"
     },
     {
-      "id": 248732945,
-      "nom": "MC DONALD'S PORTE DOREE (PORTE DE VINCENNES)",
-      "email": "amelie.chevassus@xlgestion.fr",
-      "telephone": "",
-      "adresse": "A compléter, 94300, Vincennes",
-      "ville": "Vincennes",
+      "id": 270601580,
+      "nom": "MC DONALD'S PORTE DORÉE - DELI SAS",
+      "email": "a.chevassus@xlgestion.fr",
+      "telephone": "+33 6 99 05 61 01",
+      "adresse": "4 rue du Donjon, 94300, VINCENNES",
+      "ville": "VINCENNES",
       "codePostal": "94300",
-      "rue": "A compléter"
+      "rue": "4 rue du Donjon"
     },
     {
       "id": 248733035,
@@ -10441,16 +10431,6 @@
       "rue": "39, rue Rivay"
     },
     {
-      "id": 248746623,
-      "nom": "SARL ANCORA RESTAURATION - BIANCO",
-      "email": "",
-      "telephone": "",
-      "adresse": "60, rue Montorgueil, 75002, PARIS",
-      "ville": "PARIS",
-      "codePostal": "75002",
-      "rue": "60, rue Montorgueil"
-    },
-    {
       "id": 248733189,
       "nom": "SARL ATHINA (M. PANDO)",
       "email": "",
@@ -12111,6 +12091,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1211,
-  "syncDate": "2026-05-28T05:23:37Z"
+  "total": 1209,
+  "syncDate": "2026-05-29T05:25:56Z"
 }
