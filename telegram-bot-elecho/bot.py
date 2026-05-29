@@ -45,6 +45,7 @@ from config import (
 )
 from firebase_listener import (
     BONS_COLLECTION,
+    cleanup_initial_bons_en_attente,
     cleanup_initial_bons_valides_refuses,
     get_bon,
     get_db,
@@ -204,10 +205,11 @@ async def send_bon_to_admin(bon_id: str, bon_data: dict):
     """Send bon summary to all admins on Telegram (Mathieu, Frederic, Aurele...)."""
     if bon_id in bons_envoyes:
         return
-    # Si Firestore montre que le bon a deja ete notifie sur Telegram (presence
-    # de telegram_messages), on ne renvoie pas (utile apres restart du bot,
-    # qui perd la memoire mais retrouve l'info dans Firestore).
     if bon_data.get("telegram_messages"):
+        bons_envoyes[bon_id] = 0
+        return
+    # Flag pose par le cleanup au demarrage : evite le re-push apres restart.
+    if bon_data.get("telegram_push_skip"):
         bons_envoyes[bon_id] = 0
         return
 
@@ -994,6 +996,11 @@ async def _post_init(application: Application):
         cleanup_initial_bons_valides_refuses()
     except Exception as e:
         logger.warning(f"Cleanup initial echoue (non bloquant) : {e}")
+    # Cleanup en_attente : eviter le re-push des bons existants apres restart.
+    try:
+        cleanup_initial_bons_en_attente()
+    except Exception as e:
+        logger.warning(f"Cleanup en_attente echoue (non bloquant) : {e}")
 
     # Schedule daily summary at 18h + edition des messages Telegram apres
     # validation/refus toutes les 30 sec (couvre Telegram + admin web)

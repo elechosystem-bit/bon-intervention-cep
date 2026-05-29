@@ -177,6 +177,27 @@ def cleanup_initial_bons_valides_refuses():
     logger.info(f"Cleanup initial : {n} bons valides/refuses marques comme deja notifies")
 
 
+def cleanup_initial_bons_en_attente():
+    """Au demarrage du bot, marquer les bons en_attente existants qui n'ont
+    PAS de telegram_messages comme telegram_push_skip=true. Evite que le bot
+    re-pousse ces bons (deja pousses avant le restart) a chaque demarrage."""
+    db = get_db()
+    n = 0
+    try:
+        for doc in db.collection(BONS_COLLECTION).where("statut", "==", "en_attente").stream():
+            data = doc.to_dict()
+            if data.get("telegram_messages") or data.get("telegram_push_skip"):
+                continue
+            try:
+                doc.reference.update({"telegram_push_skip": True})
+                n += 1
+            except Exception as e:
+                logger.warning(f"Cleanup en_attente bon {doc.id}: {e}")
+    except Exception as e:
+        logger.warning(f"Cleanup en_attente lecture: {e}")
+    logger.info(f"Cleanup en_attente : {n} bons marques comme deja pousses (ne seront pas re-pousses)")
+
+
 def get_bon(bon_id: str) -> dict | None:
     """Fetch a bon document by ID."""
     db = get_db()
