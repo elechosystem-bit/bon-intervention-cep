@@ -2461,6 +2461,16 @@
       "rue": "130, boulevard de Clichy"
     },
     {
+      "id": 1218958065664,
+      "nom": "CARREFOUR MARKET ATHIS MONS",
+      "email": "",
+      "telephone": "",
+      "adresse": "Avenue de Morangis, ATHIS MONS, 91200",
+      "ville": "91200",
+      "codePostal": "ATHIS MONS",
+      "rue": "Avenue de Morangis"
+    },
+    {
       "id": 248733543,
       "nom": "CARREFOUR SARTROUVILLE",
       "email": "",
@@ -12091,6 +12101,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1209,
-  "syncDate": "2026-06-01T05:35:38Z"
+  "total": 1210,
+  "syncDate": "2026-06-02T05:32:32Z"
 }
