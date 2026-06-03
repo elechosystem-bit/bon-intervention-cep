@@ -1031,6 +1031,16 @@
       "rue": "21, rue Marboeuf"
     },
     {
+      "id": 1197207453696,
+      "nom": "BISTRO RENAISSANCE",
+      "email": "floriangonzalvez@gmail.com",
+      "telephone": "",
+      "adresse": "112 Rue Championnet, 75018 Paris, 75018, Paris",
+      "ville": "Paris",
+      "codePostal": "75018",
+      "rue": "112 Rue Championnet, 75018 Paris"
+    },
+    {
       "id": 248733015,
       "nom": "BISTRO V",
       "email": "",
@@ -1179,16 +1189,6 @@
       "ville": "Paris",
       "codePostal": "75012",
       "rue": "6, rue Michel Chasles"
-    },
-    {
-      "id": 248733510,
-      "nom": "BISTROT RENAISSANCE",
-      "email": "cjg3lesbistrots@gmail.com",
-      "telephone": "",
-      "adresse": "19, rue René Boulanger, 75010, Paris",
-      "ville": "Paris",
-      "codePostal": "75010",
-      "rue": "19, rue René Boulanger"
     },
     {
       "id": 282600504,
@@ -1689,16 +1689,6 @@
       "ville": "Rueil-Malmaison",
       "codePostal": "92500",
       "rue": "26, rue Hervet"
-    },
-    {
-      "id": 1197207453696,
-      "nom": "Bistro Renaissance",
-      "email": "",
-      "telephone": "",
-      "adresse": "112 Rue Championnet, 75018 Paris, 75018, Paris",
-      "ville": "Paris",
-      "codePostal": "75018",
-      "rue": "112 Rue Championnet, 75018 Paris"
     },
     {
       "id": 261107967,
@@ -12101,6 +12091,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1210,
-  "syncDate": "2026-06-02T05:32:32Z"
+  "total": 1209,
+  "syncDate": "2026-06-03T05:36:54Z"
 }
