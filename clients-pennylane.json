@@ -1032,7 +1032,7 @@
     },
     {
       "id": 1197207453696,
-      "nom": "BISTRO RENAISSANCE",
+      "nom": "BISTRO RENAISSANCE - ZAVEZ",
       "email": "floriangonzalvez@gmail.com",
       "telephone": "",
       "adresse": "112 Rue Championnet, 75018 Paris, 75018, Paris",
@@ -2452,8 +2452,8 @@
     },
     {
       "id": 1218958065664,
-      "nom": "CARREFOUR MARKET ATHIS MONS",
-      "email": "",
+      "nom": "CARREFOUR MARKET - SMAMO - ATHIS MONS",
+      "email": "dsimon@ads50.fr",
       "telephone": "",
       "adresse": "Avenue de Morangis, ATHIS MONS, 91200",
       "ville": "91200",
@@ -12092,5 +12092,5 @@
     }
   ],
   "total": 1209,
-  "syncDate": "2026-06-03T05:36:54Z"
+  "syncDate": "2026-06-04T05:34:55Z"
 }
