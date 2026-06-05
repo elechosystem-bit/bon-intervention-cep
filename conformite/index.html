@@ -451,6 +451,7 @@
         .drop-zone.z-rapport { border-color: #bfdbfe; background: #f0f7ff; }
         .drop-zone.z-devis { border-color: #fde68a; background: #fffbeb; }
         .drop-zone.z-signe { border-color: #a7f3d0; background: #f0fdf4; }
+        .drop-zone.z-facture-bc { border-color: #c4b5fd; background: #f5f3ff; }
         .drop-zone.drag-over { border-style: solid; border-color: var(--primary); background: #eef2ff; }
         .dz-label { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .dz-hint { font-size: 0.7rem; color: var(--text-light); }
@@ -993,6 +994,7 @@
         { key: 'rapport',    label: 'Rapport de contrôle', icon: '📄', cls: 'z-rapport', hint: 'Le rapport Apave reçu' },
         { key: 'devis',      label: 'Devis',         icon: '📝', cls: 'z-devis',   hint: 'Le devis envoyé' },
         { key: 'devisSigne', label: 'Devis signé',   icon: '✅', cls: 'z-signe',   hint: 'Le devis retourné signé' },
+        { key: 'factureBc',  label: 'Facture du BC', icon: '🧾', cls: 'z-facture-bc', hint: 'La facture du bureau de contrôle (à refacturer au client)', onlyCep: true },
     ];
     let archivesOuvertes = {};
 
@@ -1026,9 +1028,11 @@
         </div>`;
     }
     function renderDocsSection(c) {
-        const zonesHtml = CASIERS_FIXES.map(z =>
-            renderDropZone(c.id, z.key, z.label, z.icon, z.cls, z.hint, getCasier(c, z.key))
-        ).join('');
+        const bcType = c.bcType || 'cep';
+        const zonesHtml = CASIERS_FIXES
+            .filter(z => !z.onlyCep || bcType === 'cep')
+            .map(z => renderDropZone(c.id, z.key, z.label, z.icon, z.cls, z.hint, getCasier(c, z.key)))
+            .join('');
 
         const annees = anneesArchive();
         const ouvert = !!archivesOuvertes[c.id];
