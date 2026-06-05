@@ -182,6 +182,7 @@
         .chip:hover { background: var(--border); }
         .chip.active-statut { background: var(--primary); color: white; }
         .chip.active-etape { background: var(--navy); color: white; }
+        .chip.active-bc { background: #6d28d9; color: white; }
 
         /* CLIENT CARD */
         .client-card {
@@ -550,6 +551,12 @@
             <button class="chip" data-etape="devisValideDate" onclick="setFiltreEtape('devisValideDate')">✅ Devis validé</button>
             <button class="chip" data-etape="travauxFaitsDate" onclick="setFiltreEtape('travauxFaitsDate')">🔧 Travaux faits</button>
         </div>
+        <div class="filter-row">
+            <span class="filter-label">Bureau de contrôle :</span>
+            <button class="chip active-bc" data-bc="tous" onclick="setFiltreBc('tous')">Tous</button>
+            <button class="chip" data-bc="cep" onclick="setFiltreBc('cep')">🏢 Notre BC</button>
+            <button class="chip" data-bc="client" onclick="setFiltreBc('client')">👤 BC client</button>
+        </div>
     </div>
 
     <div id="clientsList">
@@ -585,6 +592,13 @@
         <div class="form-group">
             <label>Année cible</label>
             <input type="number" id="formDueYear" min="2024" max="2100">
+        </div>
+        <div class="form-group">
+            <label>Bureau de contrôle</label>
+            <select id="formBcType">
+                <option value="cep">🏢 Notre BC — on paie et on refacture au client</option>
+                <option value="client">👤 BC du client — le client paie directement son BC</option>
+            </select>
         </div>
         <div class="form-group">
             <label>Notes (tableau électrique, infos d'accès, etc.)</label>
@@ -635,6 +649,7 @@
     let tousLesClients = [];
     let filtreStatut = 'tous';
     let filtreEtape = 'toutes';
+    let filtreBc = 'tous';
 
     function getCollectionRef() {
         return db.collection('societes').doc(SOCIETE_ID).collection('apave');
@@ -785,6 +800,13 @@
         });
         afficher();
     }
+    function setFiltreBc(b) {
+        filtreBc = b;
+        document.querySelectorAll('[data-bc]').forEach(btn => {
+            btn.classList.toggle('active-bc', btn.getAttribute('data-bc') === b);
+        });
+        afficher();
+    }
 
     function afficher() {
         // STATS
@@ -809,6 +831,7 @@
             const s = calculerStatut(c);
             if (filtreStatut !== 'tous' && s !== filtreStatut) return false;
             if (filtreEtape !== 'toutes' && etapeEnCours(c) !== filtreEtape) return false;
+            if (filtreBc !== 'tous' && (c.bcType || 'cep') !== filtreBc) return false;
             return true;
         });
 
@@ -830,6 +853,12 @@
         const badge = statut === 'complet' ? '<span class="badge complet">Complet</span>'
                     : statut === 'retard' ? '<span class="badge retard">En retard</span>'
                     : '<span class="badge encours">En cours</span>';
+
+        // Badge Bureau de contrôle (CEP ou client) — visible en permanence sur la fiche
+        const bcType = c.bcType || 'cep';
+        const badgeBc = bcType === 'client'
+            ? '<span style="background:#ede9fe;color:#6d28d9;padding:3px 9px;border-radius:12px;font-size:0.75rem;font-weight:700;border:1px solid #c4b5fd;white-space:nowrap;">👤 BC client</span>'
+            : '<span style="background:#dbeafe;color:#1e40af;padding:3px 9px;border-radius:12px;font-size:0.75rem;font-weight:700;border:1px solid #93c5fd;white-space:nowrap;">🏢 Notre BC</span>';
 
         // Badge rappel annuel (visible si travaux faits) — calculé depuis travauxFaitsDate + 1 an
         let rappelAnnuel = '';
@@ -891,6 +920,7 @@
                 <div class="card-header" onclick="toggleCarte('${c.id}')">
                     <span class="card-chevron">${ouvert ? '▾' : '▸'}</span>
                     <span class="card-name">${(c.name || '-').replace(/</g,'&lt;')}</span>
+                    ${badgeBc}
                     ${badge}
                 </div>
                 <div class="card-body">
@@ -1156,6 +1186,7 @@
         document.getElementById('formDueMonth').value = (now.getMonth() + 1);
         document.getElementById('formDueYear').value = now.getFullYear() + 1;
         document.getElementById('formNotes').value = '';
+        document.getElementById('formBcType').value = 'cep';
         document.getElementById('pdfSection').style.display = 'none';
         document.getElementById('modalForm').classList.add('show');
     }
@@ -1170,6 +1201,7 @@
         document.getElementById('formDueMonth').value = c.dueMonth || 1;
         document.getElementById('formDueYear').value = c.dueYear || new Date().getFullYear() + 1;
         document.getElementById('formNotes').value = c.notes || '';
+        document.getElementById('formBcType').value = c.bcType || 'cep';
         document.getElementById('pdfSection').style.display = 'block';
         afficherListePdfs(c.pdfs || []);
         document.getElementById('modalForm').classList.add('show');
@@ -1187,6 +1219,7 @@
             dueMonth: parseInt(document.getElementById('formDueMonth').value, 10),
             dueYear: parseInt(document.getElementById('formDueYear').value, 10),
             notes: document.getElementById('formNotes').value.trim(),
+            bcType: document.getElementById('formBcType').value || 'cep',
             societe: SOCIETE_ID,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         };
