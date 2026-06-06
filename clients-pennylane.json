@@ -1321,16 +1321,6 @@
       "rue": "A compléter"
     },
     {
-      "id": 248732568,
-      "nom": "BON PECHEUR",
-      "email": "",
-      "telephone": "",
-      "adresse": "9, rue des Prêcheurs, 75009, Paris",
-      "ville": "Paris",
-      "codePostal": "75009",
-      "rue": "9, rue des Prêcheurs"
-    },
-    {
       "id": 251431608,
       "nom": "BONBONNIERE MONTPARNASSE",
       "email": "labonbonniere014@gmail.com",
@@ -3839,6 +3829,16 @@
       "ville": "L'Isle-Adam",
       "codePostal": "95290",
       "rue": "A compléter"
+    },
+    {
+      "id": 1233484152832,
+      "nom": "G20 - MPVic VIRY CHATILLON",
+      "email": "dsimon@ads50.fr",
+      "telephone": "",
+      "adresse": "45 rue Francoeur, 91170, VIRY CHATILLON",
+      "ville": "VIRY CHATILLON",
+      "codePostal": "91170",
+      "rue": "45 rue Francoeur"
     },
     {
       "id": 248732642,
@@ -12092,5 +12092,5 @@
     }
   ],
   "total": 1209,
-  "syncDate": "2026-06-05T05:29:33Z"
+  "syncDate": "2026-06-06T05:16:46Z"
 }
