@@ -355,6 +355,97 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_modify_cancel(query, context)
 
 
+async def notifier_autres_admins_apres_action(query, bon_id, bon_data, est_refus=False):
+    """Editer immediatement les messages des autres admins + push court.
+    Le admin qui a clique a deja son message edite via query.edit_message_text.
+    Marque ensuite telegram_edite=True pour que le job de rattrapage 30s n'agisse pas.
+    Si une validation/refus passe par l'admin web, c'est le job batch qui prendra le relais.
+    """
+    from firebase_listener import marquer_telegram_edite, get_bon as _get_bon
+
+    chat_id_clicker = query.message.chat_id
+    heure = datetime.now().strftime("%H:%M")
+
+    # Recharger pour avoir telegram_messages a jour (handle_validate ne le recharge pas)
+    data_frais = _get_bon(bon_id) or bon_data
+    numero = data_frais.get("numero", bon_id)
+    client = data_frais.get("client", "?")
+    montant = data_frais.get("totalTTC", "")
+    technicien = data_frais.get("technicien", "")
+
+    if est_refus:
+        entete = f"❌ <b>BON REFUSE — {heure}</b>"
+        pied = "<i>Refus enregistre. Ne pas facturer.</i>"
+        push_court = (
+            "❌ <b>REFUSE</b> — N° " + str(numero) + " (" + str(client) + ")"
+            + ((f" — {montant}") if montant else "")
+        )
+    else:
+        entete = f"✅ <b>BON VALIDE — {heure}</b>"
+        pied = "<i>Envoye en compta.</i>"
+        push_court = (
+            "✅ <b>VALIDE</b> — N° " + str(numero) + " (" + str(client) + ")"
+            + ((f" — {montant}") if montant else "")
+        )
+
+    texte = (
+        f"{entete}\n\n"
+        f"N° {numero} ({client})"
+        + (f" — {montant}" if montant else "")
+        + "\n"
+        + (f"Tech : {technicien}\n" if technicien else "")
+        + f"\n{pied}"
+    )
+
+    telegram_messages = data_frais.get("telegram_messages", [])
+    autres_chats = set()
+    edit_ok = 0
+    for m in telegram_messages:
+        if not isinstance(m, dict):
+            continue
+        chat_id = m.get("chat_id")
+        message_id = m.get("message_id")
+        if not chat_id or not message_id:
+            continue
+        if int(chat_id) == int(chat_id_clicker):
+            continue  # Le clicker a deja son message edite
+        autres_chats.add(int(chat_id))
+        try:
+            await _app.bot.edit_message_text(
+                chat_id=int(chat_id),
+                message_id=int(message_id),
+                text=texte,
+                parse_mode="HTML",
+                reply_markup=None,
+            )
+            edit_ok += 1
+        except Exception as e:
+            if "not modified" not in str(e).lower() and "not found" not in str(e).lower():
+                logger.warning(f"Edit immediat msg echec bon {bon_id} chat {chat_id}: {e}")
+
+    push_ok = 0
+    for chat_id in autres_chats:
+        try:
+            await _app.bot.send_message(
+                chat_id=chat_id,
+                text=push_court,
+                parse_mode="HTML",
+            )
+            push_ok += 1
+        except Exception as e:
+            logger.warning(f"Push immediat echec bon {bon_id} chat {chat_id}: {e}")
+
+    try:
+        marquer_telegram_edite(bon_id)
+    except Exception as e:
+        logger.warning(f"Marquage telegram_edite echec bon {bon_id}: {e}")
+
+    logger.info(
+        f"Bon {bon_id} : notif immediate -> {edit_ok} edites + {push_ok} push "
+        f"sur {len(autres_chats)} autres admins"
+    )
+
+
 async def handle_validate(query, context: ContextTypes.DEFAULT_TYPE):
     """Validate a bon and create a Pennylane draft."""
     bon_id = query.data.replace("valid_", "")
@@ -462,6 +553,13 @@ async def handle_validate(query, context: ContextTypes.DEFAULT_TYPE):
             "heure": datetime.now().strftime("%H:%M"),
         })
 
+        # Notifier immediatement les autres admins (V vert + push) — ne pas attendre
+        # le job batch de 30s qui peut etre interrompu par le restart horaire.
+        try:
+            await notifier_autres_admins_apres_action(query, bon_id, bon_data, est_refus=False)
+        except Exception as notif_err:
+            logger.error(f"Erreur notif immediate autres admins (validate {bon_id}): {notif_err}")
+
     except Exception as e:
         logger.error(f"Erreur creation brouillon pour {bon_id}: {e}")
         # Re-enable buttons on error so admin can retry
@@ -518,6 +616,13 @@ async def handle_refuse(query, context: ContextTypes.DEFAULT_TYPE):
                  f"\u274c Email envoye a la compta : NE PAS FACTURER",
             parse_mode="HTML",
         )
+
+        # Notifier immediatement les autres admins (X rouge + push) \u2014 ne pas attendre
+        # le job batch de 30s qui peut etre interrompu par le restart horaire.
+        try:
+            await notifier_autres_admins_apres_action(query, bon_id, bon_data, est_refus=True)
+        except Exception as notif_err:
+            logger.error(f"Erreur notif immediate autres admins (refuse {bon_id}): {notif_err}")
     else:
         await query.edit_message_reply_markup(reply_markup=None)
         await query.message.reply_text(f"Bon {bon_id} refuse.")
