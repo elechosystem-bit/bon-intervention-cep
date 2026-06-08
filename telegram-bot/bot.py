@@ -496,6 +496,10 @@ async def handle_validate(query, context: ContextTypes.DEFAULT_TYPE):
             brouillons_crees[bon_id] = datetime.now()
             record_draft()
 
+            # Update Firebase statut (meme en TEST_MODE, sinon coche V absente
+            # et bon compte comme "a faire" dans l'admin web)
+            update_bon_statut(bon_id, "validé")
+
             # Marquer le message original comme traité
             summary = format_bon_summary(bon_id, bon_data)
             await query.edit_message_text(
