@@ -872,9 +872,9 @@
     },
     {
       "id": 248733400,
-      "nom": "BDM - BISTROT DU MARCHE",
+      "nom": "BDM - BISTROT DU MARCHE ne pas utiliser",
       "email": "bdmlavarenne@gmail.com",
-      "telephone": "0650142518",
+      "telephone": "+33 6 50 14 25 18",
       "adresse": "7, place Stalingrad, 94210, La Varenne-Saint-Hilaire",
       "ville": "La Varenne-Saint-Hilaire",
       "codePostal": "94210",
@@ -1169,16 +1169,6 @@
       "ville": "Paris",
       "codePostal": "75016",
       "rue": "29/31 rue Lauriston"
-    },
-    {
-      "id": 248732667,
-      "nom": "BISTROT DU MARCHE (SARL)",
-      "email": "",
-      "telephone": "",
-      "adresse": "A compléter, 75005, Paris",
-      "ville": "Paris",
-      "codePostal": "75005",
-      "rue": "A compléter"
     },
     {
       "id": 248733614,
@@ -3741,36 +3731,6 @@
       "rue": "SARL LODADISTR"
     },
     {
-      "id": 248732624,
-      "nom": "FRENCH AGENCY",
-      "email": "erkan-tuncer@hotmail.fr",
-      "telephone": "0142211559",
-      "adresse": "50, rue Notre Dame de Nazareth, 75003, Paris",
-      "ville": "Paris",
-      "codePostal": "75003",
-      "rue": "50, rue Notre Dame de Nazareth"
-    },
-    {
-      "id": 248733631,
-      "nom": "FRENCH AND SKINNY",
-      "email": "",
-      "telephone": "",
-      "adresse": "30, avenue Bonne Nouvelle, 75010, Paris",
-      "ville": "Paris",
-      "codePostal": "75010",
-      "rue": "30, avenue Bonne Nouvelle"
-    },
-    {
-      "id": 248732593,
-      "nom": "FRENCH LOVE SARL C & C",
-      "email": "",
-      "telephone": "",
-      "adresse": "37 bis, rue de Ponthieu, 75008, Paris",
-      "ville": "Paris",
-      "codePostal": "75008",
-      "rue": "37 bis, rue de Ponthieu"
-    },
-    {
       "id": 248733571,
       "nom": "FRENCH RIVIERA",
       "email": "kadaib@hotmail.com",
@@ -3779,26 +3739,6 @@
       "ville": "Paris",
       "codePostal": "75011",
       "rue": "8, place de la République"
-    },
-    {
-      "id": 248733211,
-      "nom": "FRENCH RIVIERA MK SOOLZIP PROJECT",
-      "email": "melissa_g33@hotmail.fr",
-      "telephone": "",
-      "adresse": "14, rue Froissard, 75003, Paris",
-      "ville": "Paris",
-      "codePostal": "75003",
-      "rue": "14, rue Froissard"
-    },
-    {
-      "id": 248732608,
-      "nom": "FRENCHY (SAS ALLIANCE)",
-      "email": "contactdavid3@gmail.com",
-      "telephone": "0689575515",
-      "adresse": "33 bis, rue Grande Rue, 95290, L'Isle-Adam",
-      "ville": "L'Isle-Adam",
-      "codePostal": "95290",
-      "rue": "33 bis, rue Grande Rue"
     },
     {
       "id": 248733208,
@@ -8234,7 +8174,7 @@
       "id": 248733424,
       "nom": "MC DONALD'S MENNECY - MONTVRAIN",
       "email": "0871@mcdonalds.fr",
-      "telephone": "0169234058",
+      "telephone": "+33 1 69 23 40 58",
       "adresse": "Avenue Charles de Gaulle, 91540, Mennecy",
       "ville": "Mennecy",
       "codePostal": "91540",
@@ -8529,16 +8469,6 @@
       "ville": "Suresnes",
       "codePostal": "92150",
       "rue": "1, rue Berthelot"
-    },
-    {
-      "id": 248733216,
-      "nom": "MC DONALD'S SURESNES - S3F FINANCES",
-      "email": "mberthod@s3f-finances.fr",
-      "telephone": "",
-      "adresse": "15 bis, rue du Mont Valérien, 92150, Suresnes",
-      "ville": "Suresnes",
-      "codePostal": "92150",
-      "rue": "15 bis, rue du Mont Valérien"
     },
     {
       "id": 248733305,
@@ -12101,6 +12031,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1210,
-  "syncDate": "2026-06-09T05:21:00Z"
+  "total": 1203,
+  "syncDate": "2026-06-10T05:29:52Z"
 }
