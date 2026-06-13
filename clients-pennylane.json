@@ -81,16 +81,6 @@
       "rue": "58, rue de la Réunion"
     },
     {
-      "id": 125164936,
-      "nom": "A TOI MAURICE",
-      "email": "",
-      "telephone": "",
-      "adresse": "A compléter, 75000, PARIS",
-      "ville": "PARIS",
-      "codePostal": "75000",
-      "rue": "A compléter"
-    },
-    {
       "id": 248732967,
       "nom": "A. BARDI BATIMENT",
       "email": "",
@@ -1551,16 +1541,6 @@
       "rue": "112 Bd du Montparnasse"
     },
     {
-      "id": 248732856,
-      "nom": "BUCHERON (W2GDL)",
-      "email": "lsarpb@lefalstaff.fr",
-      "telephone": "",
-      "adresse": "14, rue de Rivoli, 75004, Paris",
-      "ville": "Paris",
-      "codePostal": "75004",
-      "rue": "14, rue de Rivoli"
-    },
-    {
       "id": 248732570,
       "nom": "BUGNES",
       "email": "",
@@ -2572,7 +2552,7 @@
     },
     {
       "id": 125155867,
-      "nom": "CHAI BRONGNIART",
+      "nom": "CHAI BRONGNIART - A TOI MAURICE",
       "email": "antrayguesch@free.fr",
       "telephone": "",
       "adresse": "33, place de la Bourse, 75002, Paris",
@@ -5479,6 +5459,16 @@
       "ville": "Paris",
       "codePostal": "75016",
       "rue": "37, avenue Kléber"
+    },
+    {
+      "id": 248732856,
+      "nom": "LE BUCHERON",
+      "email": "jeanmarc.vedrines@gmail.com",
+      "telephone": "",
+      "adresse": "14 RUE DE RIVOLI, 75004, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75004",
+      "rue": "14 RUE DE RIVOLI"
     },
     {
       "id": 248733633,
@@ -12031,6 +12021,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1203,
-  "syncDate": "2026-06-12T05:33:06Z"
+  "total": 1202,
+  "syncDate": "2026-06-13T05:29:41Z"
 }
