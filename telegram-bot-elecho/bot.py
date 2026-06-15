@@ -497,7 +497,7 @@ async def handle_validate(query, context: ContextTypes.DEFAULT_TYPE):
             summary = format_bon_summary(bon_id, bon_data)
             await query.edit_message_text(
                 text=f"\u2705 BON VALIDE\n\n<pre>{summary}</pre>\n\n"
-                     f"\u2705 TEST — Brouillon simule pour {client_name} — {montant}",
+                     f"\u2705 Envoye en compta — {client_name} — {montant}",
                 parse_mode="HTML",
             )
         else:
