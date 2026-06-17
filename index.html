@@ -3545,16 +3545,43 @@
                 try {
                     const term = searchTerm.toLowerCase();
                     const tousResultats = [];
+                    const nomsVus = new Set(); // dédoublonnage par nom
 
-                    // Filtrer les clients Pennylane en local (fichier statique préchargé)
+                    // 1) D'abord les clients enregistrés à la main (Firestore).
+                    //    Charger le cache si pas encore fait.
+                    if (tousLesClients.length === 0) {
+                        try { await chargerTousLesClients(); } catch (e) { /* ignore */ }
+                    }
+                    const clientsFirestore = tousLesClients.filter(c =>
+                        (c.nom || '').toLowerCase().includes(term) ||
+                        (c.email && c.email.toLowerCase().includes(term)) ||
+                        (c.adresse && c.adresse.toLowerCase().includes(term))
+                    );
+                    clientsFirestore.forEach(c => {
+                        const cle = (c.nom || '').toLowerCase().trim();
+                        if (cle) nomsVus.add(cle);
+                        tousResultats.push({
+                            nom: c.nom || '',
+                            email: c.email || '',
+                            adresse: c.adresse || '',
+                            telephone: c.telephone || '',
+                            source: 'firestore'
+                        });
+                    });
+
+                    // 2) Ensuite les clients Pennylane (fichier statique préchargé),
+                    //    en évitant les doublons déjà présents par nom.
                     const cache = window._clientsPennylaneCache || [];
                     const clientsPennylane = cache.filter(c =>
                         (c.nom || '').toLowerCase().includes(term) ||
                         (c.email && c.email.toLowerCase().includes(term)) ||
                         (c.adresse && c.adresse.toLowerCase().includes(term))
-                    ).slice(0, 10);
+                    );
 
                     clientsPennylane.forEach(c => {
+                        const cle = (c.nom || '').toLowerCase().trim();
+                        if (cle && nomsVus.has(cle)) return; // déjà présent via Firestore
+                        if (cle) nomsVus.add(cle);
                         tousResultats.push({
                             nom: c.nom || '',
                             email: c.email || '',
