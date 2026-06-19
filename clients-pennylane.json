@@ -8651,16 +8651,6 @@
       "rue": "A compléter"
     },
     {
-      "id": 248732772,
-      "nom": "MID",
-      "email": "eric@mid.audio",
-      "telephone": "",
-      "adresse": "2, rue Magnier-Bédu, 95410, GROSLAY",
-      "ville": "GROSLAY",
-      "codePostal": "95410",
-      "rue": "2, rue Magnier-Bédu"
-    },
-    {
       "id": 248732656,
       "nom": "MINOSA (PASTAPAPA)",
       "email": "laurent.knibbe@gmail.com",
@@ -8849,6 +8839,16 @@
       "ville": "Paris",
       "codePostal": "75015",
       "rue": "19, rue Auguste Chabrières"
+    },
+    {
+      "id": 248732772,
+      "nom": "MUSIQUE INDUSTRIE DEVELOPPEMENT",
+      "email": "eric@mid.audio",
+      "telephone": "",
+      "adresse": "2 RUE MAGNIER BEDU, 95410, GROSLAY",
+      "ville": "GROSLAY",
+      "codePostal": "95410",
+      "rue": "2 RUE MAGNIER BEDU"
     },
     {
       "id": 248733549,
@@ -12022,5 +12022,5 @@
     }
   ],
   "total": 1202,
-  "syncDate": "2026-06-18T05:34:14Z"
+  "syncDate": "2026-06-19T05:41:46Z"
 }
