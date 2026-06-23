@@ -10591,16 +10591,6 @@
       "rue": "3 Rue de la Gaîté"
     },
     {
-      "id": 248733002,
-      "nom": "SAS ALMAJE - LES GENTLEMEN",
-      "email": "lesgentlemen@yahoo.com",
-      "telephone": "",
-      "adresse": "LES GENTLEMEN, 92000, Nanterre",
-      "ville": "Nanterre",
-      "codePostal": "92000",
-      "rue": "LES GENTLEMEN"
-    },
-    {
       "id": 125155930,
       "nom": "SAS ALMAJE - LES GENTLEMEN",
       "email": "lesgentlemen@yahoo.com",
@@ -12021,6 +12011,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1202,
-  "syncDate": "2026-06-22T05:47:21Z"
+  "total": 1201,
+  "syncDate": "2026-06-23T05:19:30Z"
 }
