@@ -3723,7 +3723,7 @@
     {
       "id": 248733208,
       "nom": "FRONT POPULAIRE (PIED DE LA DOUZE)",
-      "email": "direction.frontpopulaire@gmail.com",
+      "email": "henri.frontpopulaire@gmail.com",
       "telephone": "+33 6 69 67 32 82",
       "adresse": "1/3 rue des Fillettes, 93200, Saint-Denis",
       "ville": "Saint-Denis",
@@ -7662,7 +7662,7 @@
     },
     {
       "id": 248733357,
-      "nom": "MC DONALD'S - BIRDIE SARL",
+      "nom": "MC DONALD'S - BIRDIE CHALETTES",
       "email": "bureau.elki@hotmail.com",
       "telephone": "",
       "adresse": "87 avenue du Général Leclerc, 45120, CHALETTE SUR LOING",
@@ -10861,16 +10861,6 @@
       "rue": "174, avenue de Paris"
     },
     {
-      "id": 255251940,
-      "nom": "SAS RESTAURANT LES PRINCES",
-      "email": "",
-      "telephone": "",
-      "adresse": "4 RUE DU LIEUTENANT COLONEL DEPORT, 6 PLACE DU DOCTEUR PAUL MICHAUX, 75016 PARIS, 75016, PARIS",
-      "ville": "PARIS",
-      "codePostal": "75016",
-      "rue": "4 RUE DU LIEUTENANT COLONEL DEPORT, 6 PLACE DU DOCTEUR PAUL MICHAUX, 75016 PARIS"
-    },
-    {
       "id": 250698805,
       "nom": "SAS RESTAURANT LES PRINCES",
       "email": "fredducay@yahoo.fr",
@@ -12011,6 +12001,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1201,
-  "syncDate": "2026-06-24T05:18:52Z"
+  "total": 1200,
+  "syncDate": "2026-06-25T05:19:44Z"
 }
