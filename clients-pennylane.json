@@ -481,6 +481,16 @@
       "rue": "16, rue Henry Monnier"
     },
     {
+      "id": 1297005834240,
+      "nom": "AU BAROUDEUR PATIENT - RFM 10",
+      "email": "aubaroudeurpatient@gmail.com",
+      "telephone": "",
+      "adresse": "12 BOULEVARD DE DENAIN, 75010, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75010",
+      "rue": "12 BOULEVARD DE DENAIN"
+    },
+    {
       "id": 248733557,
       "nom": "AU BUREAU - SAS GOODBEER",
       "email": "",
@@ -8641,6 +8651,16 @@
       "rue": "3, rue Meyerbeer"
     },
     {
+      "id": 1298185474048,
+      "nom": "MG HALLES",
+      "email": "",
+      "telephone": "",
+      "adresse": "58 rue de la Fraternité, 93230, ROMAINVILLE",
+      "ville": "ROMAINVILLE",
+      "codePostal": "93230",
+      "rue": "58 rue de la Fraternité"
+    },
+    {
       "id": 248732801,
       "nom": "MICH SANDWIICH",
       "email": "",
@@ -12001,6 +12021,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1200,
-  "syncDate": "2026-06-29T05:33:28Z"
+  "total": 1202,
+  "syncDate": "2026-06-30T05:21:36Z"
 }
