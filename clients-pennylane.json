@@ -6261,6 +6261,16 @@
       "rue": "53bis, avenue de la Motte Picquet"
     },
     {
+      "id": 1332942966784,
+      "nom": "LE PAVILLON DES CANAUX - CHEPOOKA",
+      "email": "",
+      "telephone": "",
+      "adresse": "39 QUAI DE LA LOIRE, 75019, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75019",
+      "rue": "39 QUAI DE LA LOIRE"
+    },
+    {
       "id": 248733212,
       "nom": "LE PETIT BAIGNEUR/LPB75",
       "email": "canivet.thomas@hotmail.fr",
@@ -7031,16 +7041,6 @@
       "rue": "187, Jardin de l'Arche"
     },
     {
-      "id": 248733223,
-      "nom": "LES GOURMANDS (SARL SYR)",
-      "email": "maisonbeauchange@gmail.com",
-      "telephone": "",
-      "adresse": "1 - 3, rue des Grands Degrés, 75005, Paris",
-      "ville": "Paris",
-      "codePostal": "75005",
-      "rue": "1 - 3, rue des Grands Degrés"
-    },
-    {
       "id": 248733484,
       "nom": "LES GRENOUILLES / LANGEVIN / LE COQ",
       "email": "esamzo@hotmail.com",
@@ -7489,6 +7489,16 @@
       "ville": "Paris",
       "codePostal": "75004",
       "rue": "7, rue Jarente"
+    },
+    {
+      "id": 1332780138496,
+      "nom": "MANIGUA",
+      "email": "lorenzo.reinaldo@gmail.com",
+      "telephone": "",
+      "adresse": "7 RUE CHORON, 75009, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75009",
+      "rue": "7 RUE CHORON"
     },
     {
       "id": 202169838,
@@ -12021,6 +12031,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1202,
-  "syncDate": "2026-07-07T05:18:24Z"
+  "total": 1203,
+  "syncDate": "2026-07-08T05:02:36Z"
 }
