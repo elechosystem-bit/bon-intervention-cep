@@ -1882,9 +1882,9 @@
     },
     {
       "id": 248733573,
-      "nom": "CAFE DE L'OLYMPIA - SAS LCD MADELEINE",
+      "nom": "CAFE DE L'OLYMPIA - SAS LCE MADELEINE",
       "email": "christophe_berland@hotmail.com",
-      "telephone": "0140071426",
+      "telephone": "+33 1 40 07 14 26",
       "adresse": "4, placd Henri Salvador, 75009, Paris",
       "ville": "Paris",
       "codePostal": "75009",
@@ -6262,13 +6262,13 @@
     },
     {
       "id": 1332942966784,
-      "nom": "LE PAVILLON DES CANAUX - CHEPOOKA",
-      "email": "",
+      "nom": "LE PAVILLON DES CANAUX - SAS CANAILLE",
+      "email": "frederick.pagau@elechosystem.com",
       "telephone": "",
-      "adresse": "39 QUAI DE LA LOIRE, 75019, PARIS",
+      "adresse": "39 quai de la Loire, 75019, PARIS",
       "ville": "PARIS",
       "codePostal": "75019",
-      "rue": "39 QUAI DE LA LOIRE"
+      "rue": "39 quai de la Loire"
     },
     {
       "id": 248733212,
@@ -9271,19 +9271,19 @@
       "rue": "A compléter"
     },
     {
-      "id": 248733312,
-      "nom": "PATISSERIE DE L'OLYMPIA - SARL LA TERRASSE DU PARC",
-      "email": "contact@patisserie-olympia-paris.fr",
+      "id": 1342331748352,
+      "nom": "PATISSERIE DE L'OLYMPIA - LA TERRASSE DU PARC",
+      "email": "",
       "telephone": "",
-      "adresse": "2, rue de Séze, 75009, Paris",
-      "ville": "Paris",
+      "adresse": "2 rue de Seze, 75009, PARIS",
+      "ville": "PARIS",
       "codePostal": "75009",
-      "rue": "2, rue de Séze"
+      "rue": "2 rue de Seze"
     },
     {
       "id": 248733644,
       "nom": "PATISSERIE DE L'OLYMPIA - SARL NJ NYEMBO",
-      "email": "nyembojk@gmail.com",
+      "email": "",
       "telephone": "",
       "adresse": "2 rue de Sèze, 75009, PARIS",
       "ville": "PARIS",
@@ -12032,5 +12032,5 @@
     }
   ],
   "total": 1203,
-  "syncDate": "2026-07-09T05:18:40Z"
+  "syncDate": "2026-07-10T05:18:12Z"
 }
