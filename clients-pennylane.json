@@ -1491,6 +1491,16 @@
       "rue": "Angle 18 rue Minimes 36 rue Turenne"
     },
     {
+      "id": 1358011695104,
+      "nom": "BRASSERIE LE CENTRE - P'TIT COCO NEUILLY",
+      "email": "katrel.neuilly@gmail.com",
+      "telephone": "",
+      "adresse": "157 AVENUE DU ROULE, 92200, NEUILLY-SUR-SEINE",
+      "ville": "NEUILLY-SUR-SEINE",
+      "codePostal": "92200",
+      "rue": "157 AVENUE DU ROULE"
+    },
+    {
       "id": 248733157,
       "nom": "BRASSERIE LE CONVENTION",
       "email": "",
@@ -12031,6 +12041,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1203,
-  "syncDate": "2026-07-17T05:01:32Z"
+  "total": 1204,
+  "syncDate": "2026-07-18T04:56:51Z"
 }
