@@ -1491,16 +1491,6 @@
       "rue": "Angle 18 rue Minimes 36 rue Turenne"
     },
     {
-      "id": 1358011695104,
-      "nom": "BRASSERIE LE CENTRE - P'TIT COCO NEUILLY",
-      "email": "katrel.neuilly@gmail.com",
-      "telephone": "",
-      "adresse": "157 AVENUE DU ROULE, 92200, NEUILLY-SUR-SEINE",
-      "ville": "NEUILLY-SUR-SEINE",
-      "codePostal": "92200",
-      "rue": "157 AVENUE DU ROULE"
-    },
-    {
       "id": 248733157,
       "nom": "BRASSERIE LE CONVENTION",
       "email": "",
@@ -4389,6 +4379,16 @@
       "ville": "Nanterre",
       "codePostal": "92000",
       "rue": "16, terrasse de l'Arche"
+    },
+    {
+      "id": 1358011695104,
+      "nom": "KATREL - P'TIT COCO NEUILLY",
+      "email": "katrel.neuilly@gmail.com",
+      "telephone": "",
+      "adresse": "157 AVENUE DU ROULE, 92200, NEUILLY-SUR-SEINE",
+      "ville": "NEUILLY-SUR-SEINE",
+      "codePostal": "92200",
+      "rue": "157 AVENUE DU ROULE"
     },
     {
       "id": 248733314,
@@ -7732,7 +7732,7 @@
     },
     {
       "id": 248733374,
-      "nom": "MC DONALD'S - SAS COMOR",
+      "nom": "MC DONALD'S - SAS COMOR MONTEREAU",
       "email": "svignon282@gmail.com",
       "telephone": "",
       "adresse": "ROUTE DE SENS, 77130, Montereau-Fault-Yonne",
@@ -12042,5 +12042,5 @@
     }
   ],
   "total": 1204,
-  "syncDate": "2026-07-20T05:12:27Z"
+  "syncDate": "2026-07-21T05:02:20Z"
 }
