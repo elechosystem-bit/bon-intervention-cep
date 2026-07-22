@@ -1961,6 +1961,16 @@
       "rue": "45, avenue Friedland"
     },
     {
+      "id": 250637291,
+      "nom": "CAFE DES SOEURS",
+      "email": "laetitiasaib@icloud.com",
+      "telephone": "",
+      "adresse": "22 RUE LEPIC, 75018, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75018",
+      "rue": "22 RUE LEPIC"
+    },
+    {
       "id": 248733246,
       "nom": "CAFE DIVAN",
       "email": "loic_murat@outlook.fr",
@@ -2719,16 +2729,6 @@
       "ville": "Paris",
       "codePostal": "75018",
       "rue": "82, bd Marguerite de Rochechouart"
-    },
-    {
-      "id": 250637291,
-      "nom": "CHEZ MARIE",
-      "email": "frederick.pagau@elechosystem.com",
-      "telephone": "",
-      "adresse": "22 rue Lepic, 75018, PARIS",
-      "ville": "PARIS",
-      "codePostal": "75018",
-      "rue": "22 rue Lepic"
     },
     {
       "id": 248733472,
@@ -5809,6 +5809,16 @@
       "ville": "Paris",
       "codePostal": "75009",
       "rue": "27, rue d'Athènes"
+    },
+    {
+      "id": 1366583521280,
+      "nom": "LE COMPTOIR DE ST CLOUD - ROUCHERAYE RESTAURATION",
+      "email": "",
+      "telephone": "",
+      "adresse": "Place du Moustier, 92210, Saint-Cloud",
+      "ville": "Saint-Cloud",
+      "codePostal": "92210",
+      "rue": "Place du Moustier"
     },
     {
       "id": 253422651,
@@ -12041,6 +12051,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1204,
-  "syncDate": "2026-07-21T05:02:20Z"
+  "total": 1205,
+  "syncDate": "2026-07-22T05:02:15Z"
 }
