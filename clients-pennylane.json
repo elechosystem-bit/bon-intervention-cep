@@ -10641,16 +10641,6 @@
       "rue": ""
     },
     {
-      "id": 249900907,
-      "nom": "SAS AJ GAITE",
-      "email": "factureplomb15@gmail.com",
-      "telephone": "",
-      "adresse": "3 Rue de la Gaîté, 75014, Paris",
-      "ville": "Paris",
-      "codePostal": "75014",
-      "rue": "3 Rue de la Gaîté"
-    },
-    {
       "id": 125155930,
       "nom": "SAS ALMAJE - LES GENTLEMEN",
       "email": "frederick.pagau@elechosystem.com",
@@ -12061,6 +12051,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1206,
-  "syncDate": "2026-07-23T05:03:05Z"
+  "total": 1205,
+  "syncDate": "2026-07-24T05:02:34Z"
 }
