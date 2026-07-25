@@ -8693,7 +8693,7 @@
     {
       "id": 1298185474048,
       "nom": "MG HALLES",
-      "email": "",
+      "email": "gallicquentin@gmail.com",
       "telephone": "",
       "adresse": "58 rue de la Fraternité, 93230, ROMAINVILLE",
       "ville": "ROMAINVILLE",
@@ -9303,7 +9303,7 @@
     {
       "id": 1342331748352,
       "nom": "PATISSERIE DE L'OLYMPIA - LA TERRASSE DU PARC",
-      "email": "",
+      "email": "contact@patisserie-olympia-paris.fr",
       "telephone": "",
       "adresse": "2 rue de Seze, 75009, PARIS",
       "ville": "PARIS",
@@ -12052,5 +12052,5 @@
     }
   ],
   "total": 1205,
-  "syncDate": "2026-07-24T05:02:34Z"
+  "syncDate": "2026-07-25T05:02:20Z"
 }
