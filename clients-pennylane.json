@@ -331,6 +331,16 @@
       "rue": "92, rue d'Hauteville"
     },
     {
+      "id": 1384960937984,
+      "nom": "AOD 2017",
+      "email": "",
+      "telephone": "",
+      "adresse": "8 PLACE DU DIX-HUIT JUIN 1940, 75006, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75006",
+      "rue": "8 PLACE DU DIX-HUIT JUIN 1940"
+    },
+    {
       "id": 248732840,
       "nom": "APPART CITY",
       "email": "saintmaurice-direction@appartcity.com",
@@ -2141,6 +2151,16 @@
       "rue": "28, place Saint Ferdiand"
     },
     {
+      "id": 1385119154176,
+      "nom": "CAFE LATERAL - FONTAINE",
+      "email": "cafe@lateralcaragui.com",
+      "telephone": "",
+      "adresse": "4 AVENUE MAC-MAHON, 75017, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75017",
+      "rue": "4 AVENUE MAC-MAHON"
+    },
+    {
       "id": 248733133,
       "nom": "CAFE LE BASILE",
       "email": "cafebarlebasile@gmail.com",
@@ -3691,16 +3711,6 @@
       "rue": "A l'intention de Philippe MARTIN"
     },
     {
-      "id": 248732819,
-      "nom": "FOURMI",
-      "email": "direction.lafourmi@gmail.com",
-      "telephone": "",
-      "adresse": "A compléter, 75018, Paris",
-      "ville": "Paris",
-      "codePostal": "75018",
-      "rue": "A compléter"
-    },
-    {
       "id": 248733594,
       "nom": "FRANCIS LABUTTE - SARL OVATOD",
       "email": "francislabutte@yahoo.fr",
@@ -4823,7 +4833,7 @@
     {
       "id": 266581442,
       "nom": "LA BONBONNIERE",
-      "email": "",
+      "email": "labonbonniere5@gmail.com",
       "telephone": "",
       "adresse": "36, rue Gay LUSSAC, 75005, PARIS",
       "ville": "PARIS",
@@ -4979,6 +4989,16 @@
       "ville": "Palaiseau",
       "codePostal": "91120",
       "rue": "107, rue de Paris"
+    },
+    {
+      "id": 248732819,
+      "nom": "LA FOURMI",
+      "email": "direction.lafourmi@gmail.com",
+      "telephone": "",
+      "adresse": "74, rue des Martyrs, 75018, Paris",
+      "ville": "Paris",
+      "codePostal": "75018",
+      "rue": "74, rue des Martyrs"
     },
     {
       "id": 248733390,
@@ -12051,6 +12071,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1205,
-  "syncDate": "2026-07-27T05:15:43Z"
+  "total": 1207,
+  "syncDate": "2026-07-28T05:01:58Z"
 }
