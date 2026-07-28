@@ -3119,11 +3119,12 @@
                 const bonsUniques = Array.from(parNumero.values());
 
                 // Compter les bons déjà envoyés en compta (statut validé) et ceux à faire
+                // Les refusés ne sont PAS comptés dans "à faire" (ils sont clos)
                 let nbCompta = 0, nbAFaire = 0;
                 bonsUniques.forEach(bon => {
                     const s = bon.statut || 'en_attente';
                     if (s === 'validé' || s === 'valide') nbCompta++;
-                    else nbAFaire++;
+                    else if (s !== 'refusé' && s !== 'refuse') nbAFaire++;
                 });
                 const badgeAFaire = document.getElementById('badgeAFaire');
                 if (badgeAFaire) {
