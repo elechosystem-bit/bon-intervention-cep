@@ -3094,12 +3094,23 @@
             renderHistoriqueEnCours = true;
             const tbody = document.getElementById('bonsTableBody');
             if (!tbody) { renderHistoriqueEnCours = false; return; }
-            tbody.innerHTML = '';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; text-align:center; color:var(--text-light);">⏳ Chargement en cours…</td></tr>';
 
             try {
                 // Charger tous les bons (en_attente et validé)
                 if (!societeActive) return;
-                const snap = await db.collection(getCollectionPath('bons')).get();
+                // Retry auto : sur 4G le get() peut echouer transitoirement.
+                // On tente 2 fois avant d'afficher une vraie erreur.
+                let snap = null;
+                for (let tentative = 1; tentative <= 2; tentative++) {
+                    try {
+                        snap = await db.collection(getCollectionPath('bons')).get();
+                        break;
+                    } catch (errFetch) {
+                        if (tentative === 2) throw errFetch;
+                        await new Promise(r => setTimeout(r, 1500));
+                    }
+                }
                 const bons = [];
                 snap.forEach(doc => {
                     const data = doc.data();
