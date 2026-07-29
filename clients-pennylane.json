@@ -2151,6 +2151,16 @@
       "rue": "28, place Saint Ferdiand"
     },
     {
+      "id": 1386074058752,
+      "nom": "CAFE LATERAL - CARAGUI",
+      "email": "cafelateral.fontaine@gmail.com",
+      "telephone": "",
+      "adresse": "4 AVENUE MAC-MAHON, 75017, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75017",
+      "rue": "4 AVENUE MAC-MAHON"
+    },
+    {
       "id": 1385119154176,
       "nom": "CAFE LATERAL - FONTAINE",
       "email": "cafe@lateralcaragui.com",
@@ -2469,6 +2479,16 @@
       "ville": "91200",
       "codePostal": "ATHIS MONS",
       "rue": "Avenue de Morangis"
+    },
+    {
+      "id": 1388136378368,
+      "nom": "CARREFOUR RIS-ORANGIS",
+      "email": "",
+      "telephone": "",
+      "adresse": "71 Route de Grigny, 91130, Ris-Orangis",
+      "ville": "Ris-Orangis",
+      "codePostal": "91130",
+      "rue": "71 Route de Grigny"
     },
     {
       "id": 248733543,
@@ -10791,16 +10811,6 @@
       "rue": "57 Boulevard St Marcel"
     },
     {
-      "id": 248733237,
-      "nom": "SAS GUICAR - CAFE LE LATERAL",
-      "email": "cafelateral.fontaine@gmail.com",
-      "telephone": "",
-      "adresse": "4, avenue Mc Mahon, 75017, Paris",
-      "ville": "Paris",
-      "codePostal": "75017",
-      "rue": "4, avenue Mc Mahon"
-    },
-    {
       "id": 248733299,
       "nom": "SAS HLF - OKEN",
       "email": "okenparis4@gmail.com",
@@ -12071,6 +12081,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1207,
-  "syncDate": "2026-07-28T05:01:58Z"
+  "total": 1208,
+  "syncDate": "2026-07-29T05:02:30Z"
 }
