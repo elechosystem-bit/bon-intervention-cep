@@ -211,16 +211,6 @@
       "rue": "3 Rue de la Gaîté"
     },
     {
-      "id": 255182324,
-      "nom": "ALBRIER (Le Pub Suresnes)",
-      "email": "",
-      "telephone": "",
-      "adresse": "15 PLACE DU GENERAL LECLERC, 92150, Suresnes",
-      "ville": "Suresnes",
-      "codePostal": "92150",
-      "rue": "15 PLACE DU GENERAL LECLERC"
-    },
-    {
       "id": 248733522,
       "nom": "ALEXIS D'AGIER CONSULTING",
       "email": "alexis_dagier@yahoo.fr",
@@ -1691,16 +1681,6 @@
       "rue": "15 Place du Marché, 92370 Chaville"
     },
     {
-      "id": 260054859,
-      "nom": "Brasserie Bohème",
-      "email": "",
-      "telephone": "",
-      "adresse": "62 Ter avenue Jean Baptiste Clément, 92100 Boulogne-Billancourt, 92100, Boulogne-Billancourt",
-      "ville": "Boulogne-Billancourt",
-      "codePostal": "92100",
-      "rue": "62 Ter avenue Jean Baptiste Clément, 92100 Boulogne-Billancourt"
-    },
-    {
       "id": 248732794,
       "nom": "C.M.T. - WINDFIELD",
       "email": "comptabilite-accounting2@cmt-windfield.com",
@@ -1799,16 +1779,6 @@
       "ville": "Bois-Colombes",
       "codePostal": "92270",
       "rue": "12, place de la Renaissance"
-    },
-    {
-      "id": 248733329,
-      "nom": "CAFE BOHEME",
-      "email": "",
-      "telephone": "0143270133",
-      "adresse": "19 boulevard Edgar Quinet, 75014, Paris",
-      "ville": "Paris",
-      "codePostal": "75014",
-      "rue": "19 boulevard Edgar Quinet"
     },
     {
       "id": 248733203,
@@ -6601,6 +6571,16 @@
       "rue": "15, place du Général Leclerc"
     },
     {
+      "id": 255182324,
+      "nom": "LE PUB SURESNES - TRP GERANCE",
+      "email": "trpgerance@icloud.com",
+      "telephone": "",
+      "adresse": "15 PLACE DU GENERAL LECLERC, 92150, SURESNES",
+      "ville": "SURESNES",
+      "codePostal": "92150",
+      "rue": "15 PLACE DU GENERAL LECLERC"
+    },
+    {
       "id": 125155907,
       "nom": "LE PURPLE (anciennement CASA ERNESTO)",
       "email": "comptaaffiche@gmail.com",
@@ -9172,13 +9152,13 @@
     },
     {
       "id": 248733649,
-      "nom": "O P'TIT RESTO - TRP GERANCE",
+      "nom": "O P'RI RESTO - TRP GERANCE",
       "email": "trpoptitresto@gmail.com",
       "telephone": "",
-      "adresse": "5, place du Général Leclerc, 92150, Suresnes",
-      "ville": "Suresnes",
+      "adresse": "15 PLACE DU GENERAL LECLERC, 92150, SURESNES",
+      "ville": "SURESNES",
       "codePostal": "92150",
-      "rue": "5, place du Général Leclerc"
+      "rue": "15 PLACE DU GENERAL LECLERC"
     },
     {
       "id": 257623395,
@@ -12081,6 +12061,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1208,
-  "syncDate": "2026-07-30T05:00:47Z"
+  "total": 1206,
+  "syncDate": "2026-07-31T05:09:00Z"
 }
