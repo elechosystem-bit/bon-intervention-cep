@@ -521,6 +521,16 @@
       "rue": "57, boulevard Saint Marcel"
     },
     {
+      "id": 1399241539584,
+      "nom": "AU RENDEZ-VOUS DES BELGES - MICP 10",
+      "email": "rdvdesbelges@gmail.com",
+      "telephone": "",
+      "adresse": "23 RUE DE DUNKERQUE, 75010, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75010",
+      "rue": "23 RUE DE DUNKERQUE"
+    },
+    {
       "id": 125164943,
       "nom": "AU REVEIL SAMARITAIN",
       "email": "lereveil14@outlook.fr",
@@ -3352,13 +3362,13 @@
     },
     {
       "id": 248733170,
-      "nom": "DEDE LA FRITE - WHAAM",
+      "nom": "DEDE LA FRITE - MAAHW !",
       "email": "direction.dede@gmail.com",
       "telephone": "+33 7 82 54 54 58",
-      "adresse": "52, rue notre Dame des Victoires, 75002, Paris",
-      "ville": "Paris",
+      "adresse": "52 rue Notre Dame des  Victoires, 75002, PARIS",
+      "ville": "PARIS",
       "codePostal": "75002",
-      "rue": "52, rue notre Dame des Victoires"
+      "rue": "52 rue Notre Dame des  Victoires"
     },
     {
       "id": 248732838,
@@ -4752,13 +4762,13 @@
     },
     {
       "id": 125155885,
-      "nom": "L'INSPIRATION SAS",
+      "nom": "L'INSPIRATION",
       "email": "factures+cl_i06c944@m.inexweb.fr",
       "telephone": "",
-      "adresse": "65, boulevard Pasteur, 75015, Paris",
-      "ville": "Paris",
+      "adresse": "65 BOULEVARD PASTEUR, 75015, PARIS",
+      "ville": "PARIS",
       "codePostal": "75015",
-      "rue": "65, boulevard Pasteur"
+      "rue": "65 BOULEVARD PASTEUR"
     },
     {
       "id": 248733028,
@@ -10371,6 +10381,16 @@
       "rue": "A compléter"
     },
     {
+      "id": 1398411264000,
+      "nom": "S3F FINANCES SURESNES",
+      "email": "mberthod@s3f-finances.fr",
+      "telephone": "",
+      "adresse": "15 RUE DU MONT VALERIEN, 92150, SURESNES",
+      "ville": "SURESNES",
+      "codePostal": "92150",
+      "rue": "15 RUE DU MONT VALERIEN"
+    },
+    {
       "id": 248733411,
       "nom": "SA CHARDIN INVESTISSEMENT - HOTEL ELDORADO",
       "email": "",
@@ -12061,6 +12081,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1206,
-  "syncDate": "2026-07-31T05:09:00Z"
+  "total": 1208,
+  "syncDate": "2026-08-01T05:03:32Z"
 }
