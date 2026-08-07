@@ -5462,9 +5462,9 @@
     },
     {
       "id": 248733398,
-      "nom": "LE BISTROT DES PLANTES",
+      "nom": "LE BISTROT DES PLANTES - BDP14",
       "email": "canivet.thomas@hotmail.fr",
-      "telephone": "0145435371",
+      "telephone": "+33 1 45 43 53 71",
       "adresse": "34 rue des Plantes, 75014, Paris",
       "ville": "Paris",
       "codePostal": "75014",
@@ -7645,10 +7645,10 @@
       "nom": "MARIE BELLE (SARL DUDU)",
       "email": "aurelie.girbal@yahoo.fr",
       "telephone": "",
-      "adresse": "44, boulevard Poissonnière, 75010, Paris",
+      "adresse": "44 Boulevard de Bonne Nouvelle, 75010, Paris",
       "ville": "Paris",
       "codePostal": "75010",
-      "rue": "44, boulevard Poissonnière"
+      "rue": "44 Boulevard de Bonne Nouvelle"
     },
     {
       "id": 248732636,
@@ -12102,5 +12102,5 @@
     }
   ],
   "total": 1210,
-  "syncDate": "2026-08-06T06:23:20Z"
+  "syncDate": "2026-08-07T05:28:16Z"
 }
