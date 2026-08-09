@@ -9011,6 +9011,36 @@
       "rue": "106, avenue Mozart"
     },
     {
+      "id": 1412008382464,
+      "nom": "Market Ris-Orangis",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
+    },
+    {
+      "id": 1412004126720,
+      "nom": "Market Ris-Orangis",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
+    },
+    {
+      "id": 1412004085760,
+      "nom": "Market Ris-Orangis",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
+    },
+    {
       "id": 1196526854144,
       "nom": "McDonald's Auneaux",
       "email": "",
@@ -12101,6 +12131,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1210,
-  "syncDate": "2026-08-08T04:47:04Z"
+  "total": 1213,
+  "syncDate": "2026-08-09T04:55:40Z"
 }
