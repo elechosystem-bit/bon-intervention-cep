@@ -9011,6 +9011,26 @@
       "rue": "106, avenue Mozart"
     },
     {
+      "id": 1412116348928,
+      "nom": "Market Ris-Orangis",
+      "email": "",
+      "telephone": "",
+      "adresse": "",
+      "ville": "",
+      "codePostal": "",
+      "rue": ""
+    },
+    {
+      "id": 1412115611648,
+      "nom": "Market Ris-Orangis",
+      "email": "",
+      "telephone": "",
+      "adresse": "75000, Paris",
+      "ville": "Paris",
+      "codePostal": "75000",
+      "rue": ""
+    },
+    {
       "id": 1412008382464,
       "nom": "Market Ris-Orangis",
       "email": "",
@@ -12131,6 +12151,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1213,
-  "syncDate": "2026-08-09T04:55:40Z"
+  "total": 1215,
+  "syncDate": "2026-08-10T05:17:31Z"
 }
