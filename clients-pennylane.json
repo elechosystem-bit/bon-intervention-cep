@@ -3751,6 +3751,16 @@
       "rue": "SARL LODADISTR"
     },
     {
+      "id": 1413147455488,
+      "nom": "FRANPRIX MENNECY - Verville",
+      "email": "",
+      "telephone": "",
+      "adresse": "Centre Commercial Verville - Boulevard de la Verville, 91540, Mennecy",
+      "ville": "Mennecy",
+      "codePostal": "91540",
+      "rue": "Centre Commercial Verville - Boulevard de la Verville"
+    },
+    {
       "id": 248733571,
       "nom": "FRENCH RIVIERA",
       "email": "kadaib@hotmail.com",
@@ -12151,6 +12161,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1215,
-  "syncDate": "2026-08-10T05:17:31Z"
+  "total": 1216,
+  "syncDate": "2026-08-11T04:58:43Z"
 }
