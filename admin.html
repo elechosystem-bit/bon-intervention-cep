@@ -350,6 +350,10 @@
                             </div>
                         </div>
                     </div>
+                    <div class="input-group" style="grid-column: 1 / -1; background:#fff8e1; border-left:4px solid #f6ad55; padding:10px 12px; border-radius:6px;">
+                        <label style="color:#8a5a00;">📌 Note pour la compta <span style="font-weight:normal; font-size:0.75rem; color:#8a5a00;">(interne, jointe à l'email compta)</span></label>
+                        <textarea id="noteCompta" rows="3" placeholder="Indication pour la comptabilité (ex : facturer sur devis 685, contrat de maintenance, refacturer au propriétaire...)"></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -2588,6 +2592,7 @@
                     telephone: document.getElementById('clientPhone').value || '',
                     technicien: document.getElementById('technicien').value || '',
                     description: document.getElementById('description').value || '',
+                    noteCompta: document.getElementById('noteCompta')?.value || '',
                     heure_arrivee: document.getElementById('heureArrivee').value || '',
                     heure_depart: document.getElementById('heureDepart').value || '',
                     societe: societeClient ? {
@@ -2706,7 +2711,8 @@
                 const clientAddress = document.getElementById('clientAddress').value || bonData.address || '';
                 const technicien = document.getElementById('technicien').value || bonData.technicien || 'Non spécifié';
                 const description = document.getElementById('description').value || bonData.description || '';
-                
+                const noteCompta = (document.getElementById('noteCompta')?.value || bonData.noteCompta || '').trim();
+
                 // Main d'œuvre
                 const moDuree = document.getElementById('moDuree').value || bonData.moDuree || '0h00';
                 const moDemiHeures = document.getElementById('moDemiHeures').value || bonData.moDemiHeures || '0 demi-heures';
@@ -2764,7 +2770,12 @@
                 if (clientAddress) body += `📍 Adresse : ${clientAddress}\n`;
                 body += `🔧 Technicien : ${technicien}\n`;
                 if (description) body += `📝 Description : ${description}\n`;
-                
+                if (noteCompta) {
+                    body += '\n📌 NOTE POUR LA COMPTA :\n';
+                    body += '─'.repeat(50) + '\n';
+                    body += noteCompta + '\n';
+                }
+
                 body += produitsHtml;
                 
                 body += '\n💰 MAIN D\'ŒUVRE :\n';
@@ -3030,6 +3041,7 @@
                 address: document.getElementById('clientAddress').value || '',
                 technicien: document.getElementById('technicien').value || '',
                 description: document.getElementById('description').value || '',
+                noteCompta: document.getElementById('noteCompta')?.value || '',
                 heureArrivee: document.getElementById('heureArrivee').value || '',
                 heureDepart: document.getElementById('heureDepart').value || '',
                 pauseDe: document.getElementById('pauseDe')?.value || '',
@@ -3377,6 +3389,8 @@
             document.getElementById('clientAddress').value = bon.address;
             document.getElementById('technicien').value = bon.technicien;
             document.getElementById('description').value = bon.description;
+            var noteComptaEl = document.getElementById('noteCompta');
+            if (noteComptaEl) noteComptaEl.value = bon.noteCompta || '';
             document.getElementById('heureArrivee').value = bon.heureArrivee || '';
             document.getElementById('heureDepart').value = bon.heureDepart || '';
             var pauseDeEl = document.getElementById('pauseDe');
