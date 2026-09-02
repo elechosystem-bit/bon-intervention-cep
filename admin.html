@@ -272,6 +272,7 @@
                         <option value="cep">CEP</option>
                         <option value="elechosystem">Elecho System</option>
                     </select>
+                    <button type="button" id="btnTarif" onclick="ouvrirModaleTarif()" title="Rechercher un tarif dans le catalogue" style="display:none; padding:6px 12px; border-radius:6px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">💰 Tarif</button>
                     <button type="button" class="btn-deconnexion-admin" onclick="deconnecterAdmin()" title="Quitter l'administration">Déconnecter</button>
                 </div>
                 <span id="bonNumber">CEP-2024-0001</span>
@@ -921,6 +922,35 @@
     <div id="photoLightbox" class="photo-lightbox" onclick="closePhotoLightbox()">
         <button type="button" class="photo-lightbox-close" onclick="closePhotoLightbox(); event.stopPropagation();">×</button>
         <img id="photoLightboxImg" src="" alt="Aperçu photo">
+    </div>
+
+    <!-- Modale Tarif (CEP) -->
+    <div id="modaleTarif" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto;">
+        <div style="background:#fff; width:100%; max-width:780px; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; max-height:90vh;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #e2e8f0; background:#1a365d; color:white; border-radius:12px 12px 0 0;">
+                <div style="font-size:1.1rem; font-weight:700;">💰 Tarifs — Catalogue CEP</div>
+                <button type="button" onclick="fermerModaleTarif()" style="background:transparent; border:0; color:white; font-size:1.6rem; line-height:1; cursor:pointer;">×</button>
+            </div>
+            <div style="padding:12px 18px; border-bottom:1px solid #e2e8f0;">
+                <input type="text" id="tarifRecherche" placeholder="Rechercher (nom, référence, catégorie…)" oninput="filtrerTarifs()" style="width:100%; padding:10px 12px; border:2px solid #cbd5e0; border-radius:8px; font-size:1rem;">
+                <div id="tarifCompteur" style="margin-top:6px; font-size:0.8rem; color:#718096;"></div>
+            </div>
+            <div style="overflow:auto; padding:0 6px 12px 6px;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead style="position:sticky; top:0; background:#f7fafc; z-index:1;">
+                        <tr>
+                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Catégorie</th>
+                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Nom</th>
+                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Référence</th>
+                            <th style="text-align:right; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tarifTbody">
+                        <tr><td colspan="4" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Configuration des sociétés -->
@@ -1743,6 +1773,10 @@
             const btnApave = document.getElementById('btnApave');
             if (btnApave) btnApave.style.display = (societeId === 'cep') ? 'inline-flex' : 'none';
 
+            // Afficher/masquer le bouton Tarif (CEP uniquement)
+            const btnTarif = document.getElementById('btnTarif');
+            if (btnTarif) btnTarif.style.display = (societeId === 'cep') ? 'inline-flex' : 'none';
+
             // Changer le nom
             var logoUrl = societeId === 'cep' ? 'logo-cep.png' : 'logo-elecho.jpg';
             document.getElementById('societeNom').innerHTML = '<img src="' + logoUrl + '" alt="' + societe.nom + '" style="max-height:60px;max-width:200px;vertical-align:middle;">';
@@ -2077,6 +2111,116 @@
             } catch (e) { console.warn('Chargement catalogue_perso:', e); }
             return out;
         }
+
+        // === Modale Tarif (CEP uniquement) ===
+        let tarifCatalogueComplet = null;
+
+        async function ouvrirModaleTarif() {
+            const modale = document.getElementById('modaleTarif');
+            if (!modale) return;
+            modale.style.display = 'flex';
+            document.getElementById('tarifRecherche').value = '';
+            if (!tarifCatalogueComplet) {
+                await construireCatalogueTarif();
+            }
+            afficherTarifs(tarifCatalogueComplet);
+            setTimeout(function() { document.getElementById('tarifRecherche').focus(); }, 50);
+        }
+
+        function fermerModaleTarif() {
+            const modale = document.getElementById('modaleTarif');
+            if (modale) modale.style.display = 'none';
+        }
+
+        async function construireCatalogueTarif() {
+            const liste = [];
+            // Catalogue de base CEP (config.js)
+            const societe = (typeof SOCIETES !== 'undefined') ? SOCIETES['cep'] : null;
+            if (societe && Array.isArray(societe.materiel)) {
+                societe.materiel.forEach(function(cat) {
+                    (cat.produits || []).forEach(function(p) {
+                        liste.push({
+                            categorie: cat.categorie || 'Divers',
+                            nom: p.nom || '',
+                            reference: p.reference || '',
+                            prix: parseFloat(p.prix) || 0,
+                            unite: p.unite || 'u'
+                        });
+                    });
+                });
+            }
+            // Catalogue perso Firestore (CEP)
+            try {
+                if (typeof db !== 'undefined') {
+                    const snap = await db.collection('societes').doc('cep').collection('catalogue_perso').get();
+                    snap.forEach(function(doc) {
+                        const d = doc.data();
+                        liste.push({
+                            categorie: d.categorie || 'Divers',
+                            nom: d.nom || '',
+                            reference: d.reference || '',
+                            prix: parseFloat(d.prix) || 0,
+                            unite: d.unite || 'u'
+                        });
+                    });
+                }
+            } catch (e) { console.warn('catalogue_perso tarif:', e); }
+            liste.sort(function(a, b) {
+                const c = a.categorie.localeCompare(b.categorie, 'fr');
+                if (c !== 0) return c;
+                return a.nom.localeCompare(b.nom, 'fr');
+            });
+            tarifCatalogueComplet = liste;
+        }
+
+        function afficherTarifs(liste) {
+            const tbody = document.getElementById('tarifTbody');
+            const compteur = document.getElementById('tarifCompteur');
+            if (!tbody) return;
+            if (!liste || liste.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="padding:16px; text-align:center; color:#a0aec0;">Aucun résultat</td></tr>';
+                if (compteur) compteur.textContent = '';
+                return;
+            }
+            let html = '';
+            liste.forEach(function(p) {
+                const prixTxt = p.prix.toFixed(2) + ' €' + (p.unite === 'm' ? ' / m' : '');
+                html += '<tr style="border-bottom:1px solid #edf2f7;">'
+                    + '<td style="padding:8px; color:#718096; font-size:0.85rem;">' + escapeHtmlTarif(p.categorie) + '</td>'
+                    + '<td style="padding:8px; font-weight:600; color:#2d3748;">' + escapeHtmlTarif(p.nom) + '</td>'
+                    + '<td style="padding:8px; color:#4a5568; font-family:monospace; font-size:0.85rem;">' + escapeHtmlTarif(p.reference) + '</td>'
+                    + '<td style="padding:8px; text-align:right; font-weight:700; color:#1a365d; white-space:nowrap;">' + prixTxt + '</td>'
+                    + '</tr>';
+            });
+            tbody.innerHTML = html;
+            if (compteur) compteur.textContent = liste.length + ' article' + (liste.length > 1 ? 's' : '');
+        }
+
+        function filtrerTarifs() {
+            if (!tarifCatalogueComplet) return;
+            const q = (document.getElementById('tarifRecherche').value || '').trim().toLowerCase();
+            if (!q) { afficherTarifs(tarifCatalogueComplet); return; }
+            const filtre = tarifCatalogueComplet.filter(function(p) {
+                return (p.nom || '').toLowerCase().includes(q)
+                    || (p.reference || '').toLowerCase().includes(q)
+                    || (p.categorie || '').toLowerCase().includes(q);
+            });
+            afficherTarifs(filtre);
+        }
+
+        function escapeHtmlTarif(s) {
+            return String(s || '').replace(/[&<>"']/g, function(c) {
+                return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+            });
+        }
+
+        // Fermeture par touche Echap
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const m = document.getElementById('modaleTarif');
+                if (m && m.style.display === 'flex') fermerModaleTarif();
+            }
+        });
 
         function buildMaterielAvecPerso(societe, customByCat) {
             if (!societe || !societe.materiel) return societe;
