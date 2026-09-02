@@ -127,6 +127,12 @@ export default async function handler(req, res) {
                             ${bonData.heure_arrivee ? `<p style="margin: 5px 0;"><strong>Heure d'arrivée :</strong> ${bonData.heure_arrivee}</p>` : ''}
                             ${bonData.heure_depart ? `<p style="margin: 5px 0;"><strong>Heure de départ :</strong> ${bonData.heure_depart}</p>` : ''}
                         </div>
+                        ${bonData.noteCompta ? `
+                            <div style="background: #fff8e1; border-left: 4px solid #f6ad55; padding: 12px 14px; border-radius: 6px; margin: 15px 0;">
+                                <p style="margin: 0 0 6px 0; font-weight: bold; color: #8a5a00;">📌 Note pour la comptabilité :</p>
+                                <p style="margin: 0; white-space: pre-wrap; color: #2d3748;">${String(bonData.noteCompta).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+                            </div>
+                        ` : ''}
                     ` : ''}
                     ${photosHtml}
                     <p style="margin-top: 20px;">Cordialement,<br><strong>${societeNom}</strong></p>
