@@ -933,8 +933,11 @@
             </div>
             <div style="padding:12px 18px; border-bottom:1px solid #e2e8f0;">
                 <input type="text" id="tarifRecherche" placeholder="Rechercher (nom, catégorie…)" oninput="filtrerTarifs()" style="width:100%; padding:10px 12px; border:2px solid #cbd5e0; border-radius:8px; font-size:1rem;">
-                <div id="tarifCompteur" style="margin-top:6px; font-size:0.8rem; color:#718096;"></div>
-                <div style="margin-top:4px; font-size:0.75rem; color:#4a5568;">💡 Clique sur un prix pour le modifier — sauvegarde automatique.</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                    <div id="tarifCompteur" style="font-size:0.8rem; color:#718096;"></div>
+                    <button type="button" id="btnModeEditionTarif" onclick="basculerModeEditionTarif()" style="padding:6px 14px; border-radius:6px; border:0; background:#1a365d; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">✏️ Modifier</button>
+                </div>
+                <div id="tarifAideEdition" style="display:none; margin-top:6px; font-size:0.75rem; color:#8a5a00; background:#fff8e1; padding:6px 10px; border-radius:6px;">💡 Mode édition : clique sur un prix, tape la nouvelle valeur, puis Entrée ou clique ailleurs. Sauvegarde automatique.</div>
             </div>
             <div style="overflow:auto; padding:0 6px 12px 6px;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
@@ -2116,12 +2119,34 @@
 
         // === Modale Tarif (CEP uniquement) ===
         let tarifCatalogueComplet = null;
+        let tarifModeEdition = false;
+
+        function basculerModeEditionTarif() {
+            tarifModeEdition = !tarifModeEdition;
+            const btn = document.getElementById('btnModeEditionTarif');
+            const aide = document.getElementById('tarifAideEdition');
+            if (btn) {
+                btn.innerHTML = tarifModeEdition ? '✅ Terminer' : '✏️ Modifier';
+                btn.style.background = tarifModeEdition ? '#38a169' : '#1a365d';
+            }
+            if (aide) aide.style.display = tarifModeEdition ? 'block' : 'none';
+            // Re-render avec le filtre courant
+            filtrerTarifs();
+        }
 
         async function ouvrirModaleTarif() {
             const modale = document.getElementById('modaleTarif');
             if (!modale) return;
             modale.style.display = 'flex';
             document.getElementById('tarifRecherche').value = '';
+            // Toujours ouvrir en mode lecture
+            if (tarifModeEdition) {
+                tarifModeEdition = false;
+                const btn = document.getElementById('btnModeEditionTarif');
+                const aide = document.getElementById('tarifAideEdition');
+                if (btn) { btn.innerHTML = '✏️ Modifier'; btn.style.background = '#1a365d'; }
+                if (aide) aide.style.display = 'none';
+            }
             const tbody = document.getElementById('tarifTbody');
             if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>';
             if (!tarifCatalogueComplet) {
@@ -2223,20 +2248,25 @@
             let html = '';
             liste.forEach(function(p) {
                 const unite = (p.unite === 'm') ? ' / m' : '';
-                const prixVal = (p.prix > 0) ? p.prix.toFixed(2) : '';
-                const inputHtml = '<input type="number" step="0.01" min="0" value="' + prixVal + '" '
-                    + 'data-id="' + escapeHtmlTarif(p.id) + '" '
-                    + 'onblur="sauverPrixTarif(this.dataset.id, this.value, this)" '
-                    + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '
-                    + 'style="width:80px; padding:4px 6px; text-align:right; border:1px solid #cbd5e0; border-radius:4px; font-weight:700; color:#1a365d; transition:background 0.3s;">';
+                let cellulePrix;
+                if (tarifModeEdition) {
+                    const prixVal = (p.prix > 0) ? p.prix.toFixed(2) : '';
+                    cellulePrix = '<input type="number" step="0.01" min="0" value="' + prixVal + '" '
+                        + 'data-id="' + escapeHtmlTarif(p.id) + '" '
+                        + 'onblur="sauverPrixTarif(this.dataset.id, this.value, this)" '
+                        + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '
+                        + 'style="width:80px; padding:4px 6px; text-align:right; border:1px solid #cbd5e0; border-radius:4px; font-weight:700; color:#1a365d; transition:background 0.3s;">'
+                        + '<span style="margin-left:4px; color:#4a5568; font-size:0.85rem;">€' + unite + '</span>';
+                } else {
+                    cellulePrix = (p.prix > 0)
+                        ? ('<span style="font-weight:700; color:#1a365d;">' + p.prix.toFixed(2) + ' €' + unite + '</span>')
+                        : '<span style="color:#a0aec0;">nous consulter</span>';
+                }
                 html += '<tr style="border-bottom:1px solid #edf2f7;">'
                     + '<td style="padding:8px; color:#718096; font-size:0.85rem;">' + escapeHtmlTarif(p.categorie) + '</td>'
                     + '<td style="padding:8px; font-weight:600; color:#2d3748;">' + escapeHtmlTarif(p.nom) + '</td>'
-                    + '<td style="padding:8px; text-align:right; white-space:nowrap;">'
-                    + inputHtml
-                    + '<span style="margin-left:4px; color:#4a5568; font-size:0.85rem;">€' + unite + '</span>'
-                    + '</td>';
-                html += '</tr>';
+                    + '<td style="padding:8px; text-align:right; white-space:nowrap;">' + cellulePrix + '</td>'
+                    + '</tr>';
             });
             tbody.innerHTML = html;
             if (compteur) compteur.textContent = liste.length + ' article' + (liste.length > 1 ? 's' : '');
