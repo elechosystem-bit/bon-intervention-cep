@@ -932,8 +932,9 @@
                 <button type="button" onclick="fermerModaleTarif()" style="background:transparent; border:0; color:white; font-size:1.6rem; line-height:1; cursor:pointer;">×</button>
             </div>
             <div style="padding:12px 18px; border-bottom:1px solid #e2e8f0;">
-                <input type="text" id="tarifRecherche" placeholder="Rechercher (nom, référence, catégorie…)" oninput="filtrerTarifs()" style="width:100%; padding:10px 12px; border:2px solid #cbd5e0; border-radius:8px; font-size:1rem;">
+                <input type="text" id="tarifRecherche" placeholder="Rechercher (nom, catégorie…)" oninput="filtrerTarifs()" style="width:100%; padding:10px 12px; border:2px solid #cbd5e0; border-radius:8px; font-size:1rem;">
                 <div id="tarifCompteur" style="margin-top:6px; font-size:0.8rem; color:#718096;"></div>
+                <div style="margin-top:4px; font-size:0.75rem; color:#4a5568;">💡 Clique sur un prix pour le modifier — sauvegarde automatique.</div>
             </div>
             <div style="overflow:auto; padding:0 6px 12px 6px;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
@@ -2121,8 +2122,16 @@
             if (!modale) return;
             modale.style.display = 'flex';
             document.getElementById('tarifRecherche').value = '';
+            const tbody = document.getElementById('tarifTbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>';
             if (!tarifCatalogueComplet) {
-                await construireCatalogueTarif();
+                try {
+                    await construireCatalogueTarif();
+                } catch (e) {
+                    console.error('Chargement grille tarifs:', e);
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="padding:16px; text-align:center; color:#c53030;">Erreur : ' + escapeHtmlTarif(e.message || e) + '</td></tr>';
+                    return;
+                }
             }
             afficherTarifs(tarifCatalogueComplet);
             setTimeout(function() { document.getElementById('tarifRecherche').focus(); }, 50);
@@ -2134,21 +2143,76 @@
         }
 
         async function construireCatalogueTarif() {
-            const liste = [];
-            // Source unique : grille-cep.js (GRILLE_CEP) — fichier de reference
-            if (typeof GRILLE_CEP !== 'undefined' && Array.isArray(GRILLE_CEP)) {
-                GRILLE_CEP.forEach(function(p) {
-                    liste.push({
-                        categorie: p.categorie || 'Divers',
-                        nom: p.nom || '',
-                        reference: '',
-                        prix: parseFloat(p.prix) || 0,
-                        unite: p.unite || 'u'
-                    });
-                });
+            // Source : Firestore (collection societes/cep/grille_tarifs).
+            // Au 1er ouvert, si la collection est vide, on la bootstrap depuis GRILLE_CEP (grille-cep.js).
+            const col = db.collection('societes').doc('cep').collection('grille_tarifs');
+            let snap = await col.orderBy('ordre').get();
+            if (snap.empty) {
+                await bootstrapGrilleTarif();
+                snap = await col.orderBy('ordre').get();
             }
-            // On conserve l'ordre de la grille (categorie puis nom deja tries a la generation)
+            const liste = [];
+            snap.forEach(function(doc) {
+                const d = doc.data();
+                liste.push({
+                    id: doc.id,
+                    categorie: d.categorie || 'Divers',
+                    nom: d.nom || '',
+                    prix: parseFloat(d.prix) || 0,
+                    unite: d.unite || 'u',
+                    ordre: d.ordre || 0
+                });
+            });
             tarifCatalogueComplet = liste;
+        }
+
+        async function bootstrapGrilleTarif() {
+            if (typeof GRILLE_CEP === 'undefined' || !Array.isArray(GRILLE_CEP)) return;
+            const col = db.collection('societes').doc('cep').collection('grille_tarifs');
+            // Batchs de 400 (limite Firestore = 500)
+            let batch = db.batch();
+            let count = 0;
+            for (let i = 0; i < GRILLE_CEP.length; i++) {
+                const p = GRILLE_CEP[i];
+                const ref = col.doc();
+                batch.set(ref, {
+                    categorie: p.categorie || 'Divers',
+                    nom: p.nom || '',
+                    prix: parseFloat(p.prix) || 0,
+                    unite: p.unite || 'u',
+                    ordre: i
+                });
+                count++;
+                if (count >= 400) {
+                    await batch.commit();
+                    batch = db.batch();
+                    count = 0;
+                }
+            }
+            if (count > 0) await batch.commit();
+        }
+
+        async function sauverPrixTarif(id, nouveauPrix, inputEl) {
+            const val = parseFloat(String(nouveauPrix).replace(',', '.'));
+            if (isNaN(val) || val < 0) {
+                if (inputEl) { inputEl.style.background = '#fed7d7'; setTimeout(function(){ inputEl.style.background = ''; }, 1200); }
+                return;
+            }
+            try {
+                if (inputEl) inputEl.style.background = '#fefcbf';
+                await db.collection('societes').doc('cep').collection('grille_tarifs').doc(id).update({ prix: val });
+                // Mettre a jour le cache local
+                const item = tarifCatalogueComplet.find(function(p) { return p.id === id; });
+                if (item) item.prix = val;
+                if (inputEl) {
+                    inputEl.style.background = '#c6f6d5';
+                    setTimeout(function(){ inputEl.style.background = ''; }, 900);
+                }
+            } catch (e) {
+                console.error('Sauvegarde prix tarif:', e);
+                if (inputEl) { inputEl.style.background = '#fed7d7'; setTimeout(function(){ inputEl.style.background = ''; }, 1500); }
+                alert('Erreur de sauvegarde : ' + (e.message || e));
+            }
         }
 
         function afficherTarifs(liste) {
@@ -2162,14 +2226,21 @@
             }
             let html = '';
             liste.forEach(function(p) {
-                const prixTxt = p.prix > 0
-                    ? (p.prix.toFixed(2) + ' €' + (p.unite === 'm' ? ' / m' : ''))
-                    : '<span style="color:#a0aec0; font-weight:normal;">nous consulter</span>';
+                const unite = (p.unite === 'm') ? ' / m' : '';
+                const prixVal = (p.prix > 0) ? p.prix.toFixed(2) : '';
+                const inputHtml = '<input type="number" step="0.01" min="0" value="' + prixVal + '" '
+                    + 'data-id="' + escapeHtmlTarif(p.id) + '" '
+                    + 'onblur="sauverPrixTarif(this.dataset.id, this.value, this)" '
+                    + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '
+                    + 'style="width:80px; padding:4px 6px; text-align:right; border:1px solid #cbd5e0; border-radius:4px; font-weight:700; color:#1a365d; transition:background 0.3s;">';
                 html += '<tr style="border-bottom:1px solid #edf2f7;">'
                     + '<td style="padding:8px; color:#718096; font-size:0.85rem;">' + escapeHtmlTarif(p.categorie) + '</td>'
                     + '<td style="padding:8px; font-weight:600; color:#2d3748;">' + escapeHtmlTarif(p.nom) + '</td>'
-                    + '<td style="padding:8px; text-align:right; font-weight:700; color:#1a365d; white-space:nowrap;">' + prixTxt + '</td>'
-                    + '</tr>';
+                    + '<td style="padding:8px; text-align:right; white-space:nowrap;">'
+                    + inputHtml
+                    + '<span style="margin-left:4px; color:#4a5568; font-size:0.85rem;">€' + unite + '</span>'
+                    + '</td>';
+                html += '</tr>';
             });
             tbody.innerHTML = html;
             if (compteur) compteur.textContent = liste.length + ' article' + (liste.length > 1 ? 's' : '');
