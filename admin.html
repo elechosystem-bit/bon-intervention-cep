@@ -2142,68 +2142,64 @@
             if (modale) modale.style.display = 'none';
         }
 
-        async function construireCatalogueTarif() {
-            // Source : Firestore (collection societes/cep/grille_tarifs).
-            // Au 1er ouvert, si la collection est vide, on la bootstrap depuis GRILLE_CEP (grille-cep.js).
-            const col = db.collection('societes').doc('cep').collection('grille_tarifs');
-            let snap = await col.orderBy('ordre').get();
-            if (snap.empty) {
-                await bootstrapGrilleTarif();
-                snap = await col.orderBy('ordre').get();
-            }
-            const liste = [];
-            snap.forEach(function(doc) {
-                const d = doc.data();
-                liste.push({
-                    id: doc.id,
-                    categorie: d.categorie || 'Divers',
-                    nom: d.nom || '',
-                    prix: parseFloat(d.prix) || 0,
-                    unite: d.unite || 'u',
-                    ordre: d.ordre || 0
-                });
-            });
-            tarifCatalogueComplet = liste;
+        // Reference vers le document unique qui contient toute la grille
+        function refGrilleTarif() {
+            return db.collection('societes').doc('cep').collection('parametres').doc('grille_tarifs');
         }
 
-        async function bootstrapGrilleTarif() {
-            if (typeof GRILLE_CEP === 'undefined' || !Array.isArray(GRILLE_CEP)) return;
-            const col = db.collection('societes').doc('cep').collection('grille_tarifs');
-            // Batchs de 400 (limite Firestore = 500)
-            let batch = db.batch();
-            let count = 0;
-            for (let i = 0; i < GRILLE_CEP.length; i++) {
-                const p = GRILLE_CEP[i];
-                const ref = col.doc();
-                batch.set(ref, {
+        async function construireCatalogueTarif() {
+            const ref = refGrilleTarif();
+            const doc = await ref.get();
+            let items = null;
+            if (doc.exists) {
+                const d = doc.data();
+                if (Array.isArray(d.items)) items = d.items;
+            }
+            if (!items || items.length === 0) {
+                // Bootstrap depuis GRILLE_CEP (fallback statique)
+                if (typeof GRILLE_CEP === 'undefined' || !Array.isArray(GRILLE_CEP)) {
+                    throw new Error('Grille de base indisponible');
+                }
+                items = GRILLE_CEP.map(function(p) {
+                    return {
+                        categorie: p.categorie || 'Divers',
+                        nom: p.nom || '',
+                        prix: parseFloat(p.prix) || 0,
+                        unite: p.unite || 'u'
+                    };
+                });
+                await ref.set({ items: items, majLe: firebase.firestore.FieldValue.serverTimestamp() });
+            }
+            // On indexe chaque item par sa position pour la sauvegarde
+            tarifCatalogueComplet = items.map(function(p, i) {
+                return {
+                    id: String(i),
                     categorie: p.categorie || 'Divers',
                     nom: p.nom || '',
                     prix: parseFloat(p.prix) || 0,
-                    unite: p.unite || 'u',
-                    ordre: i
-                });
-                count++;
-                if (count >= 400) {
-                    await batch.commit();
-                    batch = db.batch();
-                    count = 0;
-                }
-            }
-            if (count > 0) await batch.commit();
+                    unite: p.unite || 'u'
+                };
+            });
         }
 
         async function sauverPrixTarif(id, nouveauPrix, inputEl) {
+            const idx = parseInt(id, 10);
             const val = parseFloat(String(nouveauPrix).replace(',', '.'));
-            if (isNaN(val) || val < 0) {
+            if (isNaN(idx) || isNaN(val) || val < 0) {
                 if (inputEl) { inputEl.style.background = '#fed7d7'; setTimeout(function(){ inputEl.style.background = ''; }, 1200); }
                 return;
             }
+            if (!tarifCatalogueComplet || !tarifCatalogueComplet[idx]) return;
+            // Pas de changement ? on ignore
+            if (tarifCatalogueComplet[idx].prix === val) return;
             try {
                 if (inputEl) inputEl.style.background = '#fefcbf';
-                await db.collection('societes').doc('cep').collection('grille_tarifs').doc(id).update({ prix: val });
-                // Mettre a jour le cache local
-                const item = tarifCatalogueComplet.find(function(p) { return p.id === id; });
-                if (item) item.prix = val;
+                // On reconstruit l'array complet a partir du cache local (avec le nouveau prix) et on ecrit
+                tarifCatalogueComplet[idx].prix = val;
+                const items = tarifCatalogueComplet.map(function(p) {
+                    return { categorie: p.categorie, nom: p.nom, prix: p.prix, unite: p.unite };
+                });
+                await refGrilleTarif().set({ items: items, majLe: firebase.firestore.FieldValue.serverTimestamp() });
                 if (inputEl) {
                     inputEl.style.background = '#c6f6d5';
                     setTimeout(function(){ inputEl.style.background = ''; }, 900);
