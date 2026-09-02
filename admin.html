@@ -940,13 +940,12 @@
                     <thead style="position:sticky; top:0; background:#f7fafc; z-index:1;">
                         <tr>
                             <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Catégorie</th>
-                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Nom</th>
-                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Référence</th>
+                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Produit</th>
                             <th style="text-align:right; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Prix</th>
                         </tr>
                     </thead>
                     <tbody id="tarifTbody">
-                        <tr><td colspan="4" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>
+                        <tr><td colspan="3" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -955,6 +954,8 @@
 
     <!-- Configuration des sociétés -->
     <script src="config.js"></script>
+    <!-- Grille des prix CEP (source unique pour la modale Tarif) -->
+    <script src="grille-cep.js"></script>
     <!-- Firebase v8 (app + firestore + storage) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -2134,42 +2135,19 @@
 
         async function construireCatalogueTarif() {
             const liste = [];
-            // Catalogue de base CEP (config.js)
-            const societe = (typeof SOCIETES !== 'undefined') ? SOCIETES['cep'] : null;
-            if (societe && Array.isArray(societe.materiel)) {
-                societe.materiel.forEach(function(cat) {
-                    (cat.produits || []).forEach(function(p) {
-                        liste.push({
-                            categorie: cat.categorie || 'Divers',
-                            nom: p.nom || '',
-                            reference: p.reference || '',
-                            prix: parseFloat(p.prix) || 0,
-                            unite: p.unite || 'u'
-                        });
+            // Source unique : grille-cep.js (GRILLE_CEP) — fichier de reference
+            if (typeof GRILLE_CEP !== 'undefined' && Array.isArray(GRILLE_CEP)) {
+                GRILLE_CEP.forEach(function(p) {
+                    liste.push({
+                        categorie: p.categorie || 'Divers',
+                        nom: p.nom || '',
+                        reference: '',
+                        prix: parseFloat(p.prix) || 0,
+                        unite: p.unite || 'u'
                     });
                 });
             }
-            // Catalogue perso Firestore (CEP)
-            try {
-                if (typeof db !== 'undefined') {
-                    const snap = await db.collection('societes').doc('cep').collection('catalogue_perso').get();
-                    snap.forEach(function(doc) {
-                        const d = doc.data();
-                        liste.push({
-                            categorie: d.categorie || 'Divers',
-                            nom: d.nom || '',
-                            reference: d.reference || '',
-                            prix: parseFloat(d.prix) || 0,
-                            unite: d.unite || 'u'
-                        });
-                    });
-                }
-            } catch (e) { console.warn('catalogue_perso tarif:', e); }
-            liste.sort(function(a, b) {
-                const c = a.categorie.localeCompare(b.categorie, 'fr');
-                if (c !== 0) return c;
-                return a.nom.localeCompare(b.nom, 'fr');
-            });
+            // On conserve l'ordre de la grille (categorie puis nom deja tries a la generation)
             tarifCatalogueComplet = liste;
         }
 
@@ -2178,17 +2156,18 @@
             const compteur = document.getElementById('tarifCompteur');
             if (!tbody) return;
             if (!liste || liste.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="padding:16px; text-align:center; color:#a0aec0;">Aucun résultat</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="padding:16px; text-align:center; color:#a0aec0;">Aucun résultat</td></tr>';
                 if (compteur) compteur.textContent = '';
                 return;
             }
             let html = '';
             liste.forEach(function(p) {
-                const prixTxt = p.prix.toFixed(2) + ' €' + (p.unite === 'm' ? ' / m' : '');
+                const prixTxt = p.prix > 0
+                    ? (p.prix.toFixed(2) + ' €' + (p.unite === 'm' ? ' / m' : ''))
+                    : '<span style="color:#a0aec0; font-weight:normal;">nous consulter</span>';
                 html += '<tr style="border-bottom:1px solid #edf2f7;">'
                     + '<td style="padding:8px; color:#718096; font-size:0.85rem;">' + escapeHtmlTarif(p.categorie) + '</td>'
                     + '<td style="padding:8px; font-weight:600; color:#2d3748;">' + escapeHtmlTarif(p.nom) + '</td>'
-                    + '<td style="padding:8px; color:#4a5568; font-family:monospace; font-size:0.85rem;">' + escapeHtmlTarif(p.reference) + '</td>'
                     + '<td style="padding:8px; text-align:right; font-weight:700; color:#1a365d; white-space:nowrap;">' + prixTxt + '</td>'
                     + '</tr>';
             });
@@ -2202,7 +2181,6 @@
             if (!q) { afficherTarifs(tarifCatalogueComplet); return; }
             const filtre = tarifCatalogueComplet.filter(function(p) {
                 return (p.nom || '').toLowerCase().includes(q)
-                    || (p.reference || '').toLowerCase().includes(q)
                     || (p.categorie || '').toLowerCase().includes(q);
             });
             afficherTarifs(filtre);
