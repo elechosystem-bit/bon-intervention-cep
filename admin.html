@@ -936,7 +936,7 @@
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; flex-wrap:wrap;">
                     <div id="tarifCompteur" style="font-size:0.8rem; color:#718096;"></div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button type="button" id="btnAjouterTarif" onclick="ouvrirFormAjoutTarif()" style="display:none; padding:6px 12px; border-radius:6px; border:0; background:#38a169; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">➕ Ajouter</button>
+                        <button type="button" id="btnAjouterTarif" onclick="ouvrirFormAjoutTarif()" style="padding:6px 12px; border-radius:6px; border:0; background:#38a169; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">➕ Ajouter</button>
                         <button type="button" id="btnModeEditionTarif" onclick="basculerModeEditionTarif()" style="padding:6px 14px; border-radius:6px; border:0; background:#1a365d; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">✏️ Modifier</button>
                     </div>
                 </div>
@@ -2167,7 +2167,7 @@
                 btn.innerHTML = tarifModeEdition ? '✅ Terminer' : '✏️ Modifier';
                 btn.style.background = tarifModeEdition ? '#38a169' : '#1a365d';
             }
-            if (btnAjouter) btnAjouter.style.display = tarifModeEdition ? 'inline-block' : 'none';
+            // btnAjouter reste visible en permanence (ajouter n'est pas destructif)
             if (aide) aide.style.display = tarifModeEdition ? 'block' : 'none';
             if (!tarifModeEdition) fermerFormAjoutTarif();
             filtrerTarifs();
