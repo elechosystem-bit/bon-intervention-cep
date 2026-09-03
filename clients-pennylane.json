@@ -823,7 +823,7 @@
     {
       "id": 1202402689024,
       "nom": "BAR L'IPN",
-      "email": "",
+      "email": "toujours_op88@hotmail.fr",
       "telephone": "",
       "adresse": "23, rue Mouffetard, 75005 Paris, 75005, Paris",
       "ville": "Paris",
@@ -6811,6 +6811,16 @@
       "rue": "62 Rue du Mont Cenis"
     },
     {
+      "id": 1453649502208,
+      "nom": "LE SECOND EMPIRE - SARL DE LUCA",
+      "email": "michel.delmas15230@gmail.com",
+      "telephone": "",
+      "adresse": "62 RUE DE LA VERRERIE, 75004, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75004",
+      "rue": "62 RUE DE LA VERRERIE"
+    },
+    {
       "id": 248733303,
       "nom": "LE SEGUR",
       "email": "",
@@ -7183,7 +7193,7 @@
     {
       "id": 248733618,
       "nom": "LES TELEPHONES - RAYMONDE 7",
-      "email": "",
+      "email": "lestelephones7@gmail.com",
       "telephone": "",
       "adresse": "54, rue Cler, 75007, Paris",
       "ville": "Paris",
@@ -12161,6 +12171,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1216,
-  "syncDate": "2026-09-02T08:15:03Z"
+  "total": 1217,
+  "syncDate": "2026-09-03T08:24:38Z"
 }
