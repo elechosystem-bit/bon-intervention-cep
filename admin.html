@@ -3316,6 +3316,78 @@
 
         var renderHistoriqueEnCours = false;
         var afficherEnvoyesCompta = false; // false = on masque les bons déjà envoyés en compta
+
+        // === Chargement LEGER de la liste des bons via REST + field mask ===
+        // Ne telecharge QUE les champs affiches (numero, client, date, statut, technicien, totalTTC,
+        // createdAt, fusion, bonsOrigine). Les photos/signatures/produits/description ne sont PAS
+        // telechargees ici -> gain de trafic massif (~-98%).
+        // Les detail complets d'un bon restent charges via le SDK habituel dans chargerBon().
+        function fromFirestoreRestValue(v) {
+            if (!v || typeof v !== 'object') return v;
+            if ('stringValue' in v) return v.stringValue;
+            if ('integerValue' in v) return parseInt(v.integerValue, 10);
+            if ('doubleValue' in v) return parseFloat(v.doubleValue);
+            if ('booleanValue' in v) return v.booleanValue;
+            if ('nullValue' in v) return null;
+            if ('timestampValue' in v) {
+                var d = new Date(v.timestampValue);
+                return { seconds: Math.floor(d.getTime() / 1000), nanoseconds: (d.getTime() % 1000) * 1e6 };
+            }
+            if ('arrayValue' in v) return ((v.arrayValue && v.arrayValue.values) || []).map(fromFirestoreRestValue);
+            if ('mapValue' in v) {
+                var o = {};
+                var f = (v.mapValue && v.mapValue.fields) || {};
+                Object.keys(f).forEach(function(k) { o[k] = fromFirestoreRestValue(f[k]); });
+                return o;
+            }
+            return null;
+        }
+
+        async function chargerBonsLegers() {
+            if (!societeActive) return [];
+            // Attendre que l'auth anonyme soit prete (au 1er chargement peut ne pas etre encore la)
+            var user = firebase.auth().currentUser;
+            if (!user) {
+                await new Promise(function(resolve) {
+                    var unsub = firebase.auth().onAuthStateChanged(function(u) {
+                        if (u) { unsub(); resolve(u); }
+                    });
+                    setTimeout(resolve, 5000);
+                });
+                user = firebase.auth().currentUser;
+            }
+            if (!user) throw new Error('Auth Firebase non disponible');
+            var token = await user.getIdToken();
+            var champs = ['statut', 'createdAt', 'numero', 'date', 'client', 'technicien', 'totalTTC', 'fusion', 'bonsOrigine'];
+            var mask = champs.map(function(c) { return 'mask.fieldPaths=' + encodeURIComponent(c); }).join('&');
+            var baseUrl = 'https://firestore.googleapis.com/v1/projects/bon-d-intervention-cep/databases/(default)/documents/societes/'
+                + encodeURIComponent(societeActive.id) + '/bons';
+            var docs = [];
+            var pageToken = null;
+            do {
+                var url = baseUrl + '?pageSize=300&' + mask;
+                if (pageToken) url += '&pageToken=' + encodeURIComponent(pageToken);
+                var resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+                if (!resp.ok) {
+                    var errTxt = await resp.text();
+                    throw new Error('Firestore REST ' + resp.status + ' : ' + errTxt.substring(0, 200));
+                }
+                var j = await resp.json();
+                (j.documents || []).forEach(function(d) {
+                    var idParts = (d.name || '').split('/');
+                    var id = idParts[idParts.length - 1];
+                    var bon = { id: id };
+                    var fields = d.fields || {};
+                    Object.keys(fields).forEach(function(k) {
+                        bon[k] = fromFirestoreRestValue(fields[k]);
+                    });
+                    docs.push(bon);
+                });
+                pageToken = j.nextPageToken || null;
+            } while (pageToken);
+            return docs;
+        }
+
         function toggleAfficherEnvoyesCompta() {
             afficherEnvoyesCompta = !afficherEnvoyesCompta;
             renderHistorique();
@@ -3328,26 +3400,22 @@
             tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; text-align:center; color:var(--text-light);">⏳ Chargement en cours…</td></tr>';
 
             try {
-                // Charger tous les bons (en_attente et validé)
+                // Charger tous les bons (en_attente et validé) — version LEGERE : ne recupere
+                // que les champs affiches dans la liste. Les photos/signatures/produits/description
+                // ne sont PAS chargees ici : elles sont chargees seulement quand on ouvre un bon.
                 if (!societeActive) return;
-                // Retry auto : sur 4G le get() peut echouer transitoirement.
-                // On tente 2 fois avant d'afficher une vraie erreur.
-                let snap = null;
+                // Retry auto : sur 4G le fetch peut echouer transitoirement.
+                let bonsLegers = null;
                 for (let tentative = 1; tentative <= 2; tentative++) {
                     try {
-                        snap = await db.collection(getCollectionPath('bons')).get();
+                        bonsLegers = await chargerBonsLegers();
                         break;
                     } catch (errFetch) {
                         if (tentative === 2) throw errFetch;
                         await new Promise(r => setTimeout(r, 1500));
                     }
                 }
-                const bons = [];
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    if (data.statut === 'archivé') return;
-                    bons.push({ id: doc.id, ...data });
-                });
+                const bons = (bonsLegers || []).filter(function(b) { return b.statut !== 'archivé'; });
 
                 bons.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
