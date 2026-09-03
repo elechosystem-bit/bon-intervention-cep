@@ -946,11 +946,15 @@
                     <div style="display:grid; grid-template-columns:1fr; gap:8px;">
                         <div>
                             <label style="font-size:0.8rem; color:#22543d; display:block; margin-bottom:2px;">Catégorie</label>
-                            <select id="tarifNouvCategorie" style="width:100%; padding:6px; border:1px solid #cbd5e0; border-radius:4px;"></select>
+                            <select id="tarifNouvCategorie" onchange="onChangeCategorieNouvTarif()" style="width:100%; padding:6px; border:1px solid #cbd5e0; border-radius:4px;"></select>
                         </div>
                         <div>
                             <label style="font-size:0.8rem; color:#22543d; display:block; margin-bottom:2px;">Nom du produit</label>
                             <input type="text" id="tarifNouvNom" placeholder="Ex : 5G16 Pyrolion 100m" style="width:100%; padding:6px; border:1px solid #cbd5e0; border-radius:4px;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; color:#22543d; display:block; margin-bottom:2px;">Position dans la liste</label>
+                            <select id="tarifNouvPosition" style="width:100%; padding:6px; border:1px solid #cbd5e0; border-radius:4px;"></select>
                         </div>
                         <div style="display:flex; gap:8px;">
                             <div style="flex:1;">
@@ -2173,7 +2177,6 @@
             const form = document.getElementById('tarifFormAjout');
             const selCat = document.getElementById('tarifNouvCategorie');
             if (!form || !selCat) return;
-            // Remplir la liste des categories a partir du catalogue courant + une option Nouvelle
             const categories = Array.from(new Set((tarifCatalogueComplet || []).map(function(p) { return p.categorie; }))).sort();
             let optsHtml = '';
             categories.forEach(function(c) {
@@ -2184,8 +2187,33 @@
             document.getElementById('tarifNouvNom').value = '';
             document.getElementById('tarifNouvPrix').value = '';
             document.getElementById('tarifNouvUnite').value = 'u';
+            onChangeCategorieNouvTarif();
             form.style.display = 'block';
             document.getElementById('tarifNouvNom').focus();
+        }
+
+        function onChangeCategorieNouvTarif() {
+            const cat = document.getElementById('tarifNouvCategorie').value;
+            const selPos = document.getElementById('tarifNouvPosition');
+            if (!selPos) return;
+            let opts = '';
+            // 1) Fin de la categorie (defaut)
+            opts += '<option value="fin-cat">À la fin de la catégorie</option>';
+            // 2) Debut de la categorie
+            opts += '<option value="debut-cat">Au début de la catégorie</option>';
+            // 3) Apres chaque produit de la categorie (si catégorie existante)
+            if (cat && cat !== '__nouvelle__') {
+                (tarifCatalogueComplet || []).forEach(function(p, i) {
+                    if (p.categorie === cat) {
+                        const label = (p.nom || '').substring(0, 40);
+                        opts += '<option value="apres-' + i + '">Après « ' + escapeHtmlTarif(label) + ' »</option>';
+                    }
+                });
+            }
+            // 4) Debut / fin du catalogue complet
+            opts += '<option value="tout-debut">Tout au début du catalogue</option>';
+            opts += '<option value="tout-fin">Tout à la fin du catalogue</option>';
+            selPos.innerHTML = opts;
         }
 
         function fermerFormAjoutTarif() {
@@ -2204,11 +2232,28 @@
             const unite = document.getElementById('tarifNouvUnite').value || 'u';
             if (!nom) { alert('Merci d\'indiquer un nom de produit.'); return; }
             if (isNaN(prix) || prix < 0) { alert('Prix invalide.'); return; }
-            // Trouver ou est la categorie dans la liste : on insere apres le dernier produit de la meme categorie,
-            // pour rester groupe. Si categorie inexistante, on met a la fin.
+            const position = document.getElementById('tarifNouvPosition').value || 'fin-cat';
             let insertionIdx = tarifCatalogueComplet.length;
-            for (let i = tarifCatalogueComplet.length - 1; i >= 0; i--) {
-                if (tarifCatalogueComplet[i].categorie === categorie) { insertionIdx = i + 1; break; }
+            if (position === 'tout-debut') {
+                insertionIdx = 0;
+            } else if (position === 'tout-fin') {
+                insertionIdx = tarifCatalogueComplet.length;
+            } else if (position === 'debut-cat') {
+                // Avant le premier produit de la categorie ; sinon a la fin
+                insertionIdx = tarifCatalogueComplet.length;
+                for (let i = 0; i < tarifCatalogueComplet.length; i++) {
+                    if (tarifCatalogueComplet[i].categorie === categorie) { insertionIdx = i; break; }
+                }
+            } else if (position.indexOf('apres-') === 0) {
+                const apresIdx = parseInt(position.substring(6), 10);
+                if (!isNaN(apresIdx) && apresIdx >= 0 && apresIdx < tarifCatalogueComplet.length) {
+                    insertionIdx = apresIdx + 1;
+                }
+            } else {
+                // fin-cat (defaut) : apres le dernier produit de la categorie
+                for (let i = tarifCatalogueComplet.length - 1; i >= 0; i--) {
+                    if (tarifCatalogueComplet[i].categorie === categorie) { insertionIdx = i + 1; break; }
+                }
             }
             const nouvItem = { id: '', categorie: categorie, nom: nom, prix: prix, unite: unite };
             tarifCatalogueComplet.splice(insertionIdx, 0, nouvItem);
