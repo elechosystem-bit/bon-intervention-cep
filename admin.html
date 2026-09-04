@@ -273,6 +273,7 @@
                         <option value="elechosystem">Elecho System</option>
                     </select>
                     <button type="button" id="btnTarif" onclick="ouvrirModaleTarif()" title="Rechercher un tarif dans le catalogue" style="display:none; padding:6px 12px; border-radius:6px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">💰 Tarif</button>
+                    <button type="button" id="btnContrats" onclick="ouvrirModaleContrats()" title="Clients sous contrat de maintenance" style="display:none; padding:6px 12px; border-radius:6px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">🛡️ Contrats</button>
                     <button type="button" class="btn-deconnexion-admin" onclick="deconnecterAdmin()" title="Quitter l'administration">Déconnecter</button>
                 </div>
                 <span id="bonNumber">CEP-2024-0001</span>
@@ -294,10 +295,13 @@
 
         <div id="vueBons" class="vue-content active">
         <div class="form-body">
+            <div id="bandeauContrat" style="display:none; margin:6px 0 12px 0; padding:10px 14px; background:#c6f6d5; border-left:4px solid #38a169; border-radius:6px; color:#22543d; font-weight:600;">
+                🛡️ Client sous contrat de maintenance — remise 50 % appliquée automatiquement sur le déplacement.
+            </div>
             <div class="section">
                 <h3 class="section-title">Informations Client</h3>
                 <div class="input-grid">
-                    <div class="input-group"><label>Nom / Société</label><input type="text" id="clientName" placeholder="Nom du client"></div>
+                    <div class="input-group"><label>Nom / Société</label><input type="text" id="clientName" placeholder="Nom du client" oninput="detecterClientSousContrat()"></div>
                     <div class="input-group"><label>Téléphone</label><input type="tel" id="clientPhone" placeholder="06 12 34 56 78"></div>
                     <div class="input-group">
                         <label>Email</label>
@@ -922,6 +926,29 @@
     <div id="photoLightbox" class="photo-lightbox" onclick="closePhotoLightbox()">
         <button type="button" class="photo-lightbox-close" onclick="closePhotoLightbox(); event.stopPropagation();">×</button>
         <img id="photoLightboxImg" src="" alt="Aperçu photo">
+    </div>
+
+    <!-- Modale Contrats de maintenance (CEP) -->
+    <div id="modaleContrats" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto;">
+        <div style="background:#fff; width:100%; max-width:640px; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; max-height:90vh;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #e2e8f0; background:#2c5282; color:white; border-radius:12px 12px 0 0;">
+                <div style="font-size:1.1rem; font-weight:700;">🛡️ Clients sous contrat maintenance — CEP</div>
+                <button type="button" onclick="fermerModaleContrats()" style="background:transparent; border:0; color:white; font-size:1.6rem; line-height:1; cursor:pointer;">×</button>
+            </div>
+            <div style="padding:12px 18px; border-bottom:1px solid #e2e8f0;">
+                <div style="font-size:0.85rem; color:#4a5568; margin-bottom:8px;">Les clients de cette liste bénéficient automatiquement de <strong>-50 % sur le déplacement</strong> dans les bons.</div>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="contratNouvNom" placeholder="Nom du client à ajouter" style="flex:1; padding:8px 10px; border:1px solid #cbd5e0; border-radius:6px;" onkeydown="if(event.key==='Enter'){event.preventDefault();validerAjoutContrat();}">
+                    <button type="button" onclick="validerAjoutContrat()" style="padding:8px 14px; border-radius:6px; border:0; background:#38a169; color:white; font-weight:600; cursor:pointer;">➕ Ajouter</button>
+                </div>
+            </div>
+            <div style="overflow:auto; padding:6px 6px 12px 6px;">
+                <div id="contratCompteur" style="padding:4px 12px; font-size:0.8rem; color:#718096;"></div>
+                <ul id="contratListe" style="list-style:none; padding:0; margin:0;">
+                    <li style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <!-- Modale Tarif (CEP) -->
@@ -1819,6 +1846,18 @@
             const btnTarif = document.getElementById('btnTarif');
             if (btnTarif) btnTarif.style.display = (societeId === 'cep') ? 'inline-flex' : 'none';
 
+            // Afficher/masquer le bouton Contrats (CEP uniquement)
+            const btnContrats = document.getElementById('btnContrats');
+            if (btnContrats) btnContrats.style.display = (societeId === 'cep') ? 'inline-flex' : 'none';
+
+            // Recharger la liste des clients sous contrat (pour la detection auto)
+            if (societeId === 'cep') {
+                clientsSousContrat = await chargerClientsContrat();
+            } else {
+                clientsSousContrat = [];
+            }
+            detecterClientSousContrat();
+
             // Changer le nom
             var logoUrl = societeId === 'cep' ? 'logo-cep.png' : 'logo-elecho.jpg';
             document.getElementById('societeNom').innerHTML = '<img src="' + logoUrl + '" alt="' + societe.nom + '" style="max-height:60px;max-width:200px;vertical-align:middle;">';
@@ -2152,6 +2191,125 @@
                 });
             } catch (e) { console.warn('Chargement catalogue_perso:', e); }
             return out;
+        }
+
+        // === Modale Contrats de maintenance (CEP uniquement) ===
+        let clientsSousContrat = [];  // liste en memoire, rechargee a chaque changerSociete
+
+        function refClientsContrat() {
+            return db.collection('societes').doc('cep').collection('parametres').doc('clients_contrat');
+        }
+
+        async function chargerClientsContrat() {
+            try {
+                const doc = await refClientsContrat().get();
+                if (doc.exists) {
+                    const d = doc.data();
+                    if (Array.isArray(d.clients)) return d.clients.slice();
+                }
+            } catch (e) { console.warn('chargerClientsContrat:', e); }
+            return [];
+        }
+
+        async function ecrireClientsContrat(liste) {
+            await refClientsContrat().set({ clients: liste, majLe: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+
+        function normaliserNomClient(s) {
+            return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        }
+
+        function clientEstSousContrat(nomClient) {
+            if (!nomClient || !clientsSousContrat || clientsSousContrat.length === 0) return false;
+            const q = normaliserNomClient(nomClient);
+            if (!q) return false;
+            for (let i = 0; i < clientsSousContrat.length; i++) {
+                if (normaliserNomClient(clientsSousContrat[i]) === q) return true;
+            }
+            return false;
+        }
+
+        function detecterClientSousContrat() {
+            const clientNom = document.getElementById('clientName')?.value || '';
+            const bandeau = document.getElementById('bandeauContrat');
+            const caseContrat = document.getElementById('adminCheckContrat');
+            const estSousContrat = clientEstSousContrat(clientNom);
+            if (bandeau) bandeau.style.display = estSousContrat ? 'block' : 'none';
+            if (estSousContrat && caseContrat && !caseContrat.checked) {
+                caseContrat.checked = true;
+                if (typeof updateDepl === 'function') updateDepl();
+            }
+        }
+
+        async function ouvrirModaleContrats() {
+            const modale = document.getElementById('modaleContrats');
+            if (!modale) return;
+            modale.style.display = 'flex';
+            document.getElementById('contratNouvNom').value = '';
+            clientsSousContrat = await chargerClientsContrat();
+            afficherContrats();
+        }
+
+        function fermerModaleContrats() {
+            const modale = document.getElementById('modaleContrats');
+            if (modale) modale.style.display = 'none';
+        }
+
+        function afficherContrats() {
+            const ul = document.getElementById('contratListe');
+            const compteur = document.getElementById('contratCompteur');
+            if (!ul) return;
+            if (!clientsSousContrat || clientsSousContrat.length === 0) {
+                ul.innerHTML = '<li style="padding:16px; text-align:center; color:#a0aec0;">Aucun client sous contrat. Ajoute le premier ci-dessus.</li>';
+                if (compteur) compteur.textContent = '';
+                return;
+            }
+            const liste = clientsSousContrat.slice().sort(function(a, b) { return a.localeCompare(b, 'fr'); });
+            let html = '';
+            liste.forEach(function(nom) {
+                html += '<li style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #edf2f7;">'
+                    + '<span style="color:#2d3748;">🛡️ ' + escapeHtmlTarif(nom) + '</span>'
+                    + '<button type="button" onclick="supprimerContrat(\'' + escapeHtmlTarif(nom).replace(/'/g, "\\'") + '\')" title="Retirer" style="border:0; background:transparent; color:#c53030; font-size:1rem; cursor:pointer;">🗑️</button>'
+                    + '</li>';
+            });
+            ul.innerHTML = html;
+            if (compteur) compteur.textContent = clientsSousContrat.length + ' client' + (clientsSousContrat.length > 1 ? 's' : '') + ' sous contrat';
+        }
+
+        async function validerAjoutContrat() {
+            const input = document.getElementById('contratNouvNom');
+            const nom = (input.value || '').trim();
+            if (!nom) return;
+            // Refus doublon (case/accents insensitive)
+            if (clientEstSousContrat(nom)) {
+                alert('Ce client est déjà dans la liste.');
+                return;
+            }
+            const sauvegarde = clientsSousContrat.slice();
+            clientsSousContrat.push(nom);
+            try {
+                await ecrireClientsContrat(clientsSousContrat);
+                input.value = '';
+                afficherContrats();
+                detecterClientSousContrat();
+            } catch (e) {
+                clientsSousContrat = sauvegarde;
+                alert('Erreur de sauvegarde : ' + (e.message || e));
+            }
+        }
+
+        async function supprimerContrat(nom) {
+            if (!window.confirm('Retirer « ' + nom + ' » de la liste des contrats ?')) return;
+            const sauvegarde = clientsSousContrat.slice();
+            clientsSousContrat = clientsSousContrat.filter(function(c) { return c !== nom; });
+            try {
+                await ecrireClientsContrat(clientsSousContrat);
+                afficherContrats();
+                detecterClientSousContrat();
+            } catch (e) {
+                clientsSousContrat = sauvegarde;
+                alert('Erreur : ' + (e.message || e));
+            }
         }
 
         // === Modale Tarif (CEP uniquement) ===
@@ -3267,6 +3425,7 @@
                         technicien: technicien,
                         description: description,
                         noteCompta: noteCompta,
+                        sousContrat: (societeComptaId === 'cep') && clientEstSousContrat(client),
                         heure_arrivee: heureArrivee,
                         heure_depart: heureDepart,
                         produits: produitsPourEmail,
@@ -3835,6 +3994,7 @@
             document.getElementById('bonNumber').textContent = bon.numero;
             document.getElementById('interventionDate').value = bon.date;
             document.getElementById('clientName').value = bon.client;
+            detecterClientSousContrat();
             document.getElementById('clientPhone').value = bon.phone;
             document.getElementById('clientEmail').value = bon.email;
             document.getElementById('clientAddress').value = bon.address;

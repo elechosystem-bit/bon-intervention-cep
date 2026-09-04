@@ -118,6 +118,11 @@ export default async function handler(req, res) {
                     <h3 style="color: ${societeCouleur}; margin-top: 0;">Bon d'Intervention ${bonData?.numero || ''}</h3>
                     <p>Bonjour,</p>
                     <p>Veuillez trouver ci-joint le <strong>PDF complet du bon d'intervention</strong> (matériel, main d'œuvre, déplacement, totaux)${photos && photos.length > 0 ? ' ainsi que les <strong>photos</strong> de l\'intervention' : ''}.</p>
+                    ${bonData && bonData.sousContrat ? `
+                        <div style="background: #c6f6d5; border-left: 4px solid #38a169; padding: 12px 14px; border-radius: 6px; margin: 15px 0;">
+                            <p style="margin: 0; font-weight: bold; color: #22543d;">🛡️ CLIENT SOUS CONTRAT DE MAINTENANCE — remise 50 % appliquée sur le déplacement</p>
+                        </div>
+                    ` : ''}
                     ${bonData ? `
                         <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
                             <p style="margin: 5px 0;"><strong>Date :</strong> ${bonData.date || ''}</p>
