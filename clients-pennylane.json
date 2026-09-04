@@ -951,16 +951,6 @@
       "rue": "61, rue de Courcelles"
     },
     {
-      "id": 248732582,
-      "nom": "BELLES MIETTES CERISE SUR LA PIZZA",
-      "email": "kadaib@hotmail.com",
-      "telephone": "0982315047",
-      "adresse": "96, rue Jean Pierre Timbaud, 75011, Paris",
-      "ville": "Paris",
-      "codePostal": "75011",
-      "rue": "96, rue Jean Pierre Timbaud"
-    },
-    {
       "id": 248732940,
       "nom": "BENLUX LOUVRES S.A.S.",
       "email": "compta@benlux.fr",
@@ -7071,6 +7061,16 @@
       "rue": "268, rue du Faubourg St Honoré"
     },
     {
+      "id": 248732582,
+      "nom": "LES BELLES MIETTES",
+      "email": "kadaib@hotmail.com",
+      "telephone": "+33 9 82 31 50 47",
+      "adresse": "23 Rue Neuve Saint-Pierre, 75004, Paris",
+      "ville": "Paris",
+      "codePostal": "75004",
+      "rue": "23 Rue Neuve Saint-Pierre"
+    },
+    {
       "id": 248732925,
       "nom": "LES CAILLOUX (SLJ DISTRIBUTION)",
       "email": "nicolas.botta@sljcohen.fr",
@@ -12172,5 +12172,5 @@
     }
   ],
   "total": 1217,
-  "syncDate": "2026-09-03T08:24:38Z"
+  "syncDate": "2026-09-04T08:20:11Z"
 }
