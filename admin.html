@@ -2216,7 +2216,12 @@
         }
 
         function normaliserNomClient(s) {
-            return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            return String(s || '')
+                .replace(/[’‛❜ʼ]/g, "'")           // apostrophes courbes -> droite
+                .trim()
+                .toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '')  // accents combinants
+                .replace(/\s+/g, ' ');               // compresser les espaces multiples
         }
 
         function clientEstSousContrat(nomClient) {
