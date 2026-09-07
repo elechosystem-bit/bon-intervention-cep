@@ -4251,6 +4251,16 @@
       "rue": "19, rue des Vignes"
     },
     {
+      "id": 1465531121664,
+      "nom": "IPN",
+      "email": "",
+      "telephone": "",
+      "adresse": "",
+      "ville": "",
+      "codePostal": "",
+      "rue": ""
+    },
+    {
       "id": 248732771,
       "nom": "IPN (PUB DISCOTHEQUE)",
       "email": "ipn.gestion@gmail.com",
@@ -4883,7 +4893,7 @@
     {
       "id": 126986726,
       "nom": "LA CANTINE BRETONNE - ADC",
-      "email": "lcb75019@gmail.com",
+      "email": "icba2dn@gmail.com",
       "telephone": "",
       "adresse": "22 bis rue de l'Ourcq, 75019, Paris",
       "ville": "Paris",
@@ -12171,6 +12181,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1217,
-  "syncDate": "2026-09-06T08:13:54Z"
+  "total": 1218,
+  "syncDate": "2026-09-07T08:45:52Z"
 }
