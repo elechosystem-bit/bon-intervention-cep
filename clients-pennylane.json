@@ -7311,6 +7311,16 @@
       "rue": "19 Avenue de Saint-Mandé, 75012 Paris"
     },
     {
+      "id": 1465882935296,
+      "nom": "Le Marmiton de Lutèce",
+      "email": "lemarmitondelutece@gmail.com",
+      "telephone": "",
+      "adresse": "6 rue Saint Séverin, 75005, Paris",
+      "ville": "Paris",
+      "codePostal": "75005",
+      "rue": "6 rue Saint Séverin"
+    },
+    {
       "id": 255248681,
       "nom": "Le Rapido - 2CO",
       "email": "direction.lerapido@gmail.com",
@@ -12181,6 +12191,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1218,
-  "syncDate": "2026-09-07T08:45:52Z"
+  "total": 1219,
+  "syncDate": "2026-09-08T08:26:54Z"
 }
