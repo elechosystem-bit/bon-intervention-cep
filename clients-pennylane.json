@@ -4741,6 +4741,16 @@
       "rue": "106, rue Nollet"
     },
     {
+      "id": 1474134040576,
+      "nom": "L'EPHEMERE - CO RE FI COMPAGNIE DE RESTAURATION FRANCO ITALIENNE",
+      "email": "",
+      "telephone": "",
+      "adresse": "228 AVENUE DU MAINE, 75014, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75014",
+      "rue": "228 AVENUE DU MAINE"
+    },
+    {
       "id": 248733604,
       "nom": "L'ESSENTIEL",
       "email": "essentielclichy@gmail.com",
@@ -5129,16 +5139,6 @@
       "ville": "Paris",
       "codePostal": "75014",
       "rue": "106, boulevard Montparnasse"
-    },
-    {
-      "id": 248733298,
-      "nom": "LA MANUFACTURE SEVRES INVEST (J.C.G. HOLDING)",
-      "email": "lamanufacture.sevres@gmail.com",
-      "telephone": "0681354876",
-      "adresse": "47, grande rue, 92310, Sèvres",
-      "ville": "Sèvres",
-      "codePostal": "92310",
-      "rue": "47, grande rue"
     },
     {
       "id": 248733524,
@@ -11261,6 +11261,16 @@
       "rue": "Passage Georges Melies"
     },
     {
+      "id": 248733298,
+      "nom": "SEVRES INVEST - LA MANUFACTURE",
+      "email": "lamanufacture.sevres@gmail.com",
+      "telephone": "+33 6 81 35 48 76",
+      "adresse": "47  GRANDE RUE, 92310, SEVRES",
+      "ville": "SEVRES",
+      "codePostal": "92310",
+      "rue": "47  GRANDE RUE"
+    },
+    {
       "id": 248732676,
       "nom": "SEVRES RASPAIL",
       "email": "sarljbparis@gmail.com",
@@ -12191,6 +12201,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1219,
-  "syncDate": "2026-09-08T08:26:54Z"
+  "total": 1220,
+  "syncDate": "2026-09-09T08:29:24Z"
 }
