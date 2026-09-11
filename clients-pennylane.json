@@ -7801,6 +7801,16 @@
       "rue": "6,rue Carnot"
     },
     {
+      "id": 248733304,
+      "nom": "MC DONALD'S - ACTIF VANVES",
+      "email": "comptabilite@mcdo-vanves.com",
+      "telephone": "",
+      "adresse": "C/O S3F FINANCES, 92150, Suresnes",
+      "ville": "Suresnes",
+      "codePostal": "92150",
+      "rue": "C/O S3F FINANCES"
+    },
+    {
       "id": 248732915,
       "nom": "MC DONALD'S - COPECUR",
       "email": "jle.jb@orange.fr",
@@ -7849,16 +7859,6 @@
       "ville": "Saint-Fargeau-Ponthierry",
       "codePostal": "77310",
       "rue": "ZAC de l'Europe"
-    },
-    {
-      "id": 1187047645184,
-      "nom": "MC DONALD'S - SONOGO SAS",
-      "email": "mberthod@s3f-finances.fr",
-      "telephone": "",
-      "adresse": "15bis Rue du Mont Valérien, 92150 Suresnes, 92150, Suresnes",
-      "ville": "Suresnes",
-      "codePostal": "92150",
-      "rue": "15bis Rue du Mont Valérien, 92150 Suresnes"
     },
     {
       "id": 248733585,
@@ -8609,16 +8609,6 @@
       "ville": "Trappes",
       "codePostal": "78190",
       "rue": "2, rue Paul Verlaine"
-    },
-    {
-      "id": 248733304,
-      "nom": "MC DONALD'S VANVES",
-      "email": "comptabilite@mcdo-vanves.com",
-      "telephone": "",
-      "adresse": "C/O S3F FINANCES, 92150, Suresnes",
-      "ville": "Suresnes",
-      "codePostal": "92150",
-      "rue": "C/O S3F FINANCES"
     },
     {
       "id": 248733548,
@@ -11221,6 +11211,16 @@
       "rue": "81, rue Saint Louis en l'Ile"
     },
     {
+      "id": 1479066476544,
+      "nom": "SEQUOIA - FLORI FONDATION",
+      "email": "",
+      "telephone": "",
+      "adresse": "95 AVENUE CHARLES DE GAULLE, 92200, NEUILLY-SUR-SEINE",
+      "ville": "NEUILLY-SUR-SEINE",
+      "codePostal": "92200",
+      "rue": "95 AVENUE CHARLES DE GAULLE"
+    },
+    {
       "id": 125164945,
       "nom": "SEQUOIA CAFE",
       "email": "cpinel.financieremarion@gmail.com",
@@ -12202,5 +12202,5 @@
     }
   ],
   "total": 1220,
-  "syncDate": "2026-09-10T08:31:24Z"
+  "syncDate": "2026-09-11T08:25:46Z"
 }
