@@ -2145,29 +2145,15 @@
             majBoutonFaceIDAdmin();
         }
 
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             initialiserSociete();
             const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
             if (isAuthenticated) {
                 demarrerAppApresAuth();
                 return;
             }
-            // Si Face ID est enregistre : proposer via confirm() natif iOS.
-            // Le "OK" fournit un vrai user gesture, indispensable a
-            // navigator.credentials.get() sur Safari iOS.
-            if (faceIdEstEnregistre()) {
-                const utiliserFaceID = window.confirm("Déverrouiller l'administration avec Face ID ?\n\nOK = Face ID\nAnnuler = utiliser le code");
-                if (utiliserFaceID) {
-                    const ok = await tenterFaceIDSilencieux();
-                    if (ok) {
-                        sessionStorage.setItem('adminAuthenticated', 'true');
-                        demarrerAppApresAuth();
-                        return;
-                    }
-                    // Face ID annule/echec -> on continue vers le prompt code
-                }
-            }
-            // Prompt code classique (identique a l'ancien flow)
+            // Prompt code classique. Face ID direct se declenche depuis le
+            // bouton "Admin" d'index.html (ou grace au tap = user gesture iOS).
             const code = prompt("Code administrateur :");
             if (code !== ADMIN_CODE) {
                 alert("Code incorrect. Retour à la page technicien.");

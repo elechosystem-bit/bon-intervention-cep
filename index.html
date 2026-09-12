@@ -2525,18 +2525,16 @@
         }
 
         async function toggleAdmin() {
-            // Si Face ID admin est deja enregistre sur cet appareil, proposer.
+            // Si Face ID admin est enregistre, on tente Face ID direct.
+            // Le tap sur le bouton "Admin" fournit le user gesture requis par iOS.
             if (_adminFaceIdEnregistre()) {
-                const utiliserFaceID = window.confirm("Ouvrir l'administration avec Face ID ?\n\nOK = Face ID\nAnnuler = utiliser le code");
-                if (utiliserFaceID) {
-                    const ok = await _adminTenterFaceID();
-                    if (ok) {
-                        sessionStorage.setItem('adminAuthenticated', 'true');
-                        window.location.href = "admin.html";
-                        return;
-                    }
-                    // Face ID annule ou echoue -> on continue vers le prompt code
+                const ok = await _adminTenterFaceID();
+                if (ok) {
+                    sessionStorage.setItem('adminAuthenticated', 'true');
+                    window.location.href = "admin.html";
+                    return;
                 }
+                // Face ID annule ou echoue -> fallback prompt code
             }
             const code = prompt("Code administrateur :");
             if (code === "CEP2024") {
