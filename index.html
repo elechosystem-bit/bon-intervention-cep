@@ -1544,8 +1544,8 @@
                 if (calendarWrap) calendarWrap.style.display = 'none';
                 return;
             }
-            titleEl.textContent = societeActive ? ('Planning — ' + (societeActive.nom || 'Tous les techniciens')) : 'Mon planning';
-            introEl.textContent = 'Cliquez sur un jour pour voir les interventions heure par heure (tous les techniciens de la société).';
+            titleEl.textContent = 'Mon planning';
+            introEl.textContent = 'Vos interventions à venir, jour par jour.';
             listContainer.innerHTML = '';
             if (calendarWrap) calendarWrap.style.display = 'block';
             const weekViewEl = document.getElementById('planningWeekView');
@@ -1557,8 +1557,14 @@
                 }
                 const snap = await db.collection(getCollectionPath('planning')).get();
                 planningBons = [];
+                const techQ = (technicien || '').trim().toLowerCase();
                 snap.forEach(doc => {
                     const data = doc.data();
+                    // Filtre : ne garder que les interventions du technicien connecte
+                    if (techQ) {
+                        const t = String(data.technicien || '').trim().toLowerCase();
+                        if (t !== techQ) return;
+                    }
                     planningBons.push({ id: doc.id, ...data });
                 });
                 planningBons.sort((a, b) => {
@@ -1677,12 +1683,21 @@
             try {
                 const snap = await db.collection(getCollectionPath('bons')).get();
                 const bons = [];
+                const techConnecte = (sessionStorage.getItem('technicienSocieteId')
+                    ? sessionStorage.getItem('technicienValide_' + sessionStorage.getItem('technicienSocieteId'))
+                    : '') || '';
+                const techQ = techConnecte.trim().toLowerCase();
                 snap.forEach(doc => {
                     const data = doc.data();
                     const statut = (data.statut || '').toLowerCase();
                     const isValide = statut === 'validé' || statut === 'valide';
-                    if (isValide)
-                        bons.push({ id: doc.id, ...data });
+                    if (!isValide) return;
+                    // Filtre : ne garder que les bons du technicien connecte
+                    if (techQ) {
+                        const t = String(data.technicien || '').trim().toLowerCase();
+                        if (t !== techQ) return;
+                    }
+                    bons.push({ id: doc.id, ...data });
                 });
                 bons.sort((a, b) => {
                     const dateA = (a.date || '').toString();
@@ -1840,9 +1855,18 @@
                 // Charger tous les bons et filtrer localement (évite les problèmes d'index)
                 if (!societeActive) return;
                 const snapshot = await db.collection(getCollectionPath('bons')).get();
+                const techConnecte = (sessionStorage.getItem('technicienSocieteId')
+                    ? sessionStorage.getItem('technicienValide_' + sessionStorage.getItem('technicienSocieteId'))
+                    : '') || '';
+                const techQ = techConnecte.trim().toLowerCase();
                 const nombreEnAttente = snapshot.docs.filter(doc => {
                     const data = doc.data();
-                    return data.statut === 'en_attente' || (!data.statut && data.createdAt); // Si pas de statut, considérer comme en attente
+                    // Ne compter que les bons du technicien connecte
+                    if (techQ) {
+                        const t = String(data.technicien || '').trim().toLowerCase();
+                        if (t !== techQ) return false;
+                    }
+                    return data.statut === 'en_attente' || (!data.statut && data.createdAt);
                 }).length;
                 
                 // Mettre à jour le badge visuel dans l'interface
