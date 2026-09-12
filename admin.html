@@ -263,6 +263,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+    <!-- Ecran de verrouillage (Face ID + code) -->
+    <div id="lockScreen" style="display:none; position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg,#1a365d 0%,#2c5282 100%); color:white; align-items:center; justify-content:center; padding:24px; font-family:'Outfit',system-ui,sans-serif;">
+        <div style="max-width:340px; width:100%; text-align:center;">
+            <img src="/icon-192.png" alt="CEP" style="width:110px; height:110px; border-radius:22px; margin-bottom:20px; box-shadow:0 8px 30px rgba(0,0,0,0.3);">
+            <h2 style="margin:0 0 6px 0; font-size:1.3rem; font-weight:600;">Bon d'Intervention CEP</h2>
+            <p style="margin:0 0 30px 0; opacity:0.85; font-size:0.95rem;">Espace administrateur</p>
+            <button type="button" id="btnFaceID" onclick="tenterFaceID()" style="display:none; width:100%; padding:14px; margin-bottom:12px; background:white; color:#1a365d; border:0; border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer;">🔓 Déverrouiller avec Face ID</button>
+            <div id="lockCodeArea">
+                <input type="password" id="lockCodeInput" placeholder="Code administrateur" onkeydown="if(event.key==='Enter'){validerCodeLock();}" style="width:100%; padding:14px; border:0; border-radius:12px; font-size:1rem; text-align:center; letter-spacing:3px; margin-bottom:10px; background:rgba(255,255,255,0.15); color:white;">
+                <button type="button" onclick="validerCodeLock()" style="width:100%; padding:14px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer;">Valider</button>
+            </div>
+            <div id="lockErreur" style="display:none; margin-top:12px; padding:10px; background:rgba(229,62,62,0.3); border-radius:8px; font-size:0.9rem;"></div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
             <div style="display:flex;justify-content:flex-end;gap:6px;width:100%;margin-bottom:4px;padding:0 14px;">
@@ -2003,31 +2018,169 @@
             return 'CEP-' + lastYear + '-' + String(lastSeq).padStart(4, '0');
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialiser la société
-            initialiserSociete();
-            // Protection par code admin
-            // Vérifier si l'utilisateur est déjà authentifié (venant de index.html)
-            const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
-            
-            if (!isAuthenticated) {
-                // Si pas authentifié, demander le code
-                const code = prompt("Code administrateur :");
-                if (code !== "CEP2024") {
-                    alert("Code incorrect. Retour à la page technicien.");
-                    window.location.href = "index.html";
-                    return;
-                }
-                // Stocker l'authentification
-                sessionStorage.setItem('adminAuthenticated', 'true');
-            }
+        // ============================================
+        // AUTHENTIFICATION + FACE ID (WebAuthn)
+        // ============================================
+        const ADMIN_CODE = "CEP2024";
+        const FACE_ID_STORAGE_KEY = 'adminFaceIdCredentialId';
 
+        function faceIdEstDisponible() {
+            return typeof window !== 'undefined' && !!window.PublicKeyCredential && !!navigator.credentials;
+        }
+
+        function faceIdEstEnregistre() {
+            return !!localStorage.getItem(FACE_ID_STORAGE_KEY);
+        }
+
+        function b64ToBytes(b64) {
+            const bin = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        }
+        function bytesToB64(bytes) {
+            let bin = '';
+            const arr = new Uint8Array(bytes);
+            for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+            return btoa(bin);
+        }
+
+        async function enregistrerFaceID() {
+            if (!faceIdEstDisponible()) return false;
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+                const cred = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Bon d'Intervention CEP", id: location.hostname },
+                        user: { id: userId, name: "admin", displayName: "Administrateur" },
+                        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required"
+                        },
+                        timeout: 60000,
+                        attestation: "none"
+                    }
+                });
+                if (!cred) return false;
+                localStorage.setItem(FACE_ID_STORAGE_KEY, bytesToB64(cred.rawId));
+                return true;
+            } catch (e) {
+                console.warn('Enregistrement Face ID:', e);
+                return false;
+            }
+        }
+
+        async function tenterFaceID() {
+            if (!faceIdEstDisponible() || !faceIdEstEnregistre()) return false;
+            const btn = document.getElementById('btnFaceID');
+            const err = document.getElementById('lockErreur');
+            if (btn) btn.disabled = true;
+            if (err) err.style.display = 'none';
+            try {
+                const idBytes = b64ToBytes(localStorage.getItem(FACE_ID_STORAGE_KEY));
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        rpId: location.hostname,
+                        allowCredentials: [{ type: 'public-key', id: idBytes }],
+                        userVerification: 'required',
+                        timeout: 30000
+                    }
+                });
+                if (assertion) {
+                    sessionStorage.setItem('adminAuthenticated', 'true');
+                    fermerLockScreen();
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Face ID:', e);
+                if (err) {
+                    err.textContent = "Face ID a échoué. Utilise ton code.";
+                    err.style.display = 'block';
+                }
+            }
+            if (btn) btn.disabled = false;
+            return false;
+        }
+
+        function validerCodeLock() {
+            const input = document.getElementById('lockCodeInput');
+            const err = document.getElementById('lockErreur');
+            const code = (input.value || '').trim();
+            if (code !== ADMIN_CODE) {
+                if (err) {
+                    err.textContent = "Code incorrect.";
+                    err.style.display = 'block';
+                }
+                input.value = '';
+                input.focus();
+                return;
+            }
+            sessionStorage.setItem('adminAuthenticated', 'true');
+            fermerLockScreen();
+            proposerActivationFaceID();
+        }
+
+        function fermerLockScreen() {
+            const lock = document.getElementById('lockScreen');
+            if (lock) lock.style.display = 'none';
+            demarrerAppApresAuth();
+        }
+
+        async function proposerActivationFaceID() {
+            if (!faceIdEstDisponible() || faceIdEstEnregistre()) return;
+            // On attend un peu pour laisser l'utilisateur voir la transition
+            setTimeout(async function() {
+                const ok = window.confirm("Voulez-vous activer Face ID pour ne plus taper le code à chaque fois ?");
+                if (!ok) return;
+                const enregistre = await enregistrerFaceID();
+                if (enregistre) {
+                    showToast && showToast('Face ID activé pour la prochaine fois.');
+                } else {
+                    alert("L'activation Face ID a échoué.");
+                }
+            }, 400);
+        }
+
+        function afficherLockScreen() {
+            const lock = document.getElementById('lockScreen');
+            const btn = document.getElementById('btnFaceID');
+            if (!lock) return;
+            lock.style.display = 'flex';
+            if (btn && faceIdEstDisponible() && faceIdEstEnregistre()) {
+                btn.style.display = 'block';
+            }
+        }
+
+        let appDemarree = false;
+        function demarrerAppApresAuth() {
+            if (appDemarree) return;
+            appDemarree = true;
             const today = new Date();
             document.getElementById('currentDate').textContent = today.toLocaleDateString('fr-FR');
             document.getElementById('interventionDate').valueAsDate = today;
             initSignature('signatureTech');
             initSignature('signatureClient');
             renderHistorique();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initialiserSociete();
+            const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
+            if (isAuthenticated) {
+                demarrerAppApresAuth();
+                return;
+            }
+            afficherLockScreen();
+            // Focus sur l'input code (utile si pas de Face ID)
+            setTimeout(function() {
+                const input = document.getElementById('lockCodeInput');
+                if (input && !faceIdEstEnregistre()) input.focus();
+            }, 100);
         });
 
         function deconnecterAdmin() {
