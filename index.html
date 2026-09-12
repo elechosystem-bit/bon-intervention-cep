@@ -348,6 +348,7 @@
                         <span style="font-size: 1.5rem;">🔔</span>
                         <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
                     </div>
+                    <button type="button" id="btnFaceIDTechDansApp" onclick="basculerFaceIDTechnicien()" title="Activer / désactiver Face ID pour cette session" style="display:none; padding:6px 12px; margin-right:6px; border-radius:6px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">🔒 Face ID</button>
                     <button type="button" class="btn-deconnexion" id="btnDeconnexion" onclick="deconnecterTechnicien()" style="display: none;">Se déconnecter</button>
                 </div>
             </div>
@@ -358,6 +359,7 @@
             <div class="connexion-inner">
                 <h3 id="headerInfoBar" style="font-size:1.05rem;color:#2d3748;background:linear-gradient(135deg,#f0f4f8,#e2e8f0);padding:12px 20px;border-radius:12px;text-align:center;font-family:'Georgia',serif;font-style:italic;letter-spacing:0.3px;box-shadow:0 1px 3px rgba(0,0,0,0.08);"></h3>
                 <p class="connexion-intro">Votre accès est limité à une société définie par l'administrateur. Indiquez votre nom et votre code.</p>
+                <button type="button" id="btnFaceIDTech" onclick="tenterFaceIDTechnicien()" style="display:none; width:100%; padding:14px; margin-bottom:14px; background:#1a365d; color:white; border:0; border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer; box-shadow:0 2px 8px rgba(26,54,93,0.25);">🔓 Déverrouiller avec Face ID</button>
                 <div class="input-group"><label>Votre nom</label><select id="technicienConnexion"><option value="">-- Sélectionner --</option></select></div>
                 <div class="input-group"><label>Code d'accès</label><input type="password" id="codeAccesConnexion" placeholder="Votre code" maxlength="20" autocomplete="off"></div>
                 <button type="button" class="btn btn-primary" onclick="validerConnexionTechnicien()">Valider</button>
@@ -1060,8 +1062,148 @@
             } else {
                 document.body.classList.add('technicien-connecte');
             }
+            if (typeof majBoutonFaceIDTech === 'function') majBoutonFaceIDTech();
         }
         
+        // ============================================
+        // FACE ID (WebAuthn) - TECHNICIEN
+        // ============================================
+        const TECH_FACE_ID_KEY = 'techFaceIdData';
+
+        function techFaceIdDispo() {
+            return typeof window !== 'undefined' && !!window.PublicKeyCredential && !!navigator.credentials;
+        }
+        function techFaceIdGetData() {
+            try { return JSON.parse(localStorage.getItem(TECH_FACE_ID_KEY) || 'null'); }
+            catch (e) { return null; }
+        }
+        function _b64tob(b64) {
+            const bin = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        }
+        function _btob64(b) {
+            let bin = '';
+            const a = new Uint8Array(b);
+            for (let i = 0; i < a.length; i++) bin += String.fromCharCode(a[i]);
+            return btoa(bin);
+        }
+
+        async function enregistrerFaceIDTechnicien() {
+            if (!techFaceIdDispo()) return false;
+            // Il faut etre connecte pour enregistrer (on a societeId + nom + droits en session)
+            const societeId = sessionStorage.getItem('technicienSocieteId');
+            const nom = societeId ? sessionStorage.getItem('technicienValide_' + societeId) : null;
+            const droits = getDroitsTechnicien();
+            if (!societeId || !nom) {
+                alert("Vous devez être connecté pour activer Face ID.");
+                return false;
+            }
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+                const cred = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Bon d'Intervention", id: location.hostname },
+                        user: { id: userId, name: nom, displayName: nom },
+                        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        timeout: 60000,
+                        attestation: "none"
+                    }
+                });
+                if (!cred) return false;
+                localStorage.setItem(TECH_FACE_ID_KEY, JSON.stringify({
+                    credentialId: _btob64(cred.rawId),
+                    societeId: societeId,
+                    nom: nom,
+                    droits: droits || DROITS_DEFAUT_TECH
+                }));
+                return true;
+            } catch (e) {
+                console.warn('Enregistrement Face ID tech:', e);
+                return false;
+            }
+        }
+
+        async function tenterFaceIDTechnicien() {
+            if (!techFaceIdDispo()) return false;
+            const data = techFaceIdGetData();
+            if (!data) return false;
+            const btn = document.getElementById('btnFaceIDTech');
+            if (btn) btn.disabled = true;
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        rpId: location.hostname,
+                        allowCredentials: [{ type: 'public-key', id: _b64tob(data.credentialId) }],
+                        userVerification: 'required',
+                        timeout: 30000
+                    }
+                });
+                if (assertion) {
+                    // Restaurer la session technicien
+                    sessionStorage.setItem('technicienSocieteId', data.societeId);
+                    sessionStorage.setItem('technicienValide_' + data.societeId, data.nom);
+                    sessionStorage.setItem('technicienDroits', JSON.stringify(data.droits || DROITS_DEFAUT_TECH));
+                    await changerSociete(data.societeId);
+                    const techSelect = document.getElementById('technicien');
+                    if (techSelect) techSelect.value = data.nom;
+                    afficherConnexion(false);
+                    appliquerDroitsTechnicien(data.droits || DROITS_DEFAUT_TECH);
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Face ID tech get:', e);
+                const msgEl = document.getElementById('messageConnexionTechnicien');
+                if (msgEl) { msgEl.textContent = "Face ID a échoué. Utilisez votre code."; msgEl.style.color = '#e53e3e'; }
+            }
+            if (btn) btn.disabled = false;
+            return false;
+        }
+
+        async function basculerFaceIDTechnicien() {
+            if (!techFaceIdDispo()) {
+                alert("Cet appareil ne prend pas en charge Face ID / Touch ID sur le web.");
+                return;
+            }
+            if (techFaceIdGetData()) {
+                if (!window.confirm("Face ID est déjà activé sur cet appareil. Le désactiver ?")) return;
+                localStorage.removeItem(TECH_FACE_ID_KEY);
+                majBoutonFaceIDTech();
+                alert('Face ID désactivé.');
+                return;
+            }
+            const ok = await enregistrerFaceIDTechnicien();
+            majBoutonFaceIDTech();
+            if (ok) alert('Face ID activé pour la prochaine connexion.');
+            else alert("L'activation Face ID a échoué ou a été annulée.");
+        }
+
+        function majBoutonFaceIDTech() {
+            const btnCo = document.getElementById('btnFaceIDTech');
+            const btnApp = document.getElementById('btnFaceIDTechDansApp');
+            const dispo = techFaceIdDispo();
+            const data = techFaceIdGetData();
+            if (btnCo) btnCo.style.display = (dispo && data) ? 'block' : 'none';
+            if (btnApp) {
+                btnApp.style.display = dispo ? 'inline-block' : 'none';
+                if (data) {
+                    btnApp.innerHTML = '🔓 Face ID actif';
+                    btnApp.style.background = 'rgba(72,187,120,0.4)';
+                    btnApp.style.borderColor = 'rgba(72,187,120,0.7)';
+                } else {
+                    btnApp.innerHTML = '🔒 Activer Face ID';
+                    btnApp.style.background = 'rgba(255,255,255,0.2)';
+                    btnApp.style.borderColor = 'rgba(255,255,255,0.3)';
+                }
+            }
+        }
+
         /** Validation connexion : nom + code → société déterminée par l'admin. */
         async function validerConnexionTechnicien() {
             const sel = document.getElementById('technicienConnexion');
