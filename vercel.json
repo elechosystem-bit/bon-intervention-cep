@@ -12,11 +12,5 @@
       "path": "/api/check-apave",
       "schedule": "0 7 * * *"
     }
-  ],
-  "rewrites": [
-    { "source": "/apple-touch-icon.png", "destination": "/public/apple-touch-icon.png" },
-    { "source": "/icon-192.png", "destination": "/public/icon-192.png" },
-    { "source": "/icon-512.png", "destination": "/public/icon-512.png" },
-    { "source": "/manifest.json", "destination": "/public/manifest.json" }
   ]
 }
