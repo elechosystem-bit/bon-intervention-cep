@@ -263,20 +263,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <!-- Ecran de verrouillage (Face ID + code) -->
-    <div id="lockScreen" style="display:none; position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg,#1a365d 0%,#2c5282 100%); color:white; align-items:center; justify-content:center; padding:24px; font-family:'Outfit',system-ui,sans-serif;">
-        <div style="max-width:340px; width:100%; text-align:center;">
-            <img src="/icon-192.png" alt="CEP" style="width:110px; height:110px; border-radius:22px; margin-bottom:20px; box-shadow:0 8px 30px rgba(0,0,0,0.3);">
-            <h2 style="margin:0 0 6px 0; font-size:1.3rem; font-weight:600;">Bon d'Intervention CEP</h2>
-            <p style="margin:0 0 30px 0; opacity:0.85; font-size:0.95rem;">Espace administrateur</p>
-            <button type="button" id="btnFaceID" onclick="tenterFaceID()" style="display:none; width:100%; padding:14px; margin-bottom:12px; background:white; color:#1a365d; border:0; border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer;">🔓 Déverrouiller avec Face ID</button>
-            <div id="lockCodeArea">
-                <input type="password" id="lockCodeInput" placeholder="Code administrateur" onkeydown="if(event.key==='Enter'){validerCodeLock();}" style="width:100%; padding:14px; border:0; border-radius:12px; font-size:1rem; text-align:center; letter-spacing:3px; margin-bottom:10px; background:rgba(255,255,255,0.15); color:white;">
-                <button type="button" onclick="validerCodeLock()" style="width:100%; padding:14px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer;">Valider</button>
-            </div>
-            <div id="lockErreur" style="display:none; margin-top:12px; padding:10px; background:rgba(229,62,62,0.3); border-radius:8px; font-size:0.9rem;"></div>
-        </div>
-    </div>
 
     <div class="container">
         <div class="header">
@@ -2074,12 +2060,9 @@
             }
         }
 
-        async function tenterFaceID() {
+        async function tenterFaceIDSilencieux() {
+            // Retourne true si Face ID a valide, false sinon (echec, annulation, pas dispo)
             if (!faceIdEstDisponible() || !faceIdEstEnregistre()) return false;
-            const btn = document.getElementById('btnFaceID');
-            const err = document.getElementById('lockErreur');
-            if (btn) btn.disabled = true;
-            if (err) err.style.display = 'none';
             try {
                 const idBytes = b64ToBytes(localStorage.getItem(FACE_ID_STORAGE_KEY));
                 const challenge = crypto.getRandomValues(new Uint8Array(32));
@@ -2092,44 +2075,11 @@
                         timeout: 30000
                     }
                 });
-                if (assertion) {
-                    sessionStorage.setItem('adminAuthenticated', 'true');
-                    fermerLockScreen();
-                    return true;
-                }
+                if (assertion) return true;
             } catch (e) {
-                console.warn('Face ID:', e);
-                if (err) {
-                    err.textContent = "Face ID a échoué. Utilise ton code.";
-                    err.style.display = 'block';
-                }
+                console.warn('Face ID annule/echec:', e);
             }
-            if (btn) btn.disabled = false;
             return false;
-        }
-
-        function validerCodeLock() {
-            const input = document.getElementById('lockCodeInput');
-            const err = document.getElementById('lockErreur');
-            const code = (input.value || '').trim();
-            if (code !== ADMIN_CODE) {
-                if (err) {
-                    err.textContent = "Code incorrect.";
-                    err.style.display = 'block';
-                }
-                input.value = '';
-                input.focus();
-                return;
-            }
-            sessionStorage.setItem('adminAuthenticated', 'true');
-            fermerLockScreen();
-            proposerActivationFaceID();
-        }
-
-        function fermerLockScreen() {
-            const lock = document.getElementById('lockScreen');
-            if (lock) lock.style.display = 'none';
-            demarrerAppApresAuth();
         }
 
         async function basculerFaceIDAdmin() {
@@ -2182,16 +2132,6 @@
             }, 400);
         }
 
-        function afficherLockScreen() {
-            const lock = document.getElementById('lockScreen');
-            const btn = document.getElementById('btnFaceID');
-            if (!lock) return;
-            lock.style.display = 'flex';
-            if (btn && faceIdEstDisponible() && faceIdEstEnregistre()) {
-                btn.style.display = 'block';
-            }
-        }
-
         let appDemarree = false;
         function demarrerAppApresAuth() {
             if (appDemarree) return;
@@ -2205,19 +2145,33 @@
             majBoutonFaceIDAdmin();
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             initialiserSociete();
             const isAuthenticated = sessionStorage.getItem('adminAuthenticated') === 'true';
             if (isAuthenticated) {
                 demarrerAppApresAuth();
                 return;
             }
-            afficherLockScreen();
-            // Focus sur l'input code (utile si pas de Face ID)
-            setTimeout(function() {
-                const input = document.getElementById('lockCodeInput');
-                if (input && !faceIdEstEnregistre()) input.focus();
-            }, 100);
+            // Si Face ID a deja ete enregistre, on tente une auth silencieuse d'abord.
+            // Si Face ID reussit -> pas de prompt code. Si Face ID echoue/annule -> prompt code.
+            if (faceIdEstEnregistre()) {
+                const ok = await tenterFaceIDSilencieux();
+                if (ok) {
+                    sessionStorage.setItem('adminAuthenticated', 'true');
+                    demarrerAppApresAuth();
+                    return;
+                }
+            }
+            // Fallback : le prompt code classique
+            const code = prompt("Code administrateur :");
+            if (code !== ADMIN_CODE) {
+                alert("Code incorrect. Retour à la page technicien.");
+                window.location.href = "index.html";
+                return;
+            }
+            sessionStorage.setItem('adminAuthenticated', 'true');
+            demarrerAppApresAuth();
+            proposerActivationFaceID();
         });
 
         function deconnecterAdmin() {
