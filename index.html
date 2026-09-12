@@ -1189,9 +1189,14 @@
             const btnApp = document.getElementById('btnFaceIDTechDansApp');
             const dispo = techFaceIdDispo();
             const data = techFaceIdGetData();
-            if (btnCo) btnCo.style.display = (dispo && data) ? 'block' : 'none';
+            const estConnecte = !!sessionStorage.getItem('technicienSocieteId');
+            // Bouton "Deverrouiller avec Face ID" sur l'ecran de connexion :
+            // visible seulement si Face ID enregistre ET pas encore connecte
+            if (btnCo) btnCo.style.display = (dispo && data && !estConnecte) ? 'block' : 'none';
+            // Bouton "Activer / desactiver Face ID" dans l'app connectee :
+            // visible seulement si connecte
             if (btnApp) {
-                btnApp.style.display = dispo ? 'inline-block' : 'none';
+                btnApp.style.display = (dispo && estConnecte) ? 'inline-block' : 'none';
                 if (data) {
                     btnApp.innerHTML = '🔓 Face ID actif';
                     btnApp.style.background = 'rgba(72,187,120,0.4)';
