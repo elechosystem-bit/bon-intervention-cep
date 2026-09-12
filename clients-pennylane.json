@@ -6691,16 +6691,6 @@
       "rue": "126, rue du Temple"
     },
     {
-      "id": 249890966,
-      "nom": "LE ROUSSILLON",
-      "email": "",
-      "telephone": "",
-      "adresse": "",
-      "ville": "",
-      "codePostal": "",
-      "rue": ""
-    },
-    {
       "id": 125155909,
       "nom": "LE ROUSSILLON - SARL FELICITA CLER",
       "email": "joelleparisnation@gmail.com",
@@ -12201,6 +12191,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1220,
-  "syncDate": "2026-09-11T08:25:46Z"
+  "total": 1219,
+  "syncDate": "2026-09-12T08:14:30Z"
 }
