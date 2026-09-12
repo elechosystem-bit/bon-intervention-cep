@@ -2494,11 +2494,52 @@
             _fsSourceCanvasId = null;
         }
 
-        function toggleAdmin() {
+        // Cle localStorage partagee avec admin.html
+        const ADMIN_FACE_ID_KEY = 'adminFaceIdCredentialId';
+        function _adminFaceIdEnregistre() {
+            return !!localStorage.getItem(ADMIN_FACE_ID_KEY);
+        }
+        async function _adminTenterFaceID() {
+            if (!window.PublicKeyCredential || !navigator.credentials) return false;
+            const stored = localStorage.getItem(ADMIN_FACE_ID_KEY);
+            if (!stored) return false;
+            try {
+                const bin = atob(stored);
+                const idBytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) idBytes[i] = bin.charCodeAt(i);
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        rpId: location.hostname,
+                        allowCredentials: [{ type: 'public-key', id: idBytes }],
+                        userVerification: 'required',
+                        timeout: 30000
+                    }
+                });
+                return !!assertion;
+            } catch (e) {
+                console.warn('Admin Face ID depuis index:', e);
+                return false;
+            }
+        }
+
+        async function toggleAdmin() {
+            // Si Face ID admin est deja enregistre sur cet appareil, proposer.
+            if (_adminFaceIdEnregistre()) {
+                const utiliserFaceID = window.confirm("Ouvrir l'administration avec Face ID ?\n\nOK = Face ID\nAnnuler = utiliser le code");
+                if (utiliserFaceID) {
+                    const ok = await _adminTenterFaceID();
+                    if (ok) {
+                        sessionStorage.setItem('adminAuthenticated', 'true');
+                        window.location.href = "admin.html";
+                        return;
+                    }
+                    // Face ID annule ou echoue -> on continue vers le prompt code
+                }
+            }
             const code = prompt("Code administrateur :");
-            // Pour le patron : accès à la page récap avec tous les bons chiffrés
             if (code === "CEP2024") {
-                // Stocker l'authentification dans sessionStorage pour éviter de redemander le code
                 sessionStorage.setItem('adminAuthenticated', 'true');
                 window.location.href = "admin.html";
             } else if (code !== null) {
