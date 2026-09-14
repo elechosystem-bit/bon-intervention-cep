@@ -1836,10 +1836,50 @@
             return html;
         }
 
+        // Charge la grille tarif (societes/cep/parametres/grille_tarifs) et la
+        // transforme en structure "materiel" (groupee par categorie), pour que
+        // l'ecran du bon utilise EXACTEMENT les memes produits/prix que la modale
+        // Tarif. Fallback sur GRILLE_CEP (grille-cep.js) si le doc Firestore est vide.
+        async function grilleTarifVersMateriel() {
+            let items = [];
+            try {
+                const doc = await refGrilleTarif().get();
+                if (doc.exists && Array.isArray(doc.data().items)) items = doc.data().items;
+            } catch (e) {
+                console.warn('Lecture grille tarif:', e);
+            }
+            if (!items || items.length === 0) {
+                if (typeof GRILLE_CEP !== 'undefined' && Array.isArray(GRILLE_CEP)) items = GRILLE_CEP;
+                else return null;
+            }
+            const ordre = [];
+            const parCat = {};
+            items.forEach(function(p) {
+                const cat = (p.categorie || 'Divers');
+                if (!parCat[cat]) { parCat[cat] = []; ordre.push(cat); }
+                parCat[cat].push({
+                    nom: p.nom || '',
+                    prix: parseFloat(p.prix) || 0,
+                    reference: '',
+                    unite: (p.unite === 'm') ? 'm' : 'u'
+                });
+            });
+            return ordre.map(function(cat) { return { categorie: cat, produits: parCat[cat] }; });
+        }
+
         async function changerSociete(societeId) {
-            const societe = SOCIETES[societeId];
+            let societe = SOCIETES[societeId];
             if (!societe) return;
-            
+
+            // CEP : l'ecran du bon lit la grille tarif (source unique, editable via
+            // le bouton "Tarif"). Les autres societes gardent leur materiel config.js.
+            if (societeId === 'cep') {
+                const materielGrille = await grilleTarifVersMateriel();
+                if (materielGrille && materielGrille.length) {
+                    societe = Object.assign({}, societe, { materiel: materielGrille });
+                }
+            }
+
             societeActive = societe;
             
             // Sauvegarder le choix
