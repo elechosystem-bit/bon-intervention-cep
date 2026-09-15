@@ -3937,6 +3937,7 @@
                 moTarif: document.getElementById('moTarif').value || '35',
                 deplNombre: document.getElementById('deplNombre').value || '0',
                 deplTarif: document.getElementById('deplTarif').value || '0',
+                contrat: document.getElementById('adminCheckContrat')?.checked || false,
                 subtotalProduits: document.getElementById('subtotalProduits').textContent || '0.00€',
                 subtotalMO: document.getElementById('subtotalMO').textContent || '0.00€',
                 subtotalDepl: document.getElementById('subtotalDepl').textContent || '0.00€',
@@ -4338,7 +4339,16 @@
             document.getElementById('bonNumber').textContent = bon.numero;
             document.getElementById('interventionDate').value = bon.date;
             document.getElementById('clientName').value = bon.client;
-            detecterClientSousContrat();
+            // Restaurer l'etat de la case "contrat" enregistre dans le bon (remise 50%
+            // sur le deplacement). Anciens bons sans ce champ : detection auto via la
+            // liste des clients sous contrat.
+            var caseContrat = document.getElementById('adminCheckContrat');
+            var sousContrat = clientEstSousContrat(bon.client);
+            if (caseContrat) {
+                caseContrat.checked = (typeof bon.contrat === 'boolean') ? bon.contrat : sousContrat;
+            }
+            var bandeauC = document.getElementById('bandeauContrat');
+            if (bandeauC) bandeauC.style.display = sousContrat ? 'block' : 'none';
             document.getElementById('clientPhone').value = bon.phone;
             document.getElementById('clientEmail').value = bon.email;
             document.getElementById('clientAddress').value = bon.address;
