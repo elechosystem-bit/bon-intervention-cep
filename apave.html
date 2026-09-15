@@ -509,6 +509,39 @@
 </head>
 <body>
 
+<style id="agenda-conf-styles">
+.conf-tabs{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap;}
+.conf-tab{padding:10px 18px;border:2px solid #1a365d;background:#fff;color:#1a365d;border-radius:10px;cursor:pointer;font-weight:700;font-size:0.9rem;}
+.conf-tab.active{background:#1a365d;color:#fff;}
+.agenda-conf{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+@media(max-width:820px){.agenda-conf{grid-template-columns:1fr;}}
+.agenda-cal-card,.agenda-list-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);}
+.agenda-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.agenda-cal-title{font-weight:800;color:#1a365d;font-size:1.05rem;text-transform:capitalize;}
+.agenda-cal-nav{display:flex;gap:6px;}
+.agenda-cal-nav button{width:34px;height:34px;border:1px solid #cbd5e0;background:#fff;border-radius:8px;cursor:pointer;font-size:1rem;color:#1a365d;font-weight:700;line-height:1;}
+.agenda-cal-nav button:hover{background:#1a365d;color:#fff;}
+.agenda-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.agenda-cal-wd{text-align:center;font-size:0.7rem;font-weight:700;color:#718096;padding:4px 0;}
+.agenda-cal-day{aspect-ratio:1;border-radius:8px;background:#f8fafc;border:1px solid #edf2f7;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 2px;font-size:0.8rem;position:relative;overflow:hidden;}
+.agenda-cal-day.empty{background:transparent;border:none;}
+.agenda-cal-day.today{border-color:#1a365d;border-width:2px;}
+.agenda-cal-day.has-ech{cursor:pointer;}
+.agenda-cal-day.has-ech:hover{background:#ebf3ff;}
+.agenda-cal-day .d-num{font-weight:700;color:#2d3748;}
+.agenda-cal-dot{width:100%;margin-top:auto;border-radius:5px;font-size:0.62rem;font-weight:800;color:#fff;padding:1px 0;text-align:center;}
+.dot-retard{background:#dc2626;}
+.dot-bientot{background:#f59e0b;}
+.dot-avenir{background:#16a34a;}
+.agenda-cal-selinfo{margin-top:12px;font-size:0.82rem;color:#4a5568;border-top:1px solid #edf2f7;padding-top:10px;}
+.ech-group-title{font-size:0.72rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;margin:14px 0 6px;color:#718096;}
+.ech-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;margin-bottom:6px;cursor:pointer;border:1px solid #edf2f7;background:#fff;transition:background .15s;}
+.ech-item:hover{background:#f7fafc;}
+.ech-pastille{width:11px;height:11px;border-radius:50%;flex:0 0 auto;}
+.ech-item .ech-nom{font-weight:700;color:#2d3748;font-size:0.9rem;flex:1;}
+.ech-item .ech-quand{font-size:0.78rem;font-weight:700;white-space:nowrap;text-align:right;}
+</style>
+
 <div class="container">
 
     <div class="header">
@@ -522,6 +555,32 @@
         <div class="header-actions">
             <button class="btn-back" onclick="toggleTout()">⇕ Tout déplier / replier</button>
             <button class="btn-new" onclick="ouvrirModalAjout()">+ Nouveau client</button>
+        </div>
+    </div>
+
+    <div class="conf-tabs">
+        <button type="button" id="confTabAgenda" class="conf-tab active" onclick="showVueConformite('agenda')">📅 Agenda</button>
+        <button type="button" id="confTabFiches" class="conf-tab" onclick="showVueConformite('fiches')">📋 Fiches</button>
+    </div>
+
+    <div id="agendaConfWrap">
+        <div class="agenda-conf">
+            <div class="agenda-cal-card">
+                <div class="agenda-cal-head">
+                    <div class="agenda-cal-title" id="agendaCalTitle">—</div>
+                    <div class="agenda-cal-nav">
+                        <button type="button" onclick="agendaConfNavig(-1)" title="Mois précédent">‹</button>
+                        <button type="button" onclick="agendaConfAujourdhui()" title="Aujourd'hui">•</button>
+                        <button type="button" onclick="agendaConfNavig(1)" title="Mois suivant">›</button>
+                    </div>
+                </div>
+                <div class="agenda-cal-grid" id="agendaCalGrid"></div>
+                <div class="agenda-cal-selinfo" id="agendaCalSel"></div>
+            </div>
+            <div class="agenda-list-card">
+                <div class="agenda-cal-title" style="margin-bottom:6px;">Prochaines échéances</div>
+                <div id="agendaEchList"></div>
+            </div>
         </div>
     </div>
 
@@ -775,6 +834,7 @@
             snap.forEach(doc => tousLesClients.push({ id: doc.id, ...doc.data() }));
             tousLesClients.sort((a, b) => (a.dueYear - b.dueYear) || (a.dueMonth - b.dueMonth));
             afficher();
+            showVueConformite(window.vueConfCourante || 'agenda');
         } catch (e) {
             console.error(e);
             document.getElementById('clientsList').innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div>Erreur de chargement</div>';
@@ -837,6 +897,150 @@
         }
 
         container.innerHTML = liste.map(c => renderClientCard(c)).join('');
+    }
+
+    // ===================== AGENDA DES CONFORMITÉS =====================
+    window.vueConfCourante = window.vueConfCourante || 'agenda';
+    let agendaConfMois = new Date(); agendaConfMois.setDate(1);
+    let agendaConfSelJour = null;
+
+    function escapeConf(s){ return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+    function showVueConformite(mode){
+        window.vueConfCourante = mode;
+        const estAgenda = mode === 'agenda';
+        const wrap = document.getElementById('agendaConfWrap');
+        const stats = document.getElementById('stats');
+        const filtres = document.querySelector('.filters-card');
+        const liste = document.getElementById('clientsList');
+        if (wrap) wrap.style.display = estAgenda ? 'block' : 'none';
+        if (stats) stats.style.display = estAgenda ? 'none' : '';
+        if (filtres) filtres.style.display = estAgenda ? 'none' : '';
+        if (liste) liste.style.display = estAgenda ? 'none' : '';
+        const ta = document.getElementById('confTabAgenda');
+        const tf = document.getElementById('confTabFiches');
+        if (ta) ta.classList.toggle('active', estAgenda);
+        if (tf) tf.classList.toggle('active', !estAgenda);
+        if (estAgenda) renderAgendaConformite();
+    }
+
+    function urgenceEch(jours){
+        if (jours < 0) return { cls:'retard', couleur:'#dc2626' };
+        if (jours <= 30) return { cls:'bientot', couleur:'#f59e0b' };
+        return { cls:'avenir', couleur:'#16a34a' };
+    }
+
+    function echeancesConf(){
+        return (tousLesClients||[]).map(function(c){
+            const date = prochainRappelDate(c);
+            const jours = joursAvantRappel(c);
+            return { c:c, date:date, jours:jours, urg:urgenceEch(jours) };
+        }).filter(function(e){ return e.date && !isNaN(e.date.getTime()); });
+    }
+
+    function agendaConfNavig(delta){
+        agendaConfMois.setMonth(agendaConfMois.getMonth() + delta);
+        agendaConfSelJour = null;
+        renderAgendaConformite();
+    }
+    function agendaConfAujourdhui(){
+        agendaConfMois = new Date(); agendaConfMois.setDate(1);
+        agendaConfSelJour = null;
+        renderAgendaConformite();
+    }
+
+    function renderAgendaConformite(){
+        const ech = echeancesConf();
+        renderAgendaCalendrier(ech);
+        renderAgendaListe(ech);
+    }
+
+    function renderAgendaCalendrier(ech){
+        const grid = document.getElementById('agendaCalGrid');
+        const title = document.getElementById('agendaCalTitle');
+        if (!grid || !title) return;
+        const annee = agendaConfMois.getFullYear();
+        const mois = agendaConfMois.getMonth();
+        title.textContent = agendaConfMois.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+        const parJour = {};
+        ech.forEach(function(e){
+            if (e.date.getFullYear()===annee && e.date.getMonth()===mois){
+                const j = e.date.getDate();
+                (parJour[j] = parJour[j] || []).push(e);
+            }
+        });
+        let html = '';
+        ['Lu','Ma','Me','Je','Ve','Sa','Di'].forEach(function(w){ html += '<div class="agenda-cal-wd">'+w+'</div>'; });
+        let premierJour = new Date(annee, mois, 1).getDay();
+        premierJour = (premierJour === 0) ? 6 : premierJour - 1;
+        for (let i=0;i<premierJour;i++) html += '<div class="agenda-cal-day empty"></div>';
+        const nbJours = new Date(annee, mois+1, 0).getDate();
+        const auj = new Date(); auj.setHours(0,0,0,0);
+        for (let d=1; d<=nbJours; d++){
+            const list = parJour[d] || [];
+            const estAuj = (annee===auj.getFullYear() && mois===auj.getMonth() && d===auj.getDate());
+            let dotHtml = '';
+            if (list.length){
+                let pire = 'avenir';
+                list.forEach(function(e){ if (e.urg.cls==='retard') pire='retard'; else if (e.urg.cls==='bientot' && pire!=='retard') pire='bientot'; });
+                const dotCls = pire==='retard'?'dot-retard':(pire==='bientot'?'dot-bientot':'dot-avenir');
+                dotHtml = '<div class="agenda-cal-dot '+dotCls+'">'+list.length+'</div>';
+            }
+            const cls = 'agenda-cal-day' + (estAuj?' today':'') + (list.length?' has-ech':'');
+            const onclick = list.length ? ' onclick="agendaConfSelectJour('+d+')"' : '';
+            html += '<div class="'+cls+'"'+onclick+'><span class="d-num">'+d+'</span>'+dotHtml+'</div>';
+        }
+        grid.innerHTML = html;
+        const sel = document.getElementById('agendaCalSel');
+        if (sel){
+            if (agendaConfSelJour && parJour[agendaConfSelJour]){
+                const dLbl = new Date(annee, mois, agendaConfSelJour).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+                sel.innerHTML = '<strong style="color:#1a365d;">'+escapeConf(dLbl)+'</strong>' + parJour[agendaConfSelJour].map(function(e){
+                    const q = e.jours<0 ? (' — en retard de '+Math.abs(e.jours)+' j') : (e.jours===0 ? " — aujourd'hui" : (' — dans '+e.jours+' j'));
+                    return '<div style="margin-top:5px;"><span style="color:'+e.urg.couleur+';font-weight:800;">●</span> '+escapeConf(e.c.name||'?')+'<span style="color:#718096;">'+q+'</span></div>';
+                }).join('');
+            } else {
+                sel.innerHTML = '<span style="color:#a0aec0;">Clique sur un jour marqué d\'une pastille pour voir les contrôles prévus.</span>';
+            }
+        }
+    }
+
+    function agendaConfSelectJour(d){
+        agendaConfSelJour = d;
+        renderAgendaCalendrier(echeancesConf());
+    }
+
+    function renderAgendaListe(ech){
+        const cont = document.getElementById('agendaEchList');
+        if (!cont) return;
+        const tri = ech.slice().sort(function(a,b){ return a.date - b.date; });
+        const retard = tri.filter(function(e){ return e.jours < 0; });
+        const bientot = tri.filter(function(e){ return e.jours>=0 && e.jours<=30; });
+        const avenir = tri.filter(function(e){ return e.jours>30; });
+        function bloc(titre, arr){
+            if (!arr.length) return '';
+            let h = '<div class="ech-group-title">'+titre+' ('+arr.length+')</div>';
+            arr.forEach(function(e){
+                const quand = e.jours<0 ? ('en retard de '+Math.abs(e.jours)+' j')
+                            : (e.jours===0 ? "aujourd'hui" : ('dans '+e.jours+' j'));
+                const dateLbl = e.date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+                h += '<div class="ech-item" onclick="ouvrirFicheDepuisAgenda(\''+escapeConf(e.c.id)+'\')">'
+                   + '<span class="ech-pastille" style="background:'+e.urg.couleur+';"></span>'
+                   + '<span class="ech-nom">'+escapeConf(e.c.name||'Sans nom')+'</span>'
+                   + '<span class="ech-quand" style="color:'+e.urg.couleur+';">'+quand+'<br><span style="color:#718096;font-weight:600;">'+dateLbl+'</span></span>'
+                   + '</div>';
+            });
+            return h;
+        }
+        let html = bloc('🔴 En retard', retard) + bloc('🟠 Bientôt (≤ 30 j)', bientot) + bloc('🟢 À venir', avenir);
+        cont.innerHTML = html || '<div style="color:#a0aec0;padding:12px;">Aucune échéance enregistrée.</div>';
+    }
+
+    function ouvrirFicheDepuisAgenda(id){
+        const e = echeancesConf().find(function(x){ return x.c.id === id; });
+        showVueConformite('fiches');
+        const search = document.getElementById('searchInput');
+        if (search && e){ search.value = e.c.name || ''; afficher(); }
     }
 
     function renderClientCard(c) {
