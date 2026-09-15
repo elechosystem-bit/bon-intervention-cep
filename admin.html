@@ -973,11 +973,12 @@
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; flex-wrap:wrap;">
                     <div id="tarifCompteur" style="font-size:0.8rem; color:#718096;"></div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button type="button" id="btnAjouterTarif" onclick="ouvrirFormAjoutTarif()" style="padding:6px 12px; border-radius:6px; border:0; background:#38a169; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">➕ Ajouter</button>
+                        <button type="button" id="btnAjouterTarif" onclick="ouvrirFormAjoutTarif()" style="padding:6px 12px; border-radius:6px; border:0; background:#38a169; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">➕ Produit</button>
+                        <button type="button" id="btnAjouterCategorieTarif" onclick="ajouterCategorieTarif()" style="padding:6px 12px; border-radius:6px; border:0; background:#6b46c1; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">🏷️ Catégorie</button>
                         <button type="button" id="btnModeEditionTarif" onclick="basculerModeEditionTarif()" style="padding:6px 14px; border-radius:6px; border:0; background:#1a365d; color:white; font-size:0.85rem; cursor:pointer; font-weight:600;">✏️ Modifier</button>
                     </div>
                 </div>
-                <div id="tarifAideEdition" style="display:none; margin-top:6px; font-size:0.75rem; color:#8a5a00; background:#fff8e1; padding:6px 10px; border-radius:6px;">💡 Mode édition : clique sur un prix pour le modifier, ou sur ➕ Ajouter pour créer un nouveau produit. Utilise 🗑️ pour supprimer.</div>
+                <div id="tarifAideEdition" style="display:none; margin-top:6px; font-size:0.75rem; color:#8a5a00; background:#fff8e1; padding:6px 10px; border-radius:6px;">💡 Mode édition : clique sur un prix pour le modifier. ➕ Produit / 🏷️ Catégorie pour ajouter. Sur le bandeau coloré d'une catégorie : ✏️ pour la renommer, 🗑️ pour la supprimer. 🗑️ à côté d'un prix supprime le produit.</div>
                 <div id="tarifFormAjout" style="display:none; margin-top:10px; padding:12px; background:#f0fff4; border:2px solid #38a169; border-radius:8px;">
                     <div style="font-weight:700; color:#22543d; margin-bottom:8px;">➕ Nouveau produit</div>
                     <div style="display:grid; grid-template-columns:1fr; gap:8px;">
@@ -1017,13 +1018,12 @@
                 <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
                     <thead style="position:sticky; top:0; background:#f7fafc; z-index:1;">
                         <tr>
-                            <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Catégorie</th>
                             <th style="text-align:left; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Produit</th>
                             <th style="text-align:right; padding:10px 8px; border-bottom:2px solid #e2e8f0; color:#4a5568;">Prix de vente</th>
                         </tr>
                     </thead>
                     <tbody id="tarifTbody">
-                        <tr><td colspan="3" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>
+                        <tr><td colspan="2" style="padding:16px; text-align:center; color:#a0aec0;">Chargement…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1842,9 +1842,14 @@
         // Tarif. Fallback sur GRILLE_CEP (grille-cep.js) si le doc Firestore est vide.
         async function grilleTarifVersMateriel() {
             let items = [];
+            let categoriesOrdre = null;
             try {
                 const doc = await refGrilleTarif().get();
-                if (doc.exists && Array.isArray(doc.data().items)) items = doc.data().items;
+                if (doc.exists) {
+                    const d = doc.data();
+                    if (Array.isArray(d.items)) items = d.items;
+                    if (Array.isArray(d.categories)) categoriesOrdre = d.categories;
+                }
             } catch (e) {
                 console.warn('Lecture grille tarif:', e);
             }
@@ -1852,11 +1857,11 @@
                 if (typeof GRILLE_CEP !== 'undefined' && Array.isArray(GRILLE_CEP)) items = GRILLE_CEP;
                 else return null;
             }
-            const ordre = [];
             const parCat = {};
+            const ordreApparition = [];
             items.forEach(function(p) {
                 const cat = (p.categorie || 'Divers');
-                if (!parCat[cat]) { parCat[cat] = []; ordre.push(cat); }
+                if (!parCat[cat]) { parCat[cat] = []; ordreApparition.push(cat); }
                 parCat[cat].push({
                     nom: p.nom || '',
                     prix: parseFloat(p.prix) || 0,
@@ -1864,7 +1869,13 @@
                     unite: (p.unite === 'm') ? 'm' : 'u'
                 });
             });
-            return ordre.map(function(cat) { return { categorie: cat, produits: parCat[cat] }; });
+            // Ordre : celui enregistre (categories), complete par l'ordre d'apparition.
+            // Les categories sans produit sont ignorees (rien a afficher dans le bon).
+            let ordre = (categoriesOrdre && categoriesOrdre.length) ? categoriesOrdre.slice() : ordreApparition;
+            ordreApparition.forEach(function(c) { if (ordre.indexOf(c) === -1) ordre.push(c); });
+            return ordre
+                .filter(function(cat) { return parCat[cat] && parCat[cat].length; })
+                .map(function(cat) { return { categorie: cat, produits: parCat[cat] }; });
         }
 
         async function changerSociete(societeId) {
@@ -2503,6 +2514,25 @@
         // === Modale Tarif (CEP uniquement) ===
         let tarifCatalogueComplet = null;
         let tarifModeEdition = false;
+        let tarifCategories = [];   // ordre des categories (permet des categories vides)
+
+        // Derive l'ordre des categories a partir des produits (ordre d'apparition, sans doublon)
+        function deriverCategoriesTarif(items) {
+            const vues = [];
+            (items || []).forEach(function(p) {
+                const c = p.categorie || 'Divers';
+                if (vues.indexOf(c) === -1) vues.push(c);
+            });
+            return vues;
+        }
+
+        // Couleur stable derivee du nom de la categorie (une couleur par categorie)
+        function couleurCategorieTarif(nom) {
+            let h = 0;
+            const s = String(nom || '');
+            for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) % 360; }
+            return 'hsl(' + h + ', 45%, 42%)';
+        }
 
         function basculerModeEditionTarif() {
             tarifModeEdition = !tarifModeEdition;
@@ -2523,7 +2553,11 @@
             const form = document.getElementById('tarifFormAjout');
             const selCat = document.getElementById('tarifNouvCategorie');
             if (!form || !selCat) return;
-            const categories = Array.from(new Set((tarifCatalogueComplet || []).map(function(p) { return p.categorie; }))).sort();
+            // Lister les categories connues (ordre de la grille, inclut les categories vides)
+            const categories = tarifCategories.slice();
+            deriverCategoriesTarif(tarifCatalogueComplet).forEach(function(c) {
+                if (categories.indexOf(c) === -1) categories.push(c);
+            });
             let optsHtml = '';
             categories.forEach(function(c) {
                 optsHtml += '<option value="' + escapeHtmlTarif(c) + '">' + escapeHtmlTarif(c) + '</option>';
@@ -2601,6 +2635,12 @@
                     if (tarifCatalogueComplet[i].categorie === categorie) { insertionIdx = i + 1; break; }
                 }
             }
+            // Enregistrer la categorie dans la liste ordonnee si elle est nouvelle
+            let categorieAjoutee = false;
+            if (categorie && tarifCategories.indexOf(categorie) === -1) {
+                tarifCategories.push(categorie);
+                categorieAjoutee = true;
+            }
             const nouvItem = { id: '', categorie: categorie, nom: nom, prix: prix, unite: unite };
             tarifCatalogueComplet.splice(insertionIdx, 0, nouvItem);
             // Re-indexer les id (position dans le tableau)
@@ -2613,6 +2653,7 @@
                 // Rollback en cas d'erreur d'ecriture
                 tarifCatalogueComplet.splice(insertionIdx, 1);
                 tarifCatalogueComplet.forEach(function(p, i) { p.id = String(i); });
+                if (categorieAjoutee) tarifCategories = tarifCategories.filter(function(c) { return c !== categorie; });
                 alert('Erreur de sauvegarde : ' + (e.message || e));
             }
         }
@@ -2639,7 +2680,11 @@
             const items = tarifCatalogueComplet.map(function(p) {
                 return { categorie: p.categorie, nom: p.nom, prix: p.prix, unite: p.unite };
             });
-            await refGrilleTarif().set({ items: items, majLe: firebase.firestore.FieldValue.serverTimestamp() });
+            await refGrilleTarif().set({
+                items: items,
+                categories: tarifCategories.slice(),
+                majLe: firebase.firestore.FieldValue.serverTimestamp()
+            });
         }
 
         async function ouvrirModaleTarif() {
@@ -2685,9 +2730,11 @@
             const ref = refGrilleTarif();
             const doc = await ref.get();
             let items = null;
+            let categories = null;
             if (doc.exists) {
                 const d = doc.data();
                 if (Array.isArray(d.items)) items = d.items;
+                if (Array.isArray(d.categories)) categories = d.categories;
             }
             if (!items || items.length === 0) {
                 // Bootstrap depuis GRILLE_CEP (fallback statique)
@@ -2702,7 +2749,8 @@
                         unite: p.unite || 'u'
                     };
                 });
-                await ref.set({ items: items, majLe: firebase.firestore.FieldValue.serverTimestamp() });
+                categories = deriverCategoriesTarif(items);
+                await ref.set({ items: items, categories: categories, majLe: firebase.firestore.FieldValue.serverTimestamp() });
             }
             // On indexe chaque item par sa position pour la sauvegarde
             tarifCatalogueComplet = items.map(function(p, i) {
@@ -2713,6 +2761,12 @@
                     prix: parseFloat(p.prix) || 0,
                     unite: p.unite || 'u'
                 };
+            });
+            // Ordre des categories : celui enregistre, complete par toute categorie
+            // presente dans les produits mais absente de la liste (securite).
+            tarifCategories = (categories && categories.length) ? categories.slice() : deriverCategoriesTarif(tarifCatalogueComplet);
+            deriverCategoriesTarif(tarifCatalogueComplet).forEach(function(c) {
+                if (tarifCategories.indexOf(c) === -1) tarifCategories.push(c);
             });
         }
 
@@ -2749,37 +2803,139 @@
             const tbody = document.getElementById('tarifTbody');
             const compteur = document.getElementById('tarifCompteur');
             if (!tbody) return;
-            if (!liste || liste.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="padding:16px; text-align:center; color:#a0aec0;">Aucun résultat</td></tr>';
-                if (compteur) compteur.textContent = '';
+
+            const q = (document.getElementById('tarifRecherche').value || '').trim();
+            const rechercheActive = q.length > 0;
+
+            // Grouper la liste recue par categorie
+            const parCat = {};
+            (liste || []).forEach(function(p) {
+                const c = p.categorie || 'Divers';
+                if (!parCat[c]) parCat[c] = [];
+                parCat[c].push(p);
+            });
+
+            // Ordre d'affichage : tarifCategories, + categories orphelines a la fin
+            const ordre = tarifCategories.slice();
+            Object.keys(parCat).forEach(function(c) { if (ordre.indexOf(c) === -1) ordre.push(c); });
+
+            let html = '';
+            let nbAffiches = 0;
+            ordre.forEach(function(cat) {
+                const produits = parCat[cat] || [];
+                // En recherche active : masquer les categories sans resultat.
+                // Sinon : afficher toutes les categories (meme vides) pour les gerer.
+                if (rechercheActive && produits.length === 0) return;
+
+                const bg = couleurCategorieTarif(cat);
+                let actionsCat = '';
+                if (tarifModeEdition) {
+                    const catEsc = escapeHtmlTarif(cat).replace(/'/g, "\\'");
+                    actionsCat = ''
+                        + '<button type="button" onclick="renommerCategorieTarif(\'' + catEsc + '\')" title="Renommer la catégorie" style="border:0; background:rgba(255,255,255,0.25); color:white; font-size:0.85rem; padding:2px 8px; border-radius:5px; cursor:pointer; margin-left:6px;">✏️</button>'
+                        + '<button type="button" onclick="supprimerCategorieTarif(\'' + catEsc + '\')" title="Supprimer la catégorie" style="border:0; background:rgba(255,255,255,0.25); color:white; font-size:0.85rem; padding:2px 8px; border-radius:5px; cursor:pointer; margin-left:4px;">🗑️</button>';
+                }
+                html += '<tr><td colspan="2" style="padding:0;">'
+                    + '<div style="display:flex; align-items:center; justify-content:space-between; background:' + bg + '; color:white; padding:8px 12px; margin-top:8px; border-radius:6px; font-weight:700; font-size:0.9rem;">'
+                    + '<span>' + escapeHtmlTarif(cat) + '</span>'
+                    + '<span style="white-space:nowrap;">' + actionsCat + '</span>'
+                    + '</div></td></tr>';
+
+                if (produits.length === 0) {
+                    html += '<tr><td colspan="2" style="padding:6px 12px; color:#a0aec0; font-style:italic; font-size:0.85rem;">Aucun produit dans cette catégorie</td></tr>';
+                }
+                produits.forEach(function(p) {
+                    const unite = (p.unite === 'm') ? ' / m' : '';
+                    let cellulePrix;
+                    if (tarifModeEdition) {
+                        const prixVal = (p.prix > 0) ? p.prix.toFixed(2) : '';
+                        cellulePrix = '<input type="number" step="0.01" min="0" value="' + prixVal + '" '
+                            + 'data-id="' + escapeHtmlTarif(p.id) + '" '
+                            + 'onblur="sauverPrixTarif(this.dataset.id, this.value, this)" '
+                            + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '
+                            + 'style="width:80px; padding:4px 6px; text-align:right; border:1px solid #cbd5e0; border-radius:4px; font-weight:700; color:#1a365d; transition:background 0.3s;">'
+                            + '<span style="margin-left:4px; color:#4a5568; font-size:0.85rem;">€' + unite + '</span>'
+                            + ' <button type="button" onclick="supprimerTarif(\'' + escapeHtmlTarif(p.id) + '\')" title="Supprimer ce produit" style="margin-left:6px; padding:2px 6px; border:0; background:transparent; color:#c53030; font-size:1rem; cursor:pointer;">🗑️</button>';
+                    } else {
+                        cellulePrix = (p.prix > 0)
+                            ? ('<span style="font-weight:700; color:#1a365d;">' + p.prix.toFixed(2) + ' €' + unite + '</span>')
+                            : '<span style="color:#a0aec0;">nous consulter</span>';
+                    }
+                    html += '<tr style="border-bottom:1px solid #edf2f7;">'
+                        + '<td style="padding:8px 8px 8px 16px; font-weight:600; color:#2d3748;">' + escapeHtmlTarif(p.nom) + '</td>'
+                        + '<td style="padding:8px; text-align:right; white-space:nowrap;">' + cellulePrix + '</td>'
+                        + '</tr>';
+                    nbAffiches++;
+                });
+            });
+
+            if (html === '') {
+                html = '<tr><td colspan="2" style="padding:16px; text-align:center; color:#a0aec0;">Aucun résultat</td></tr>';
+            }
+            tbody.innerHTML = html;
+            if (compteur) compteur.textContent = nbAffiches + ' article' + (nbAffiches > 1 ? 's' : '');
+        }
+
+        // === Gestion des categories de la grille tarif ===
+        async function ajouterCategorieTarif() {
+            const nom = (window.prompt('Nom de la nouvelle catégorie :') || '').trim();
+            if (!nom) return;
+            if (tarifCategories.some(function(c) { return c.toLowerCase() === nom.toLowerCase(); })) {
+                alert('Cette catégorie existe déjà.');
                 return;
             }
-            let html = '';
-            liste.forEach(function(p) {
-                const unite = (p.unite === 'm') ? ' / m' : '';
-                let cellulePrix;
-                if (tarifModeEdition) {
-                    const prixVal = (p.prix > 0) ? p.prix.toFixed(2) : '';
-                    cellulePrix = '<input type="number" step="0.01" min="0" value="' + prixVal + '" '
-                        + 'data-id="' + escapeHtmlTarif(p.id) + '" '
-                        + 'onblur="sauverPrixTarif(this.dataset.id, this.value, this)" '
-                        + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '
-                        + 'style="width:80px; padding:4px 6px; text-align:right; border:1px solid #cbd5e0; border-radius:4px; font-weight:700; color:#1a365d; transition:background 0.3s;">'
-                        + '<span style="margin-left:4px; color:#4a5568; font-size:0.85rem;">€' + unite + '</span>'
-                        + ' <button type="button" onclick="supprimerTarif(\'' + escapeHtmlTarif(p.id) + '\')" title="Supprimer ce produit" style="margin-left:6px; padding:2px 6px; border:0; background:transparent; color:#c53030; font-size:1rem; cursor:pointer;">🗑️</button>';
-                } else {
-                    cellulePrix = (p.prix > 0)
-                        ? ('<span style="font-weight:700; color:#1a365d;">' + p.prix.toFixed(2) + ' €' + unite + '</span>')
-                        : '<span style="color:#a0aec0;">nous consulter</span>';
-                }
-                html += '<tr style="border-bottom:1px solid #edf2f7;">'
-                    + '<td style="padding:8px; color:#718096; font-size:0.85rem;">' + escapeHtmlTarif(p.categorie) + '</td>'
-                    + '<td style="padding:8px; font-weight:600; color:#2d3748;">' + escapeHtmlTarif(p.nom) + '</td>'
-                    + '<td style="padding:8px; text-align:right; white-space:nowrap;">' + cellulePrix + '</td>'
-                    + '</tr>';
-            });
-            tbody.innerHTML = html;
-            if (compteur) compteur.textContent = liste.length + ' article' + (liste.length > 1 ? 's' : '');
+            const sauvegarde = tarifCategories.slice();
+            tarifCategories.push(nom);
+            try {
+                await ecrireGrilleTarif();
+                filtrerTarifs();
+            } catch (e) {
+                tarifCategories = sauvegarde;
+                alert('Erreur de sauvegarde : ' + (e.message || e));
+            }
+        }
+
+        async function renommerCategorieTarif(ancien) {
+            const nouveau = (window.prompt('Renommer la catégorie « ' + ancien +' » en :', ancien) || '').trim();
+            if (!nouveau || nouveau === ancien) return;
+            if (tarifCategories.some(function(c) { return c.toLowerCase() === nouveau.toLowerCase() && c !== ancien; })) {
+                alert('Une catégorie porte déjà ce nom.');
+                return;
+            }
+            const sauvegardeCats = tarifCategories.slice();
+            const sauvegardeItems = tarifCatalogueComplet.map(function(p) { return Object.assign({}, p); });
+            tarifCategories = tarifCategories.map(function(c) { return c === ancien ? nouveau : c; });
+            tarifCatalogueComplet.forEach(function(p) { if (p.categorie === ancien) p.categorie = nouveau; });
+            try {
+                await ecrireGrilleTarif();
+                filtrerTarifs();
+            } catch (e) {
+                tarifCategories = sauvegardeCats;
+                tarifCatalogueComplet = sauvegardeItems;
+                alert('Erreur de sauvegarde : ' + (e.message || e));
+            }
+        }
+
+        async function supprimerCategorieTarif(cat) {
+            const nb = tarifCatalogueComplet.filter(function(p) { return p.categorie === cat; }).length;
+            const msg = nb > 0
+                ? ('Supprimer la catégorie « ' + cat + ' » ET ses ' + nb + ' produit' + (nb > 1 ? 's' : '') + ' ?')
+                : ('Supprimer la catégorie vide « ' + cat + ' » ?');
+            if (!window.confirm(msg)) return;
+            const sauvegardeCats = tarifCategories.slice();
+            const sauvegardeItems = tarifCatalogueComplet.map(function(p) { return Object.assign({}, p); });
+            tarifCategories = tarifCategories.filter(function(c) { return c !== cat; });
+            tarifCatalogueComplet = tarifCatalogueComplet.filter(function(p) { return p.categorie !== cat; });
+            tarifCatalogueComplet.forEach(function(p, i) { p.id = String(i); });
+            try {
+                await ecrireGrilleTarif();
+                filtrerTarifs();
+            } catch (e) {
+                tarifCategories = sauvegardeCats;
+                tarifCatalogueComplet = sauvegardeItems;
+                tarifCatalogueComplet.forEach(function(p, i) { p.id = String(i); });
+                alert('Erreur de suppression : ' + (e.message || e));
+            }
         }
 
         function filtrerTarifs() {
