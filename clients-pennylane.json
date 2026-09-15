@@ -3721,16 +3721,6 @@
       "rue": "2, rue Copernic"
     },
     {
-      "id": 1404750106624,
-      "nom": "FRANPRIX",
-      "email": "",
-      "telephone": "",
-      "adresse": "1 boulevard de la Verville, 91540, MENNECY",
-      "ville": "MENNECY",
-      "codePostal": "91540",
-      "rue": "1 boulevard de la Verville"
-    },
-    {
       "id": 248732878,
       "nom": "FRANPRIX",
       "email": "loic.dahan@gmail.com",
@@ -8951,6 +8941,16 @@
       "rue": "LES COUSINES"
     },
     {
+      "id": 1404750106624,
+      "nom": "MPRM - MENNECY",
+      "email": "disimon@ads50.fr",
+      "telephone": "",
+      "adresse": "CENTRE COMMERCIAL DU PARC DE VILLEROY PLACE NORMANDIE NIEMEN, 91540, MENNECY",
+      "ville": "MENNECY",
+      "codePostal": "91540",
+      "rue": "CENTRE COMMERCIAL DU PARC DE VILLEROY PLACE NORMANDIE NIEMEN"
+    },
+    {
       "id": 262120853,
       "nom": "MPV - SUPERMARCHE G20",
       "email": "",
@@ -12192,5 +12192,5 @@
     }
   ],
   "total": 1219,
-  "syncDate": "2026-09-14T09:24:06Z"
+  "syncDate": "2026-09-15T09:04:42Z"
 }
