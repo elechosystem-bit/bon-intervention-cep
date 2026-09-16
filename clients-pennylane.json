@@ -61,6 +61,16 @@
       "rue": "A compléter"
     },
     {
+      "id": 249927660,
+      "nom": "722003936",
+      "email": "",
+      "telephone": "",
+      "adresse": "2 Avenue Paul Verlaine, 78190, Trappes",
+      "ville": "Trappes",
+      "codePostal": "78190",
+      "rue": "2 Avenue Paul Verlaine"
+    },
+    {
       "id": 248733488,
       "nom": "A LA PLACE SAINT GEORGES - SARL SAGALUTHE CAFE",
       "email": "pigaultcharles@gmail.com",
@@ -8582,13 +8592,13 @@
     },
     {
       "id": 248733305,
-      "nom": "MC DONALD'S TRAPPES (NOUVEAU)",
+      "nom": "MC DONALD'S TRAPPES - TEYDIUM",
       "email": "jagut.sebastien@gmail.com",
-      "telephone": "0139386530",
-      "adresse": "2, rue Paul Verlaine, 78190, Trappes",
-      "ville": "Trappes",
+      "telephone": "+33 1 39 38 65 30",
+      "adresse": "2 AVENUE PAUL VERLAINE, 78190, TRAPPES",
+      "ville": "TRAPPES",
       "codePostal": "78190",
-      "rue": "2, rue Paul Verlaine"
+      "rue": "2 AVENUE PAUL VERLAINE"
     },
     {
       "id": 248733548,
@@ -8669,16 +8679,6 @@
       "ville": "Suresnes",
       "codePostal": "92150",
       "rue": "42, rue Emile Zola"
-    },
-    {
-      "id": 249927660,
-      "nom": "MC DONALDS TRAPPES",
-      "email": "",
-      "telephone": "",
-      "adresse": "",
-      "ville": "",
-      "codePostal": "",
-      "rue": ""
     },
     {
       "id": 125155894,
@@ -9609,6 +9609,16 @@
       "ville": "Orgeval",
       "codePostal": "78630",
       "rue": "589, avenue Pasteur"
+    },
+    {
+      "id": 1493433868288,
+      "nom": "PHARMACIE NOTRE DAME DES CHAMPS",
+      "email": "",
+      "telephone": "",
+      "adresse": "153 Boulevard du Montparnasse, 75006, Paris",
+      "ville": "Paris",
+      "codePostal": "75006",
+      "rue": "153 Boulevard du Montparnasse"
     },
     {
       "id": 248732933,
@@ -12191,6 +12201,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1219,
-  "syncDate": "2026-09-15T09:04:42Z"
+  "total": 1220,
+  "syncDate": "2026-09-16T08:57:05Z"
 }
