@@ -721,6 +721,16 @@
       "rue": "48, rue Lamarck"
     },
     {
+      "id": 1500232916992,
+      "nom": "Alkan ASLAN",
+      "email": "alkan.aslan55@gmail.com",
+      "telephone": "+33 6 65 62 88 37",
+      "adresse": "4 Rue Kléber, 92130, Issy-les-Moulineaux",
+      "ville": "Issy-les-Moulineaux",
+      "codePostal": "92130",
+      "rue": "4 Rue Kléber"
+    },
+    {
       "id": 248732911,
       "nom": "Arnaud ANCORA (ANCORA IMMOBILIER)",
       "email": "arnaud.ancora@gmail.com",
@@ -12201,6 +12211,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1220,
-  "syncDate": "2026-09-17T09:02:02Z"
+  "total": 1221,
+  "syncDate": "2026-09-18T08:36:58Z"
 }
