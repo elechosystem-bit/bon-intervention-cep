@@ -9443,7 +9443,7 @@
     {
       "id": 248733644,
       "nom": "PATISSERIE DE L'OLYMPIA - SARL NJ NYEMBO",
-      "email": "",
+      "email": "nyembojk@gmail.com",
       "telephone": "",
       "adresse": "2 rue de Sèze, 75009, PARIS",
       "ville": "PARIS",
@@ -11201,6 +11201,16 @@
       "rue": "49, rue Linois"
     },
     {
+      "id": 1513984548864,
+      "nom": "SECOND EMPIRE - LE PLOMB",
+      "email": "aliciavidalenc03@gmail.com",
+      "telephone": "",
+      "adresse": "62 RUE DE LA VERRERIE, 75004, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75004",
+      "rue": "62 RUE DE LA VERRERIE"
+    },
+    {
       "id": 248732805,
       "nom": "SELECT MONTPARNASSE",
       "email": "bastienviguier@hotmail.com",
@@ -12211,6 +12221,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1221,
-  "syncDate": "2026-09-23T04:06:02Z"
+  "total": 1222,
+  "syncDate": "2026-09-24T04:06:01Z"
 }
