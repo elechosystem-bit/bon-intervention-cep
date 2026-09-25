@@ -1201,6 +1201,16 @@
       "rue": "angle12 rue  Caire 204 rue St Denis"
     },
     {
+      "id": 1515594670080,
+      "nom": "BISTROT GISELE - SAS LE SELECT",
+      "email": "",
+      "telephone": "",
+      "adresse": "ANGLE 12 RUE DU CAIRE 204 RUE SAINT DENIS, 75002, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75002",
+      "rue": "ANGLE 12 RUE DU CAIRE 204 RUE SAINT DENIS"
+    },
+    {
       "id": 248732655,
       "nom": "BISTROT LYONNAIS",
       "email": "",
@@ -12221,6 +12231,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1222,
-  "syncDate": "2026-09-24T04:06:01Z"
+  "total": 1223,
+  "syncDate": "2026-09-25T04:06:05Z"
 }
