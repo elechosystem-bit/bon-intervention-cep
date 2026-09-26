@@ -2842,13 +2842,13 @@
     },
     {
       "id": 248733598,
-      "nom": "CHEZ YVETTE",
+      "nom": "CHEZ YVETTE - SAS LATITUDE",
       "email": "gallicquentin@gmail.com",
       "telephone": "",
-      "adresse": "47, avenue Trudaine, 75009, Paris",
-      "ville": "Paris",
+      "adresse": "47 AVENUE TRUDAINE, 75009, PARIS",
+      "ville": "PARIS",
       "codePostal": "75009",
-      "rue": "47, avenue Trudaine"
+      "rue": "47 AVENUE TRUDAINE"
     },
     {
       "id": 248732893,
@@ -5851,6 +5851,16 @@
       "rue": "19, boulevard du Montparnasse"
     },
     {
+      "id": 1520834580480,
+      "nom": "LE CHINON",
+      "email": "",
+      "telephone": "",
+      "adresse": "49 RUE DES ABBESSES, 75018, PARIS",
+      "ville": "PARIS",
+      "codePostal": "75018",
+      "rue": "49 RUE DES ABBESSES"
+    },
+    {
       "id": 248733280,
       "nom": "LE CIRKUS",
       "email": "boutieart@gmail.com",
@@ -7219,6 +7229,16 @@
       "ville": "Paris",
       "codePostal": "75010",
       "rue": "5, rue du Chateau d'Eau"
+    },
+    {
+      "id": 125155902,
+      "nom": "LES PETITS PLATS",
+      "email": "restaurantlespetitsplats@orange.fr",
+      "telephone": "",
+      "adresse": "2 AVENUE GAMBETTA, 94100, SAINT-MAUR-DES-FOSSES",
+      "ville": "SAINT-MAUR-DES-FOSSES",
+      "codePostal": "94100",
+      "rue": "2 AVENUE GAMBETTA"
     },
     {
       "id": 248733618,
@@ -9609,16 +9629,6 @@
       "ville": "Paris",
       "codePostal": "75002",
       "rue": "17, rue des Petits Carreaux"
-    },
-    {
-      "id": 125155902,
-      "nom": "PETITS PLATS - APC",
-      "email": "patricesalacroup@gmail.com",
-      "telephone": "",
-      "adresse": "2, avenue Gambetta, 94100, Saint-Maur-des-Fossés",
-      "ville": "Saint-Maur-des-Fossés",
-      "codePostal": "94100",
-      "rue": "2, avenue Gambetta"
     },
     {
       "id": 248733017,
@@ -12231,6 +12241,6 @@
       "rue": "A compléter"
     }
   ],
-  "total": 1223,
-  "syncDate": "2026-09-25T04:06:05Z"
+  "total": 1224,
+  "syncDate": "2026-09-26T04:05:46Z"
 }
